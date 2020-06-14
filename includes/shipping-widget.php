@@ -34,18 +34,27 @@ function ShowBox( $post ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         echo "<div><p>Failed to create shipment in DelyvaX, you can try again by changing order status to <b>Preparing</b></p></div>";
     } else if ( $order->has_status( array( 'processing' ) ) ) {
-				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
+				// echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         echo "<div><p>
             <a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=preparing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Fulfill with DelyvaX</a>
             </p></div>";
 	  } else if ( $order->has_status( array( 'preparing' ) ) ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
-	      echo "<div><p>
-	          <a href=\"".$printLabelUrl."\" class=\"button button-primary\" target=\"_blank\">Print label</a>
-	          </p></div>";
-	      echo "<div><p>
-	          <a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
-	          </p></div>";
+				if($TrackingCode)
+				{
+						echo "<div><p>
+			          <a href=\"".$printLabelUrl."\" class=\"button button-primary\" target=\"_blank\">Print label</a>
+			          </p></div>";
+			      echo "<div><p>
+			          <a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
+			          </p></div>";
+				}else {
+					echo "<div>
+					<p>
+							Set your order to <b>Processing</b> again to fulfill with DelyvaX, it also works with <i>bulk actions</i> too!
+					</p>
+					</div>";
+				}
     } else if ( $order->has_status( array( 'completed' ) ) ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         echo "<div>
@@ -65,7 +74,7 @@ function ShowBox( $post ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         echo "<div>
         <p>
-            Set your order to <b>Preparing</b> to fulfill with DelyvaX, it also works with <i>bulk actions</i> too!
+            Set your order to <b>Processing</b> to fulfill with DelyvaX, it also works with <i>bulk actions</i> too!
         </p>
     		</div>";
     }

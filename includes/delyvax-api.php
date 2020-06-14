@@ -55,7 +55,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 "weight" => $weight,
             ];
 
-            print_r(json_encode($postRequestArr));
+            // print_r(json_encode($postRequestArr));
 
             $response = wp_remote_post($url, array(
                 'headers' => array(
@@ -67,7 +67,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'timeout' => 25
             ));
 
-            print_r($response['body']);
+            // print_r($response['body']);
             // exit;
 
             if (is_wp_error($response)) {
@@ -98,12 +98,78 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $customer_id = $settings['customer_id'];
               $api_token = $settings['api_token'];
 
-              //DateTime !TODO!!!!
-              $my_date_time = date("Y-m-d H:i:s", strtotime("+1 hours"));
-              $scheduledAt = (new DateTime($my_date_time))->format('c');
+              // echo 'order';
+              // var_dump($order);
+              // echo 'user';
+              // var_dump($user);
+
+              //TODO! Date Time
+              //----delivery date & time (pull from woo delivery), if not available, set to +next day 8am.
+
+              $gmtoffset = get_option('gmt_offset');
+              // echo '<br>';
+              $timezones = get_option('timezone_string');
+              // echo '<br>';
+
+              $dtimezone = new DateTimeZone($timezones);
+
+              $delivery_date = new DateTime();
+              $delivery_date->setTimezone($dtimezone);
+              // $delivery_date->modify('+1 day');
+              $delivery_date->format('d-m-Y H:i:s');
+              // echo '<br>';
+              if($order->get_meta( 'delivery_date' ) != null)
+              {
+                  $delivery_date = new DateTime('@' .$order->get_meta( 'delivery_date' ));
+                  $delivery_date->setTimezone($dtimezone);
+                  // $delivery_type = $order->get_meta( 'delivery_type' );
+              }
+              $delivery_date->format('d-m-Y H:i:s');
+              // echo '<br>';
+
+              // echo $delivery_time = '08:00'; //8AM
+              $delivery_time = date("H", strtotime("+1 hours"));
+              // echo '<br>';
+              if($order->get_meta( 'delivery_time' ) != null)
+              {
+                  $w_delivery_time = $order->get_meta( 'delivery_time' ); //1440 minutes / 24
+                  // echo '<br>';
+
+                  $a_delivery_time = explode(",",$w_delivery_time);
+                  if(sizeof($a_delivery_time) > 0)
+                  {
+                      $a_delivery_time[0].'<br>';
+                      $delivery_time = $a_delivery_time[0]/60;
+                  }
+
+              }
+              $delivery_time;
+              // echo '<br>';
+
+              $delivery_type = 'delivery';
+              // echo '<br>';
+              if($order->get_meta( 'delivery_type' ) != null)
+              {
+                  $delivery_type = $order->get_meta( 'delivery_type' );
+              }
+              // echo $delivery_type;
+
+              // $my_date_time = date("Y-m-d H:i:s", strtotime("+1 hours"));
+
+              $scheduledAt = $delivery_date;
+              $scheduledAt->setTime($delivery_time,00,00);
+
+              $delivery_date->format('d-m-Y H:i:s');
+              // echo '<br>';
+
+              $scheduledAt = $scheduledAt->format('c');
+              // echo '<br>';
+
+              // $scheduledAt = (new DateTime($my_date_time))->format('c');
               //2020-06-10T23:13:51-04:00 / "scheduledAt": "2019-11-15T12:00:00+0800", //echo date_format(date_create('17 Oct 2008'), 'c');
               // echo $scheduledAt;
               // exit;
+
 
               //service
               $serviceCode = "";
@@ -123,42 +189,64 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               }
 
               //inventory / items
+              $count = 0;
+              $inventories = array();
               $total_weight = 0;
-              $product_names = '';
               $total_price = 0;
+              $order_notes = '';
 
-              foreach ( $order->get_items() as $item ) {
+              foreach ( $order->get_items() as $item )
+              {
                   $product_name = $item->get_name();
                   $product_id = $item->get_product_id();
                   $product_variation_id = $item->get_variation_id();
+
+                  $product_id = $item->get_product_id();
+                  $variation_id = $item->get_variation_id();
+                  $product = $item->get_product();
+                  $name = $item->get_name();
+                  $quantity = $item->get_quantity();
+                  $subtotal = $item->get_subtotal();
+                  $total = $item->get_total();
+                  $tax = $item->get_subtotal_tax();
+                  $taxclass = $item->get_tax_class();
+                  $taxstat = $item->get_tax_status();
+                  $allmeta = $item->get_meta_data();
+                  // $somemeta = $item->get_meta( '_whatever', true );
+                  $type = $item->get_type();
+
+                  // print_r($allmeta);
 
                   $_pf = new WC_Product_Factory();
 
                   $product = $_pf->get_product($product_id);
 
-                  $total_weight = $total_weight + $product->get_weight();
-                  $total_price = $total_price + $product->get_price();
-
-                  $product_names = $product_names.$product_name.'/n';
-
-              }
-
-              $inventories = array(
-                  array(
-                      "name" => $product_name,
-                      "type" => "PARCEL",
+                  $inventories[$count] = array(
+                      "name" => $name,
+                      "type" => "PARCEL", //$type PARCEL / FOOD
                       "price" => array(
-                          "amount" => $total_price,
-                          "currency" => "MYR"
+                          "amount" => $total,
+                          "currency" => $order->get_currency(),
                       ),
                       "weight" => array(
-                          "value" => $total_weight,
+                          "value" => ($product->get_weight()*$quantity),
                           "unit" => "kg"
                       ),
-                      "quantity" => 1,
-                      "description" => $product_name
-                  )
-              );
+                      "quantity" => $quantity,
+                      "description" => $order_notes
+                  );
+
+                  $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                  $total_price = $total_price + $total;
+
+                  $order_notes = $order_notes.'#'.($count+1).'. '.$name.' X '.$quantity.'pcs \n';
+
+                  $count++;
+              }
+
+              //echo json_encode($inventories);
+
+              // echo $order_notes;
 
               //origin
               // The main address pieces:
@@ -177,6 +265,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $store_country = $split_country[0];
               $store_state   = $split_country[1];
 
+              //TODO! Origin!
               $origin = array(
                   "scheduledAt" => $scheduledAt, //"2019-11-15T12:00:00+0800",
                   "inventory" => $inventories,
@@ -196,7 +285,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       //     "lon" => ""
                       // )
                   ),
-                  // "note"=> ""
+                  "note"=> $order_notes
               );
 
               //destination
@@ -219,7 +308,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       //     "lon" => ""
                       // )
                   ),
-                  // "note"=> ""
+                  "note"=> $order_notes
               );
 
               $weight = array(
@@ -250,6 +339,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
 
               echo json_encode($postRequestArr);
               echo json_encode($response);
+              exit;
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
@@ -281,10 +371,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $user_id = $settings['user_id'];
               $customer_id = $settings['customer_id'];
               $api_token = $settings['api_token'];
-
-              //DateTime !TODO!!!!
-              $my_date_time = date("Y-m-d H:i:s", strtotime("+1 hours"));
-              $scheduledAt = (new DateTime($my_date_time))->format('c');
 
               //service
               $serviceCode = "";
@@ -333,7 +419,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               } else {
                   if ($response['response']['code'] == 200) {
                       $body = json_decode($response['body'], true);
-                      return $body;
+                      return $body['data'];
                   } else {
                       throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                   }
