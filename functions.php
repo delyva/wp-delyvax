@@ -537,7 +537,7 @@ add_filter( 'wc_order_statuses', 'add_to_order_statuses' );
 //         include_once 'includes/delyvax-api.php';
 //     }
 //     try {
-//         //save tracking no into order and suborders !TODO!
+//         //save tracking no into order and suborders
 //         $order = wc_get_order ( $order_id );
 //       	if ( $order ) {
 //             global $wpdb;
@@ -557,7 +557,7 @@ add_filter( 'wc_order_statuses', 'add_to_order_statuses' );
 /*
 function SaveTrackingNo( $order_id, $trackingNo ) {
     try {
-        //save tracking no into order and suborders !TODO!
+        //save tracking no into order and suborders
         $order = wc_get_order ( $order_id );
       	if ( $order ) {
             global $wpdb;
@@ -583,7 +583,7 @@ function SaveOrderTrackingNo( $order_id, $shipmentId ) {
 
         $consignmentNo = $result["consignmentNo"];
 
-        //save tracking no into order and suborders !TODO!
+        //save tracking no into order and suborders
         $order = wc_get_order ( $order_id );
       	if ( $order ) {
             $TrackingCode = $consignmentNo;

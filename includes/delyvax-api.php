@@ -103,7 +103,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               // echo 'user';
               // var_dump($user);
 
-              //TODO! Date Time
               //----delivery date & time (pull from woo delivery), if not available, set to +next day 8am.
 
               $gmtoffset = get_option('gmt_offset');
@@ -337,9 +336,9 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              echo json_encode($postRequestArr);
-              echo json_encode($response);
-              exit;
+              // echo json_encode($postRequestArr);
+              // echo json_encode($response);
+              // exit;
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
