@@ -20,32 +20,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $customer_id = $settings['customer_id'];
             $api_token = $settings['api_token'];
 
-            // $origin = array(
-            //     "address1" => "Suite 8.0.1, Level 8",
-            //     "address2" => "Menara Binjai, No.2, Jalan Binjai",
-            //     "city" => "Kuala Lumpur",
-            //     "state" => "WP Kuala Lumpur",
-            //     "postcode" => "50450",
-            //     "country" => "MY",
-            //     "coord" => array(
-            //         "lat" => "",
-            //         "lon" => ""
-            //     )
-            // );
-
-            // $destination = array(
-            //     "address1" => "28 Jalan 5",
-            //     "address2" => "Taman Mesra",
-            //     "city" => "Kajang",
-            //     "state" => "Selangor",
-            //     "postcode" => "43000",
-            //     "country" => "MY",
-            //     "coord" => array(
-            //         "lat" => "",
-            //         "lon" => ""
-            //     )
-            // );
-
             $postRequestArr = [
                 // 'companyId' => $company_id,
                 // 'userId' => $user_id,
@@ -100,13 +74,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $customer_id = $settings['customer_id'];
               $api_token = $settings['api_token'];
 
-              // echo 'order';
-              // var_dump($order);
-              // echo 'user';
-              // var_dump($user);
-
-              //----delivery date & time (pull from woo delivery), if not available, set to +next day 8am.
-
+              //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
               $gmtoffset = get_option('gmt_offset');
               // echo '<br>';
               $timezones = get_option('timezone_string');
@@ -202,59 +170,115 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $total_price = 0;
               $order_notes = '';
 
-              foreach ( $order->get_items() as $item )
+              //loop inventory main n suborder
+              if($order->parent_id)
               {
-                  $product_name = $item->get_name();
-                  $product_id = $item->get_product_id();
-                  $product_variation_id = $item->get_variation_id();
+                  $main_order = wc_get_order($order->parent_id);
 
-                  $product_id = $item->get_product_id();
-                  $variation_id = $item->get_variation_id();
-                  $product = $item->get_product();
-                  $name = $item->get_name();
-                  $quantity = $item->get_quantity();
-                  $subtotal = $item->get_subtotal();
-                  $total = $item->get_total();
-                  $tax = $item->get_subtotal_tax();
-                  $taxclass = $item->get_tax_class();
-                  $taxstat = $item->get_tax_status();
-                  $allmeta = $item->get_meta_data();
-                  // $somemeta = $item->get_meta( '_whatever', true );
-                  $type = $item->get_type();
+                  $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                  $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                  $main_order->save();
 
-                  // print_r($allmeta);
+                  foreach ( $main_order->get_items() as $item )
+                  {
+                      $product_name = $item->get_name();
+                      $product_id = $item->get_product_id();
+                      $product_variation_id = $item->get_variation_id();
 
-                  $_pf = new WC_Product_Factory();
+                      $product_id = $item->get_product_id();
+                      $variation_id = $item->get_variation_id();
+                      $product = $item->get_product();
+                      $name = $item->get_name();
+                      $quantity = $item->get_quantity();
+                      $subtotal = $item->get_subtotal();
+                      $total = $item->get_total();
+                      $tax = $item->get_subtotal_tax();
+                      $taxclass = $item->get_tax_class();
+                      $taxstat = $item->get_tax_status();
+                      $allmeta = $item->get_meta_data();
+                      // $somemeta = $item->get_meta( '_whatever', true );
+                      $type = $item->get_type();
 
-                  $product = $_pf->get_product($product_id);
+                      // print_r($allmeta);
 
-                  $inventories[$count] = array(
-                      "name" => $name,
-                      "type" => "PARCEL", //$type PARCEL / FOOD
-                      "price" => array(
-                          "amount" => $total,
-                          "currency" => $order->get_currency(),
-                      ),
-                      "weight" => array(
-                          "value" => ($product->get_weight()*$quantity),
-                          "unit" => "kg"
-                      ),
-                      "quantity" => $quantity,
-                      "description" => $name
-                  );
+                      $_pf = new WC_Product_Factory();
 
-                  $total_weight = $total_weight + ($product->get_weight()*$quantity);
-                  $total_price = $total_price + $total;
+                      $product = $_pf->get_product($product_id);
 
-                  $order_notes = $order_notes.'#'.($count+1).'. '.$name.' X '.$quantity.'pcs \n';
+                      $inventories[$count] = array(
+                          "name" => $name,
+                          "type" => "PARCEL", //$type PARCEL / FOOD
+                          "price" => array(
+                              "amount" => $total,
+                              "currency" => $main_order->get_currency(),
+                          ),
+                          "weight" => array(
+                              "value" => ($product->get_weight()*$quantity),
+                              "unit" => "kg"
+                          ),
+                          "quantity" => $quantity,
+                          "description" => $name
+                      );
 
-                  $count++;
+                      $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                      $total_price = $total_price + $total;
+
+                      $order_notes = $order_notes.'#'.($count+1).'. '.$name.' X '.$quantity.'pcs \n';
+
+                      $count++;
+                  }
+              }else {
+                  $main_order = $order;
+
+                  foreach ( $main_order->get_items() as $item )
+                  {
+                      $product_name = $item->get_name();
+                      $product_id = $item->get_product_id();
+                      $product_variation_id = $item->get_variation_id();
+
+                      $product_id = $item->get_product_id();
+                      $variation_id = $item->get_variation_id();
+                      $product = $item->get_product();
+                      $name = $item->get_name();
+                      $quantity = $item->get_quantity();
+                      $subtotal = $item->get_subtotal();
+                      $total = $item->get_total();
+                      $tax = $item->get_subtotal_tax();
+                      $taxclass = $item->get_tax_class();
+                      $taxstat = $item->get_tax_status();
+                      $allmeta = $item->get_meta_data();
+                      // $somemeta = $item->get_meta( '_whatever', true );
+                      $type = $item->get_type();
+
+                      // print_r($allmeta);
+
+                      $_pf = new WC_Product_Factory();
+
+                      $product = $_pf->get_product($product_id);
+
+                      $inventories[$count] = array(
+                          "name" => $name,
+                          "type" => "PARCEL", //$type PARCEL / FOOD
+                          "price" => array(
+                              "amount" => $total,
+                              "currency" => $main_order->get_currency(),
+                          ),
+                          "weight" => array(
+                              "value" => ($product->get_weight()*$quantity),
+                              "unit" => "kg"
+                          ),
+                          "quantity" => $quantity,
+                          "description" => $name
+                      );
+
+                      $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                      $total_price = $total_price + $total;
+
+                      $order_notes = $order_notes.'#'.($count+1).'. '.$name.' X '.$quantity.'pcs \n';
+
+                      $count++;
+                  }
               }
-
-              // echo 'inventories';
-              // print_r($inventories);
-              // echo json_encode($inventories);
-              // echo $order_notes;
 
               //origin
               // The main address pieces:
@@ -333,7 +357,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   "process" => false,
                   "serviceCode" => $serviceCode,
                   'origin' => $origin,
-                  'destination' => $destination
+                  'destination' => $destination,
+                  // 'note' => $order_notes
               ];
 
               $response = wp_remote_post($url, array(
@@ -433,7 +458,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               echo '-----------------------------------';
               echo json_encode($response['body']);
               echo '-----------------------------------';
-              
+
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
                   if ($error_message == 'fsocket timed out') {

@@ -180,13 +180,38 @@ function create_order($order, $user) {
                   {
                       $trackingNo = $resultProcess["consignmentNo"];
 
-                      //save tracking no into order !TODO to all parent order and suborders
-                      $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                      $order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                      $order->save();
+                      //save tracking no into order to all parent order and suborders
+                      if($order->parent_id)
+                      {
+                          $main_order = wc_get_order($order->parent_id);
 
-                      //save tracking no into order !TODO to all parent order and suborders
+                          $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                          $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                          $main_order->save();
 
+                          // update $sub_orders
+                          $sub_orders = get_children( array( 'post_parent' => $order_id, 'post_type' => 'shop_order' ) );
+
+                          if ( $sub_orders ) {
+                              $proceed_create_order = true;
+
+                              foreach ($sub_orders as $sub)
+                              {
+                                  $sub_order = wc_get_order($sub->ID);
+
+                                  $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                                  $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                                  $sub_order->save();
+                              }
+                          }
+                          //
+                      }else {
+                          $main_order = $order;
+
+                          $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                          $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                          $main_order->save();
+                      }
                       ///
                   }
             }
@@ -322,8 +347,22 @@ function webhook_get_tracking()
               								// $order->add_order_note( 'Payment completed.');
                               // echo $order->get_status();
             							// }
+                          if($statusCode == 200)
+                          {
+                              if (!empty($order))
+                              {
+                                  //on the way to pick up
+                                  if( !$order->has_status('courier-accepted') )
+                                  {
+                                      echo 'courier-accepted';
+                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->save();
 
-                          if($statusCode == 400)
+                                      $order->update_status('courier-accepted', 'Order status changed to Courier accepted.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                  }
+                              }
+                          }else if($statusCode == 400)
                           {
                               if (!empty($order))
                               {
@@ -462,6 +501,14 @@ function register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Ready to collect (%s)', 'Ready to collect (%s)' )
     ) );
+    register_post_status( 'wc-courier-accepted', array(
+        'label'                     => 'Courier accepted',
+        'public'                    => true,
+        'exclude_from_search'       => false,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'label_count'               => _n_noop( 'Courier accepted (%s)', 'Courier accepted (%s)' )
+    ) );
     register_post_status( 'wc-start-collecting', array(
         'label'                     => 'Pending pick up',
         'public'                    => true,
@@ -517,6 +564,7 @@ function add_to_order_statuses( $order_statuses ) {
         if ( 'wc-processing' === $key ) {
             $new_order_statuses['wc-preparing'] = 'Preparing';
             $new_order_statuses['wc-ready-to-collect'] = 'Ready to collect';
+            $new_order_statuses['wc-courier-accepted'] = 'Courier accepted';
             $new_order_statuses['wc-start-collecting'] = 'Pending pick up';
             $new_order_statuses['wc-collected'] = 'Pick up complete';
             $new_order_statuses['wc-failed-collection'] = 'Pick up failed';
