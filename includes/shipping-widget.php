@@ -54,6 +54,9 @@ function ShowBox( $post ) {
 							Set your order to <b>Processing</b> again to fulfill with DelyvaX, it also works with <i>bulk actions</i> too!
 					</p>
 					</div>";
+					echo "<div><p>
+	            <a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=processing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Set to Processing</a>
+	            </p></div>";
 				}
     } else if ( $order->has_status( array( 'completed' ) ) ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';

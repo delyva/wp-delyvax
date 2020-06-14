@@ -53,6 +53,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'origin' => $origin,
                 'destination' => $destination,
                 "weight" => $weight,
+                "itemType" => "PARCEL"
             ];
 
             // print_r(json_encode($postRequestArr));
@@ -68,7 +69,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             ));
 
             // print_r($response['body']);
-            // exit;
 
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
@@ -89,6 +89,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
 
         public static function postCreateOrder($order, $user)
         {
+              $order_id = $order->get_id();
+
               $url = Self::$api_endpoint . "/order";// . trim(esc_attr($settings['integration_id']), " ");
 
               $settings = get_option( 'woocommerce_delyvax_settings' );
@@ -142,7 +144,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   }
 
               }
-              $delivery_time;
               // echo '<br>';
 
               $delivery_type = 'delivery';
@@ -166,23 +167,30 @@ if (!class_exists('DelyvaX_Shipping_API')) {
 
               // $scheduledAt = (new DateTime($my_date_time))->format('c');
               //2020-06-10T23:13:51-04:00 / "scheduledAt": "2019-11-15T12:00:00+0800", //echo date_format(date_create('17 Oct 2008'), 'c');
-              // echo $scheduledAt;
-              // exit;
-
 
               //service
               $serviceCode = "";
 
+              $main_order = $order;
+
+              if($order->parent_id)
+              {
+                  $main_order = wc_get_order($order->parent_id);
+              }
+
               // Iterating through order shipping items
-              foreach( $order->get_items( 'shipping' ) as $item_id => $shipping_item_obj ){
+              foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
+              {
                   $serviceobject = $shipping_item_obj->get_meta_data();
+
+                  // print_r($serviceobject);
 
                   // echo json_encode($serviceobject);
                   for($i=0; $i < sizeof($serviceobject); $i++)
                   {
                       if($serviceobject[$i]->key == "service_code")
                       {
-                          $serviceCode = $serviceobject[0]->value;
+                          echo 'serviceCode'.$serviceCode = $serviceobject[0]->value;
                       }
                   }
               }
@@ -232,7 +240,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                           "unit" => "kg"
                       ),
                       "quantity" => $quantity,
-                      "description" => $order_notes
+                      "description" => $name
                   );
 
                   $total_weight = $total_weight + ($product->get_weight()*$quantity);
@@ -243,8 +251,9 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   $count++;
               }
 
-              //echo json_encode($inventories);
-
+              // echo 'inventories';
+              // print_r($inventories);
+              // echo json_encode($inventories);
               // echo $order_notes;
 
               //origin
@@ -264,7 +273,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $store_country = $split_country[0];
               $store_state   = $split_country[1];
 
-              //TODO! Origin!
+              //TODO! Origin! -- hanlde multivendor, pickup address from vendor address
+
               $origin = array(
                   "scheduledAt" => $scheduledAt, //"2019-11-15T12:00:00+0800",
                   "inventory" => $inventories,
@@ -336,9 +346,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
+              // echo '-----------------------------------';
               // echo json_encode($postRequestArr);
+              // echo '-----------------------------------';
               // echo json_encode($response);
-              // exit;
+              // echo '-----------------------------------';
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
@@ -360,6 +372,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
 
         public static function postProcessOrder($order, $user, $shipmentId)
         {
+              $order_id = $order->get_id();
+
               $url = Self::$api_endpoint . "/order/:orderId/process";// . trim(esc_attr($settings['integration_id']), " ");
 
               $url = str_replace(":orderId", $shipmentId, $url);
@@ -374,18 +388,27 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               //service
               $serviceCode = "";
 
+              $main_order = $order;
+
+              if($order->parent_id)
+              {
+                  $main_order = wc_get_order($order->parent_id);
+              }
+
               // Iterating through order shipping items
-              foreach( $order->get_items( 'shipping' ) as $item_id => $shipping_item_obj ){
+              foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
+              {
                   $serviceobject = $shipping_item_obj->get_meta_data();
+
+                  // print_r($serviceobject);
 
                   // echo json_encode($serviceobject);
                   for($i=0; $i < sizeof($serviceobject); $i++)
                   {
                       if($serviceobject[$i]->key == "service_code")
                       {
-                          $serviceCode = $serviceobject[0]->value;
+                          echo 'serviceCode'.$serviceCode = $serviceobject[0]->value;
                       }
-
                   }
               }
 
@@ -405,9 +428,12 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              echo json_encode($postRequestArr);
-              echo json_encode($response);
-
+              // echo '-----------------------------------';
+              // echo json_encode($postRequestArr);
+              echo '-----------------------------------';
+              echo json_encode($response['body']);
+              echo '-----------------------------------';
+              
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
                   if ($error_message == 'fsocket timed out') {
@@ -418,7 +444,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               } else {
                   if ($response['response']['code'] == 200) {
                       $body = json_decode($response['body'], true);
-                      return $body['data'];
+                      return $body;
                   } else {
                       throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                   }
@@ -460,7 +486,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             } else {
                 if ($response['response']['code'] == 200) {
                     $body = json_decode($response['body'], true);
-
                     return $body;
                 } else {
                     throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
@@ -509,7 +534,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
-        public static function postCreateWebhook()
+        public static function postCreateWebhook($event_name)
         {
             $settings = get_option( 'woocommerce_delyvax_settings' );
 
@@ -521,10 +546,10 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $url = Self::$api_endpoint . "//webhook/";
 
             // get_option( 'woocommerce_store_url' );
-            $store_url = get_site_url(); //"https://matdespatch.com/my/makan";
+            $store_url = get_site_url()."/"; //"https://matdespatch.com/my/makan";
 
             $postRequestArr = array(
-                "event" => "order_tracking.update",
+                "event" => $event_name,
                 "url" => $store_url,
             );
 

@@ -99,45 +99,12 @@ function delyvaxRequest() {
 function so_payment_complete( $order_id ){
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
-    if ($settings['create_shipment_on_paid'] == 'yes') {
-
+    if ($settings['create_shipment_on_paid'] == 'yes')
+    {
         $order = wc_get_order( $order_id );
         $user = $order->get_user();
 
-        //create order
-        //start DelyvaX API
-        if (!class_exists('DelyvaX_Shipping_API')) {
-            include_once 'includes/delyvax-api.php';
-        }
-        try {
-            $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
-            $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
-
-            if($DelyvaXOrderID == null && $DelyvaXTrackingCode == null)
-            {
-                $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
-
-                if($resultCreate)
-                {
-                      $shipmentId = $resultCreate["id"];
-
-                      $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
-
-                      if($resultProcess)
-                      {
-                          $trackingNo = $resultProcess["consignmentNo"];
-
-                          //save tracking no into order and suborders
-                          $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                          $order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                          $order->save();
-                      }
-                }
-            }
-        } catch (Exception $e) {
-            print_r($e);
-        }
-        ///
+        create_order($order, $user);
     }
 }
 
@@ -145,50 +112,89 @@ function so_order_confirmed( $order_id, $old_status, $new_status ) {
     // make action magic happen here...
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
-    if ($settings['create_shipment_on_confirm'] == 'yes') {
+    if ($settings['create_shipment_on_confirm'] == 'yes')
+    {
         $order = wc_get_order( $order_id );
         $user = $order->get_user();
 
+        //check sub orders
+        $sub_orders = get_children( array( 'post_parent' => $order_id, 'post_type' => 'shop_order' ) );
+
+        if ( $sub_orders ) {
+            $proceed_create_order = true;
+
+            foreach ($sub_orders as $sub)
+            {
+                $sub_order = wc_get_order($sub->ID);
+                // echo '<pre>'.$sub_order.'</pre>';
+
+                $sub_order_status = $sub_order->get_status();
+
+                $seller_id = dokan_get_seller_id_by_order($sub->ID);
+                $store_info = dokan_get_store_info( $seller_id );
+                // echo '<pre>'.print_r($store_info).'</pre>';
+
+                if($sub_order_status != 'preparing' && $sub_order_status != 'cancelled' )
+                {
+                    $proceed_create_order = false;
+                }
+            }
+
+            if($proceed_create_order)
+            {
+                create_order($order, $user);
+            }
+        }else {
+            if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
+            {
+                create_order($order, $user);
+            }
+        }
+        //end check sub orders
+    }
+}
+
+
+function create_order($order, $user) {
+    try {
         //create order
         //start DelyvaX API
         if (!class_exists('DelyvaX_Shipping_API')) {
             include_once 'includes/delyvax-api.php';
         }
 
-        if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
+        $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
+        $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
+
+        if($DelyvaXOrderID == null && $DelyvaXTrackingCode == null)
         {
-            try {
-                $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
-                $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
+            $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
 
-                if($DelyvaXOrderID == null && $DelyvaXTrackingCode == null)
-                {
-                    $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
+            if($resultCreate)
+            {
+                  $shipmentId = $resultCreate["id"];
 
-                    if($resultCreate)
-                    {
-                          $shipmentId = $resultCreate["id"];
+                  $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
 
-                          $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
+                  if($resultProcess)
+                  {
+                      $trackingNo = $resultProcess["consignmentNo"];
 
-                          if($resultProcess)
-                          {
-                              $trackingNo = $resultProcess["consignmentNo"];
+                      //save tracking no into order !TODO to all parent order and suborders
+                      $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                      $order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                      $order->save();
 
-                              //save tracking no into order and suborders
-                              $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                              $order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                              $order->save();
-                          }
-                    }
-                }
-                // exit;
-            } catch (Exception $e) {
-                print_r($e);
-                // exit;
+                      //save tracking no into order !TODO to all parent order and suborders
+
+                      ///
+                  }
             }
         }
-        ///
+        // exit;
+    } catch (Exception $e) {
+        print_r($e);
+        // exit;
     }
 }
 
@@ -198,30 +204,51 @@ function webhook_subscribe() {
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
     if ($settings['api_webhook_enable'] == 'yes') {
-        if (strlen(get_option( 'delyvax_api_webhook_id' )) == 0 ) {
-            //subscribe to webhook
-            //start DelyvaX API
-            if (!class_exists('DelyvaX_Shipping_API')) {
-                include_once 'includes/delyvax-api.php';
-            }
-            try {
-                $result = DelyvaX_Shipping_API::postCreateWebhook();
 
-                // echo json_encode($result);
-                //{"event":"order_tracking.update","url":"https:\/\/matdespatch.com\/my\/makan","userId":"d50d1780-aabc-11ea-8557-fb3ba8b0c74b","companyId":"e44c7375-c4dc-47e9-8b24-70a28e024a83","id":18,"customerId":null,"status":1,"createdAt":"2020-06-12T02:37:14.430Z","updatedAt":"2020-06-12T02:37:14.430Z","deletedAt":null}
+        //subscribe to webhook
+        //start DelyvaX API
+        if (!class_exists('DelyvaX_Shipping_API')) {
+            include_once 'includes/delyvax-api.php';
+        }
+        try {
+            if (strlen(get_option( 'delyvax_api_webhook_created_id' )) == 0 )
+            {
+                $result = DelyvaX_Shipping_API::postCreateWebhook("order.created");
+                if($result["status"] == 1)
+                {
+                    //Save api_webhook_key
+                    update_option( 'delyvax_api_webhook_created_id', $result["id"]);
+                }
+            }
+            if (strlen(get_option( 'delyvax_api_webhook_failed_id' )) == 0 )
+            {
+                $result = DelyvaX_Shipping_API::postCreateWebhook("order.failed");
+                if($result["status"] == 1)
+                {
+                    //Save api_webhook_key
+                    update_option( 'delyvax_api_webhook_failed_id', $result["id"]);
+                }
+            }
+            if (strlen(get_option( 'delyvax_api_webhook_updated_id' )) == 0 )
+            {
+                $result = DelyvaX_Shipping_API::postCreateWebhook("order.updated");
+                if($result["status"] == 1)
+                {
+                    //Save api_webhook_key
+                    update_option( 'delyvax_api_webhook_updated_id', $result["id"]);
+                }
+            }
+            if (strlen(get_option( 'delyvax_api_webhook_id' )) == 0 ) {
+                $result = DelyvaX_Shipping_API::postCreateWebhook("order_tracking.update");
 
                 if($result["status"] == 1)
                 {
                     //Save api_webhook_key
                     update_option( 'delyvax_api_webhook_id', $result["id"]);
                 }
-
-            } catch (Exception $e) {
-
             }
-        }else {
-            //do nothing
-            // echo '//do nothing';
+        } catch (Exception $e) {
+
         }
     }
 }
