@@ -223,6 +223,15 @@ function create_order($order, $user) {
     }
 }
 
+//rewire logic here, API is only for post
+function post_create_order($order, $user) {
+
+}
+
+//rewire logic here, API is only for post
+function post_process_order($order, $user, $shipmentId) {
+
+}
 
 //subscribe to webhook here or when save the settings ?
 function webhook_subscribe() {

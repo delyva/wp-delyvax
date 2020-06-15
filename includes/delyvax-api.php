@@ -159,7 +159,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   {
                       if($serviceobject[$i]->key == "service_code")
                       {
-                          echo 'serviceCode'.$serviceCode = $serviceobject[0]->value;
+                          $serviceCode = $serviceobject[0]->value;
                       }
                   }
               }
@@ -176,71 +176,135 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               {
                   $main_order = wc_get_order($order->parent_id);
 
-                  $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                  $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                  $main_order->save();
+                  $sub_orders = get_children( array( 'post_parent' => $main_order->get_id(), 'post_type' => 'shop_order' ) );
 
-                  foreach ( $main_order->get_items() as $item )
+                  if ( $sub_orders )
                   {
-                      $product_name = $item->get_name();
-                      $product_id = $item->get_product_id();
-                      $product_variation_id = $item->get_variation_id();
+                      foreach ($sub_orders as $sub)
+                      {
+                          $sub_order = wc_get_order($sub->ID);
 
-                      $product_id = $item->get_product_id();
-                      $variation_id = $item->get_variation_id();
-                      $product = $item->get_product();
-                      $name = $item->get_name();
-                      $quantity = $item->get_quantity();
-                      $subtotal = $item->get_subtotal();
-                      $total = $item->get_total();
-                      $tax = $item->get_subtotal_tax();
-                      $taxclass = $item->get_tax_class();
-                      $taxstat = $item->get_tax_status();
-                      $allmeta = $item->get_meta_data();
-                      // $somemeta = $item->get_meta( '_whatever', true );
-                      $type = $item->get_type();
+                          $store_name = 'N/A';
+                          $store_phone = '-';
+                          if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+                          {
+                              $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
+                              $store_info = dokan_get_store_info( $seller_id );
+                              $store_name = $store_info['store_name'];
+                              $store_phone = $store_info['phone'];
+                              // echo '<pre>'.print_r($store_info).'</pre>';
+                          }
 
-                      // print_r($allmeta);
+                          foreach ( $sub_order->get_items() as $item )
+                          {
+                              $product_id = $item->get_product_id();
+                              $product_variation_id = $item->get_variation_id();
+                              $product = $item->get_product();
+                              $product_name = $item->get_name();
+                              $quantity = $item->get_quantity();
+                              $subtotal = $item->get_subtotal();
+                              $total = $item->get_total();
+                              $tax = $item->get_subtotal_tax();
+                              $taxclass = $item->get_tax_class();
+                              $taxstat = $item->get_tax_status();
+                              $allmeta = $item->get_meta_data();
+                              // $somemeta = $item->get_meta( '_whatever', true );
+                              $type = $item->get_type();
 
-                      $_pf = new WC_Product_Factory();
+                              // print_r($allmeta);
 
-                      $product = $_pf->get_product($product_id);
+                              $_pf = new WC_Product_Factory();
 
-                      $inventories[$count] = array(
-                          "name" => $name,
-                          "type" => "PARCEL", //$type PARCEL / FOOD
-                          "price" => array(
-                              "amount" => $total,
-                              "currency" => $main_order->get_currency(),
-                          ),
-                          "weight" => array(
-                              "value" => ($product->get_weight()*$quantity),
-                              "unit" => "kg"
-                          ),
-                          "quantity" => $quantity,
-                          "description" => $name
-                      );
+                              $product = $_pf->get_product($product_id);
 
-                      $total_weight = $total_weight + ($product->get_weight()*$quantity);
-                      $total_price = $total_price + $total;
+                              $inventories[$count] = array(
+                                  "name" => $product_name,
+                                  "type" => "PARCEL", //$type PARCEL / FOOD
+                                  "price" => array(
+                                      "amount" => $total,
+                                      "currency" => $main_order->get_currency(),
+                                  ),
+                                  "weight" => array(
+                                      "value" => ($product->get_weight()*$quantity),
+                                      "unit" => "kg"
+                                  ),
+                                  "quantity" => $quantity,
+                                  "description" => $product_name
+                              );
 
-                      $order_notes = $order_notes.'#'.($count+1).'. '.$name.' X '.$quantity.'pcs \n';
+                              $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                              $total_price = $total_price + $total;
 
-                      $count++;
+                              $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          \n';
+
+                              $count++;
+                          }
+                      }
+                  }else {
+                      foreach ( $main_order->get_items() as $item )
+                      {
+                          $product_id = $item->get_product_id();
+                          $product_variation_id = $item->get_variation_id();
+                          $product = $item->get_product();
+                          $product_name = $item->get_name();
+                          $quantity = $item->get_quantity();
+                          $subtotal = $item->get_subtotal();
+                          $total = $item->get_total();
+                          $tax = $item->get_subtotal_tax();
+                          $taxclass = $item->get_tax_class();
+                          $taxstat = $item->get_tax_status();
+                          $allmeta = $item->get_meta_data();
+                          // $somemeta = $item->get_meta( '_whatever', true );
+                          $type = $item->get_type();
+
+                          //get seller info
+                          $store_name = 'N/A';
+                          $store_phone = '-';
+                          if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+                          {
+                              $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
+                              $store_info = dokan_get_store_info( $seller_id );
+                              $store_name = $store_info['store_name'];
+                              $store_phone = $store_info['phone'];
+                              // echo '<pre>'.print_r($store_info).'</pre>';
+                          }
+
+                          $_pf = new WC_Product_Factory();
+
+                          $product = $_pf->get_product($product_id);
+
+                          $inventories[$count] = array(
+                              "name" => $product_name,
+                              "type" => "PARCEL", //$type PARCEL / FOOD
+                              "price" => array(
+                                  "amount" => $total,
+                                  "currency" => $main_order->get_currency(),
+                              ),
+                              "weight" => array(
+                                  "value" => ($product->get_weight()*$quantity),
+                                  "unit" => "kg"
+                              ),
+                              "quantity" => $quantity,
+                              "description" => $product_name
+                          );
+
+                          $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                          $total_price = $total_price + $total;
+
+                          $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          \n';
+
+                          $count++;
+                      }
                   }
               }else {
                   $main_order = $order;
 
                   foreach ( $main_order->get_items() as $item )
                   {
-                      $product_name = $item->get_name();
                       $product_id = $item->get_product_id();
                       $product_variation_id = $item->get_variation_id();
-
-                      $product_id = $item->get_product_id();
-                      $variation_id = $item->get_variation_id();
                       $product = $item->get_product();
-                      $name = $item->get_name();
+                      $product_name = $item->get_name();
                       $quantity = $item->get_quantity();
                       $subtotal = $item->get_subtotal();
                       $total = $item->get_total();
@@ -251,14 +315,24 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       // $somemeta = $item->get_meta( '_whatever', true );
                       $type = $item->get_type();
 
-                      // print_r($allmeta);
+                      //get seller info
+                      $store_name = 'N/A';
+                      $store_phone = '-';
+                      if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+                      {
+                          $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
+                          $store_info = dokan_get_store_info( $seller_id );
+                          $store_name = $store_info['store_name'];
+                          $store_phone = $store_info['phone'];
+                          // echo '<pre>'.print_r($store_info).'</pre>';
+                      }
 
                       $_pf = new WC_Product_Factory();
 
                       $product = $_pf->get_product($product_id);
 
                       $inventories[$count] = array(
-                          "name" => $name,
+                          "name" => $product_name,
                           "type" => "PARCEL", //$type PARCEL / FOOD
                           "price" => array(
                               "amount" => $total,
@@ -269,17 +343,20 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                               "unit" => "kg"
                           ),
                           "quantity" => $quantity,
-                          "description" => $name
+                          "description" => $product_name
                       );
 
                       $total_weight = $total_weight + ($product->get_weight()*$quantity);
                       $total_price = $total_price + $total;
 
-                      $order_notes = $order_notes.'#'.($count+1).'. '.$name.' X '.$quantity.'pcs \n';
+                      $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          \n';
 
                       $count++;
                   }
               }
+
+              // echo $order_notes;
+              // exit;
 
               /// check payment method and set codAmount
               $codAmount = 0;
