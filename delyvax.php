@@ -19,7 +19,7 @@
 
     if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
         if ( ! class_exists( 'WC_Integration_DelyvaX' ) ) {
-            class WC_Integration_Delyva {
+            class WC_Integration_DelyvaX {
                 public function __construct() {
                     add_action('woocommerce_shipping_init', array( $this, 'init' ) );
                     add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_action_links'));
@@ -54,6 +54,6 @@
                     return $integrations;
                 }
             }
-            $WC_Integration_Delyva = new WC_Integration_Delyva();
+            $WC_Integration_DelyvaX = new WC_Integration_DelyvaX();
         }
     }

@@ -268,7 +268,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             );
 
             $destination = array(
-                "address1" => $pdestination["address_1"],
+                "address1" => $pdestination["address"],
                 "address2" => $pdestination["address_2"],
                 "city" => $pdestination["city"],
                 "state" => $pdestination["state"],
@@ -286,13 +286,20 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
               "value" => $total_weight
             );
 
+            //
+            $codAmount = 0;
+            $cod = array(
+              "amount" => $codAmount,
+              "currency" => $currency,
+            );
+
             //start DelyvaX API
             if (!class_exists('DelyvaX_Shipping_API')) {
                 include_once 'delyvax-api.php';
             }
 
             try {
-                $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight);
+                $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod);
             } catch (Exception $e) {
                 $rates = array();
             }

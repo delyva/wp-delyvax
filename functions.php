@@ -6,8 +6,8 @@ register_uninstall_hook('delyvax/delyvax.php', 'delyvaxPluginUninstalled');
 
 add_filter('parse_request', 'delyvaxRequest');
 
-add_action('woocommerce_check_cart_items','check_cart_weight');
-add_action('woocommerce_checkout_before_customer_details', 'check_checkout_weight');
+add_action('woocommerce_check_cart_items','delyvax_check_cart_weight');
+add_action('woocommerce_checkout_before_customer_details', 'delyvax_check_checkout_weight');
 
 add_action( 'woocommerce_payment_complete', 'so_payment_complete' );
 add_action( 'woocommerce_order_status_changed', 'so_order_confirmed', 10, 3 );
@@ -16,7 +16,7 @@ add_action( 'widgets_init', 'webhook_subscribe' );
 add_action( 'woocommerce_after_register_post_type', 'webhook_get_tracking' );
 
 
-function check_cart_weight(){
+function delyvax_check_cart_weight(){
     $weight = WC()->cart->get_cart_contents_weight();
     $min_weight = 0.1; // kg
     $max_weight = 10000; // kg
@@ -30,7 +30,7 @@ function check_cart_weight(){
     }
 }
 
-function  check_checkout_weight() {
+function  delyvax_check_checkout_weight() {
     $weight = WC()->cart->get_cart_contents_weight();
     $min_weight = 0.1; // kg
     $max_weight = 10000; // kg

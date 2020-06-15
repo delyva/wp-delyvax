@@ -9,7 +9,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
         private static $api_endpoint = "https://api.delyva.app";
 
         //instant quote
-        public static function getPriceQuote($origin, $destination, $weight)
+        public static function getPriceQuote($origin, $destination, $weight, $cod)
         {
             $url = Self::$api_endpoint . "/service/instantQuote/";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -27,7 +27,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'origin' => $origin,
                 'destination' => $destination,
                 "weight" => $weight,
-                "itemType" => "PARCEL"
+                "itemType" => "PARCEL",
+                // "cod" => $cod,
             ];
 
             // print_r(json_encode($postRequestArr));
@@ -77,10 +78,12 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
               $gmtoffset = get_option('gmt_offset');
               // echo '<br>';
-              $timezones = get_option('timezone_string');
+              $stimezone = get_option('timezone_string');
               // echo '<br>';
 
-              $dtimezone = new DateTimeZone($timezones);
+              $dtimezone = new DateTimeZone($stimezone);
+
+              // echo date('d-m-Y H:i:s');
 
               $delivery_date = new DateTime();
               $delivery_date->setTimezone($dtimezone);
@@ -93,11 +96,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   $delivery_date->setTimezone($dtimezone);
                   // $delivery_type = $order->get_meta( 'delivery_type' );
               }
-              $delivery_date->format('d-m-Y H:i:s');
+              // $delivery_date->format('d-m-Y H:i:s');
               // echo '<br>';
 
               // echo $delivery_time = '08:00'; //8AM
-              $delivery_time = date("H", strtotime("+1 hours"));
+              $delivery_time = date("H", strtotime("+2 hours"));
               // echo '<br>';
               if($order->get_meta( 'delivery_time' ) != null)
               {
@@ -110,9 +113,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       $a_delivery_time[0].'<br>';
                       $delivery_time = $a_delivery_time[0]/60;
                   }
-
               }
-              // echo '<br>';
 
               $delivery_type = 'delivery';
               // echo '<br>';
@@ -280,6 +281,15 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   }
               }
 
+              /// check payment method and set codAmount
+              $codAmount = 0;
+              $codCurrency = $order->get_currency();
+
+              if($order->get_payment_method() == 'cod')
+              {
+                  $codAmount = $main_order->get_total();
+              }
+
               //origin
               // The main address pieces:
               $store_address     = get_option( 'woocommerce_store_address' );
@@ -349,6 +359,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 "value" => $total_weight
               );
 
+              $cod = array(
+                "amount" => $codAmount,
+                "currency" => $codCurrency
+              );
+
               $postRequestArr = [
                   // 'companyId' => $company_id,
                   // 'userId' => $user_id,
@@ -358,7 +373,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   "serviceCode" => $serviceCode,
                   'origin' => $origin,
                   'destination' => $destination,
-                  // 'note' => $order_notes
+                  'note' => $order_notes,
+                  'cod'=>$cod
               ];
 
               $response = wp_remote_post($url, array(
@@ -371,11 +387,12 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              // echo '-----------------------------------';
-              // echo json_encode($postRequestArr);
-              // echo '-----------------------------------';
-              // echo json_encode($response);
-              // echo '-----------------------------------';
+              echo '-----------------------------------';
+              echo json_encode($postRequestArr);
+              echo '-----------------------------------';
+              echo json_encode($response['body']);
+              echo '-----------------------------------';
+              // exit;
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
@@ -432,7 +449,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   {
                       if($serviceobject[$i]->key == "service_code")
                       {
-                          echo 'serviceCode'.$serviceCode = $serviceobject[0]->value;
+                          $serviceCode = $serviceobject[0]->value;
                       }
                   }
               }
@@ -453,11 +470,12 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              // echo '-----------------------------------';
-              // echo json_encode($postRequestArr);
+              echo '-----------------------------------';
+              echo json_encode($postRequestArr);
               echo '-----------------------------------';
               echo json_encode($response['body']);
               echo '-----------------------------------';
+              // exit;
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
