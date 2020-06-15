@@ -549,6 +549,15 @@ function register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Delivery failed (%s)', 'Delivery failed (%s)' )
     ) );
+    register_post_status( 'wc-request-refund', array(
+        'label'                     => 'Request refund',
+        'public'                    => true,
+        'exclude_from_search'       => false,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'label_count'               => _n_noop( 'Request refund (%s)', 'Request refund (%s)' )
+    ) );
+
 }
 add_action( 'init', 'register_order_statuses' );
 
@@ -570,6 +579,7 @@ function add_to_order_statuses( $order_statuses ) {
             $new_order_statuses['wc-failed-collection'] = 'Pick up failed';
             $new_order_statuses['wc-start-delivery'] = 'On the way for delivery';
             $new_order_statuses['wc-failed-delivery'] = 'Delivery failed';
+            $new_order_statuses['wc-request-refund'] = 'Request refund';
         }
     }
 
