@@ -11,6 +11,7 @@ add_action('woocommerce_checkout_before_customer_details', 'delyvax_check_checko
 
 add_action( 'woocommerce_payment_complete', 'delyvax_payment_complete' );
 add_action( 'woocommerce_order_status_changed', 'delyvax_order_confirmed', 10, 3 );
+add_filter( 'woocommerce_cod_process_payment_order_status', 'delyvax_change_cod_payment_order_status', 10, 2 );
 
 add_action( 'widgets_init', 'delyvax_webhook_subscribe' );
 add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking' );
@@ -98,7 +99,7 @@ function delyvaxRequest() {
 
 function delyvax_payment_complete( $order_id ){
     $settings = get_option( 'woocommerce_delyvax_settings' );
-    
+
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
         $order = wc_get_order( $order_id );
@@ -108,8 +109,20 @@ function delyvax_payment_complete( $order_id ){
     }
 }
 
+function delyvax_change_cod_payment_order_status( $order_status, $order ) {
+    $settings = get_option( 'woocommerce_delyvax_settings' );
+
+    if ($settings['create_shipment_on_paid'] == 'yes')
+    {
+        // $order = wc_get_order( $order_id );
+        $user = $order->get_user();
+
+        delyvax_create_order($order, $user);
+    }
+    return 'preparing';
+}
+
 function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
-    // make action magic happen here...
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
     if ($settings['create_shipment_on_confirm'] == 'yes')
