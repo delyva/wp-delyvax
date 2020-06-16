@@ -9,11 +9,11 @@ add_filter('parse_request', 'delyvaxRequest');
 add_action('woocommerce_check_cart_items','delyvax_check_cart_weight');
 add_action('woocommerce_checkout_before_customer_details', 'delyvax_check_checkout_weight');
 
-add_action( 'woocommerce_payment_complete', 'so_payment_complete' );
-add_action( 'woocommerce_order_status_changed', 'so_order_confirmed', 10, 3 );
+add_action( 'woocommerce_payment_complete', 'delyvax_payment_complete' );
+add_action( 'woocommerce_order_status_changed', 'delyvax_order_confirmed', 10, 3 );
 
-add_action( 'widgets_init', 'webhook_subscribe' );
-add_action( 'woocommerce_after_register_post_type', 'webhook_get_tracking' );
+add_action( 'widgets_init', 'delyvax_webhook_subscribe' );
+add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking' );
 
 
 function delyvax_check_cart_weight(){
@@ -96,7 +96,7 @@ function delyvaxRequest() {
 }
 
 
-function so_payment_complete( $order_id ){
+function delyvax_payment_complete( $order_id ){
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
     if ($settings['create_shipment_on_paid'] == 'yes')
@@ -104,11 +104,43 @@ function so_payment_complete( $order_id ){
         $order = wc_get_order( $order_id );
         $user = $order->get_user();
 
-        create_order($order, $user);
+        //check sub orders
+        $sub_orders = get_children( array( 'post_parent' => $order_id, 'post_type' => 'shop_order' ) );
+
+        if ( $sub_orders ) {
+            $proceed_create_order = true;
+
+            foreach ($sub_orders as $sub)
+            {
+                $sub_order = wc_get_order($sub->ID);
+                // echo '<pre>'.$sub_order.'</pre>';
+
+                $sub_order_status = $sub_order->get_status();
+
+                $seller_id = dokan_get_seller_id_by_order($sub->ID);
+                $store_info = dokan_get_store_info( $seller_id );
+                // echo '<pre>'.print_r($store_info).'</pre>';
+
+                if($sub_order_status != 'preparing' && $sub_order_status != 'cancelled' )
+                {
+                    $proceed_create_order = false;
+                }
+            }
+
+            if($proceed_create_order)
+            {
+                delyvax_create_order($order, $user);
+            }
+        }else {
+            if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
+            {
+                delyvax_create_order($order, $user);
+            }
+        }
     }
 }
 
-function so_order_confirmed( $order_id, $old_status, $new_status ) {
+function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
     // make action magic happen here...
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
@@ -142,20 +174,19 @@ function so_order_confirmed( $order_id, $old_status, $new_status ) {
 
             if($proceed_create_order)
             {
-                create_order($order, $user);
+                delyvax_create_order($order, $user);
             }
         }else {
             if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
             {
-                create_order($order, $user);
+                delyvax_create_order($order, $user);
             }
         }
-        //end check sub orders
     }
 }
 
 
-function create_order($order, $user) {
+function delyvax_create_order($order, $user) {
     try {
         //create order
         //start DelyvaX API
@@ -224,17 +255,17 @@ function create_order($order, $user) {
 }
 
 //rewire logic here, API is only for post
-function post_create_order($order, $user) {
+function delyvax_post_create_order($order, $user) {
 
 }
 
 //rewire logic here, API is only for post
-function post_process_order($order, $user, $shipmentId) {
+function delyvax_post_process_order($order, $user, $shipmentId) {
 
 }
 
 //subscribe to webhook here or when save the settings ?
-function webhook_subscribe() {
+function delyvax_webhook_subscribe() {
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
     if ($settings['api_webhook_enable'] == 'yes') {
@@ -287,9 +318,7 @@ function webhook_subscribe() {
     }
 }
 
-
-
-function webhook_get_tracking()
+function delyvax_webhook_get_tracking()
 {
     $raw = file_get_contents('php://input');
     // var_dump($raw);
@@ -491,87 +520,97 @@ function webhook_get_tracking()
 }
 
 
-// Register new statuses - --  preparing,
 // Register new status
-function register_order_statuses() {
-    register_post_status( 'wc-preparing', array(
-        'label'                     => 'Preparing',
+function delyvax_register_order_statuses() {
+    register_post_status( 'preparing', array(
+        'label'                     => _x('Preparing', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Preparing (%s)', 'Preparing (%s)' )
     ) );
-    register_post_status( 'wc-ready-to-collect', array(
-        'label'                     => 'Ready to collect',
+    register_post_status( 'ready-to-collect', array(
+        'label'                     => _x('Ready to collect', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Ready to collect (%s)', 'Ready to collect (%s)' )
     ) );
-    register_post_status( 'wc-courier-accepted', array(
-        'label'                     => 'Courier accepted',
+    register_post_status( 'courier-accepted', array(
+        'label'                     => _x('Courier accepted', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Courier accepted (%s)', 'Courier accepted (%s)' )
+        // 'label_count'               => _n_noop( 'Courier accepted class="count">(%s)</span>', 'Courier accepted <span class="count">(%s)</span>' )
     ) );
-    register_post_status( 'wc-start-collecting', array(
-        'label'                     => 'Pending pick up',
+    register_post_status( 'start-collecting', array(
+        'label'                     => _x('Pending pick up', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Pending pick up (%s)', 'Pending pick up (%s)' )
     ) );
-    register_post_status( 'wc-collected', array(
-        'label'                     => 'Pick up complete',
+    register_post_status( 'collected', array(
+        'label'                     => _x('Pick up complete', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Pick up complete (%s)', 'Pick up complete (%s)' )
     ) );
-    register_post_status( 'wc-failed-collection', array(
-        'label'                     => 'Pick up failed',
+    register_post_status( 'failed-collection', array(
+        'label'                     => _x('Pick up failed', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Pick up failed (%s)', 'Pick up failed (%s)' )
     ) );
-    register_post_status( 'wc-start-delivery', array(
-        'label'                     => 'On the way for delivery',
+    register_post_status( 'start-delivery', array(
+        'label'                     => _x('On the way for delivery', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'On the way for delivery (%s)', 'On the way for delivery (%s)' )
     ) );
-    register_post_status( 'wc-failed-delivery', array(
-        'label'                     => 'Delivery failed',
+    register_post_status( 'failed-delivery', array(
+        'label'                     => _x('Delivery failed', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Delivery failed (%s)', 'Delivery failed (%s)' )
     ) );
-    register_post_status( 'wc-request-refund', array(
-        'label'                     => 'Request refund',
+    register_post_status( 'request-refund', array(
+        'label'                     => _x('Request refund', 'Order status', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Request refund (%s)', 'Request refund (%s)' )
     ) );
-
 }
-add_action( 'init', 'register_order_statuses' );
+add_action( 'init', 'delyvax_register_order_statuses' );
+
+
+add_filter( 'woocommerce_reports_order_statuses', 'include_custom_order_status_to_reports', 20, 1 );
+function include_custom_order_status_to_reports( $statuses ){
+    // Adding the custom order status to the 3 default woocommerce order statuses
+    return array( 'preparing', 'ready-to-collect', 'courier-accepted',
+      'start-collecting', 'collected', 'failed-collection',
+      'start-delivery', 'failed-delivery', 'request-refund'
+    );
+}
 
 // Add to list of WC Order statuses
-function add_to_order_statuses( $order_statuses ) {
+// Add custom status to order edit page drop down (and displaying orders with this custom status in the list)
+function delyvax_add_to_order_statuses( $order_statuses ) {
 
     $new_order_statuses = array();
 
@@ -580,22 +619,37 @@ function add_to_order_statuses( $order_statuses ) {
         $new_order_statuses[ $key ] = $status;
 
         if ( 'wc-processing' === $key ) {
-            $new_order_statuses['wc-preparing'] = 'Preparing';
-            $new_order_statuses['wc-ready-to-collect'] = 'Ready to collect';
-            $new_order_statuses['wc-courier-accepted'] = 'Courier accepted';
-            $new_order_statuses['wc-start-collecting'] = 'Pending pick up';
-            $new_order_statuses['wc-collected'] = 'Pick up complete';
-            $new_order_statuses['wc-failed-collection'] = 'Pick up failed';
-            $new_order_statuses['wc-start-delivery'] = 'On the way for delivery';
-            $new_order_statuses['wc-failed-delivery'] = 'Delivery failed';
-            $new_order_statuses['wc-request-refund'] = 'Request refund';
+            $new_order_statuses['wc-preparing'] = _x('Preparing', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-ready-to-collect'] = _x('Ready to collect', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-courier-accepted'] = _x('Courier accepted', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-start-collecting'] = _x('Pending pick up', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-collected'] = _x('Pick up complete', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-failed-collection'] = _x('Pick up failed', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-start-delivery'] = _x('On the way for delivery', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-failed-delivery'] = _x('Delivery failed', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-request-refund'] = _x('Request refund', 'Order status', 'woocommerce' );
         }
     }
 
     return $new_order_statuses;
 }
-add_filter( 'wc_order_statuses', 'add_to_order_statuses' );
+add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses' );
 //
+
+// Adding custom status  to admin order list bulk actions dropdown
+function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
+    $actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce' );
+    $actions['mark_ready-to-collect'] = __( 'Mark as Ready to collect', 'woocommerce' );
+    $actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce' );
+    $actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce' );
+    $actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce' );
+    $actions['mark_failed-collection'] = __( 'Mark as Pick up failed', 'woocommerce' );
+    $actions['mark_start-delivery'] = __( 'Mark as On the way for delivery', 'woocommerce' );
+    $actions['mark_failed-delivery'] = __( 'Mark as Delivery failed', 'woocommerce' );
+    $actions['mark_request-refund'] = __( 'Mark as Request refund', 'woocommerce' );
+    return $actions;
+}
+add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 20, 1 );
 
 
 /*
