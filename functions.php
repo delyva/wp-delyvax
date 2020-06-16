@@ -99,44 +99,15 @@ function delyvaxRequest() {
 function delyvax_payment_complete( $order_id ){
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
+    echo 'delyvax_payment_complete';
+    exit;
+
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
         $order = wc_get_order( $order_id );
         $user = $order->get_user();
 
-        //check sub orders
-        $sub_orders = get_children( array( 'post_parent' => $order_id, 'post_type' => 'shop_order' ) );
-
-        if ( $sub_orders ) {
-            $proceed_create_order = true;
-
-            foreach ($sub_orders as $sub)
-            {
-                $sub_order = wc_get_order($sub->ID);
-                // echo '<pre>'.$sub_order.'</pre>';
-
-                $sub_order_status = $sub_order->get_status();
-
-                $seller_id = dokan_get_seller_id_by_order($sub->ID);
-                $store_info = dokan_get_store_info( $seller_id );
-                // echo '<pre>'.print_r($store_info).'</pre>';
-
-                if($sub_order_status != 'preparing' && $sub_order_status != 'cancelled' )
-                {
-                    $proceed_create_order = false;
-                }
-            }
-
-            if($proceed_create_order)
-            {
-                delyvax_create_order($order, $user);
-            }
-        }else {
-            if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
-            {
-                delyvax_create_order($order, $user);
-            }
-        }
+        delyvax_create_order($order, $user);
     }
 }
 
