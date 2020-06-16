@@ -98,10 +98,7 @@ function delyvaxRequest() {
 
 function delyvax_payment_complete( $order_id ){
     $settings = get_option( 'woocommerce_delyvax_settings' );
-
-    echo 'delyvax_payment_complete';
-    exit;
-
+    
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
         $order = wc_get_order( $order_id );
