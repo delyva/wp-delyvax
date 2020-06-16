@@ -229,7 +229,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                                       "unit" => "kg"
                                   ),
                                   "quantity" => $quantity,
-                                  "description" => $product_name
+                                  "description" => '[Store: '.$store_name.'] '.$product_name
                               );
 
                               $total_weight = $total_weight + ($product->get_weight()*$quantity);
@@ -285,7 +285,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                                   "unit" => "kg"
                               ),
                               "quantity" => $quantity,
-                              "description" => $product_name
+                              "description" => '[Store: '.$store_name.'] '.$product_name
                           );
 
                           $total_weight = $total_weight + ($product->get_weight()*$quantity);
@@ -343,7 +343,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                               "unit" => "kg"
                           ),
                           "quantity" => $quantity,
-                          "description" => $product_name
+                          "description" => '[Store: '.$store_name.'] '.$product_name
                       );
 
                       $total_weight = $total_weight + ($product->get_weight()*$quantity);
