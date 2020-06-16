@@ -136,7 +136,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $scheduledAt = $delivery_date;
               $scheduledAt->setTime($delivery_time,00,00);
 
-              // echo $delivery_date->format('d-m-Y g:i A');
+              // echo $delivery_date->format('d-m-Y H:i');
               // echo '<br>';
 
               // $scheduledAt = $scheduledAt->format('c');
@@ -190,7 +190,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   $main_order = wc_get_order($order->parent_id);
 
                   $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
-                  $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y g:i A').' <br>';
+                  $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
 
                   if($timeslot)
                   {
@@ -321,7 +321,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   $main_order = $order;
 
                   $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
-                  $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y g:i A').' <br>';
+                  $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
 
                   if($timeslot)
                   {
