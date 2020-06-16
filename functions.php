@@ -523,7 +523,7 @@ function delyvax_webhook_get_tracking()
 // Register new status
 function delyvax_register_order_statuses() {
     register_post_status( 'preparing', array(
-        'label'                     => _x('Preparing', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Preparing', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -531,7 +531,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Preparing (%s)', 'Preparing (%s)' )
     ) );
     register_post_status( 'ready-to-collect', array(
-        'label'                     => _x('Ready to collect', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Ready to collect', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -539,7 +539,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Ready to collect (%s)', 'Ready to collect (%s)' )
     ) );
     register_post_status( 'courier-accepted', array(
-        'label'                     => _x('Courier accepted', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Courier accepted', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -548,7 +548,7 @@ function delyvax_register_order_statuses() {
         // 'label_count'               => _n_noop( 'Courier accepted class="count">(%s)</span>', 'Courier accepted <span class="count">(%s)</span>' )
     ) );
     register_post_status( 'start-collecting', array(
-        'label'                     => _x('Pending pick up', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Pending pick up', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -556,7 +556,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Pending pick up (%s)', 'Pending pick up (%s)' )
     ) );
     register_post_status( 'collected', array(
-        'label'                     => _x('Pick up complete', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Pick up complete', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -564,7 +564,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Pick up complete (%s)', 'Pick up complete (%s)' )
     ) );
     register_post_status( 'failed-collection', array(
-        'label'                     => _x('Pick up failed', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Pick up failed', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -572,7 +572,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Pick up failed (%s)', 'Pick up failed (%s)' )
     ) );
     register_post_status( 'start-delivery', array(
-        'label'                     => _x('On the way for delivery', 'Order status', 'woocommerce' ),
+        'label'                     => _x('On the way for delivery', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -580,7 +580,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'On the way for delivery (%s)', 'On the way for delivery (%s)' )
     ) );
     register_post_status( 'failed-delivery', array(
-        'label'                     => _x('Delivery failed', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Delivery failed', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -588,7 +588,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Delivery failed (%s)', 'Delivery failed (%s)' )
     ) );
     register_post_status( 'request-refund', array(
-        'label'                     => _x('Request refund', 'Order status', 'woocommerce' ),
+        'label'                     => _x('Request refund', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -638,19 +638,56 @@ add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses' );
 
 // Adding custom status  to admin order list bulk actions dropdown
 function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
-    $actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce' );
-    $actions['mark_ready-to-collect'] = __( 'Mark as Ready to collect', 'woocommerce' );
-    $actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce' );
-    $actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce' );
-    $actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce' );
-    $actions['mark_failed-collection'] = __( 'Mark as Pick up failed', 'woocommerce' );
-    $actions['mark_start-delivery'] = __( 'Mark as On the way for delivery', 'woocommerce' );
-    $actions['mark_failed-delivery'] = __( 'Mark as Delivery failed', 'woocommerce' );
-    $actions['mark_request-refund'] = __( 'Mark as Request refund', 'woocommerce' );
-    return $actions;
+    $new_actions = array();
+
+    // add new order status before processing
+    foreach ($actions as $key => $action) {
+        $new_actions[$key] = $action;
+
+        if ('mark_processing' === $key)
+        {
+            $new_actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce' );
+            $new_actions['mark_ready-to-collect'] = __( 'Mark as Ready to collect', 'woocommerce' );
+            $new_actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce' );
+            $new_actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce' );
+            $new_actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce' );
+            $new_actions['mark_failed-collection'] = __( 'Mark as Pick up failed', 'woocommerce' );
+            $new_actions['mark_start-delivery'] = __( 'Mark as On the way for delivery', 'woocommerce' );
+            $new_actions['mark_failed-delivery'] = __( 'Mark as Delivery failed', 'woocommerce' );
+            $new_actions['mark_request-refund'] = __( 'Mark as Request refund', 'woocommerce' );
+        }
+    }
+
+    return $new_actions;
 }
 add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 20, 1 );
 
+
+function ts_woocommerce_exclude_order_status( $query_vars )
+{
+      global $typenow;
+
+      /**
+      * Using wc_get_order_types() instead of 'shop_order' as other order types could be added by other plugins
+      */
+      if ( in_array( $typenow, wc_get_order_types( 'order-meta-boxes' ), true ) )
+      {
+
+          if ( isset( $_GET['exclude_status'] ) && '' != $_GET['exclude_status'] && isset( $query_vars['post_status'] ) )
+          {
+              $exclude_status = explode( ',', $_GET['exclude_status'] );
+              foreach ( $exclude_status as $key => $value )
+              {
+                  if ( ( $key = array_search( $value, $query_vars['post_status'] ) ) !== false)
+                  {
+                      unset( $query_vars['post_status'][$key] );
+                  }
+              }
+          }
+      }
+      return $query_vars;
+}
+add_filter( 'request', 'ts_woocommerce_exclude_order_status', 20, 1 );
 
 /*
 { data:
