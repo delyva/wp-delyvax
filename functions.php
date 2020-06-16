@@ -663,16 +663,14 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
 add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 20, 1 );
 
 
-function ts_woocommerce_exclude_order_status( $query_vars )
+/*
+function delyvax_woocommerce_exclude_order_status( $query_vars )
 {
       global $typenow;
 
-      /**
-      * Using wc_get_order_types() instead of 'shop_order' as other order types could be added by other plugins
-      */
+      // Using wc_get_order_types() instead of 'shop_order' as other order types could be added by other plugins
       if ( in_array( $typenow, wc_get_order_types( 'order-meta-boxes' ), true ) )
       {
-
           if ( isset( $_GET['exclude_status'] ) && '' != $_GET['exclude_status'] && isset( $query_vars['post_status'] ) )
           {
               $exclude_status = explode( ',', $_GET['exclude_status'] );
@@ -687,7 +685,8 @@ function ts_woocommerce_exclude_order_status( $query_vars )
       }
       return $query_vars;
 }
-add_filter( 'request', 'ts_woocommerce_exclude_order_status', 20, 1 );
+add_filter( 'request', 'delyvax_woocommerce_exclude_order_status', 20, 1 );
+*/
 
 /*
 { data:
