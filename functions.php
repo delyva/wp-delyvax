@@ -598,15 +598,15 @@ function delyvax_register_order_statuses() {
 }
 add_action( 'init', 'delyvax_register_order_statuses' );
 
-
-add_filter( 'woocommerce_reports_order_statuses', 'include_custom_order_status_to_reports', 20, 1 );
-function include_custom_order_status_to_reports( $statuses ){
-    // Adding the custom order status to the 3 default woocommerce order statuses
-    return array( 'preparing', 'ready-to-collect', 'courier-accepted',
-      'start-collecting', 'collected', 'failed-collection',
-      'start-delivery', 'failed-delivery', 'request-refund'
-    );
-}
+//
+// add_filter( 'woocommerce_reports_order_statuses', 'include_custom_order_status_to_reports', 20, 1 );
+// function include_custom_order_status_to_reports( $statuses ){
+//     // Adding the custom order status to the 3 default woocommerce order statuses
+//     return array( 'preparing', 'ready-to-collect', 'courier-accepted',
+//       'start-collecting', 'collected', 'failed-collection',
+//       'start-delivery', 'failed-delivery', 'request-refund'
+//     );
+// }
 
 // Add to list of WC Order statuses
 // Add custom status to order edit page drop down (and displaying orders with this custom status in the list)

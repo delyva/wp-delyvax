@@ -84,6 +84,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $dtimezone = new DateTimeZone($stimezone);
 
               // echo date('d-m-Y H:i:s');
+              $timeslot = null;
 
               $delivery_date = new DateTime();
               $delivery_date->setTimezone($dtimezone);
@@ -110,8 +111,15 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   $a_delivery_time = explode(",",$w_delivery_time);
                   if(sizeof($a_delivery_time) > 0)
                   {
-                      $a_delivery_time[0].'<br>';
                       $delivery_time = $a_delivery_time[0]/60;
+                  }
+
+                  if(sizeof($a_delivery_time) > 1)
+                  {
+                      $timeslot_from = $a_delivery_time[0]/60;
+                      $timeslot_to = $a_delivery_time[1]/60;
+
+                      $timeslot = $timeslot_from.':00 - '.$timeslot_to.':00 (24H)';
                   }
               }
 
@@ -128,11 +136,16 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $scheduledAt = $delivery_date;
               $scheduledAt->setTime($delivery_time,00,00);
 
-              $delivery_date->format('d-m-Y H:i:s');
+              // echo $delivery_date->format('d-m-Y g:i A');
               // echo '<br>';
 
-              $scheduledAt = $scheduledAt->format('c');
+              // $scheduledAt = $scheduledAt->format('c');
               // echo '<br>';
+
+              // echo $scheduledAt->format('d/m/Y H:i:s');
+              // echo $scheduledAt->format('Y-m-d H:i:s');
+
+              // echo $scheduledAt->format('d-m-Y H:i:s');
 
               // $scheduledAt = (new DateTime($my_date_time))->format('c');
               //2020-06-10T23:13:51-04:00 / "scheduledAt": "2019-11-15T12:00:00+0800", //echo date_format(date_create('17 Oct 2008'), 'c');
@@ -175,6 +188,14 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               if($order->parent_id)
               {
                   $main_order = wc_get_order($order->parent_id);
+
+                  $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
+                  $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y g:i A').' <br>';
+
+                  if($timeslot)
+                  {
+                      $order_notes = $order_notes.'Time slot: '.$timeslot.'';
+                  }
 
                   $sub_orders = get_children( array( 'post_parent' => $main_order->get_id(), 'post_type' => 'shop_order' ) );
 
@@ -235,7 +256,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                               $total_weight = $total_weight + ($product->get_weight()*$quantity);
                               $total_price = $total_price + $total;
 
-                              $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          \n';
+                              // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
 
                               $count++;
                           }
@@ -291,13 +312,21 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                           $total_weight = $total_weight + ($product->get_weight()*$quantity);
                           $total_price = $total_price + $total;
 
-                          $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          \n';
+                          // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
 
                           $count++;
                       }
                   }
               }else {
                   $main_order = $order;
+
+                  $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
+                  $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y g:i A').' <br>';
+
+                  if($timeslot)
+                  {
+                      $order_notes = $order_notes.'Time slot: '.$timeslot.'';
+                  }
 
                   foreach ( $main_order->get_items() as $item )
                   {
@@ -349,14 +378,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       $total_weight = $total_weight + ($product->get_weight()*$quantity);
                       $total_price = $total_price + $total;
 
-                      $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          \n';
+                      // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
 
                       $count++;
                   }
               }
-
-              // echo $order_notes;
-              // exit;
 
               /// check payment method and set codAmount
               $codAmount = 0;
@@ -387,7 +413,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               //TODO! Origin! -- hanlde multivendor, pickup address from vendor address
 
               $origin = array(
-                  "scheduledAt" => $scheduledAt, //"2019-11-15T12:00:00+0800",
+                  "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
                   "inventory" => $inventories,
                   "contact" => array(
                       "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
@@ -410,7 +436,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
 
               //destination
               $destination = array(
-                  "scheduledAt" => $scheduledAt, //"2019-11-15T12:00:00+0800",
+                  "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
                   "inventory" => $inventories,
                   "contact" => array(
                       "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
@@ -464,11 +490,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              echo '-----------------------------------';
-              echo json_encode($postRequestArr);
-              echo '-----------------------------------';
-              echo json_encode($response['body']);
-              echo '-----------------------------------';
+              // echo '-----------------------------------';
+              // echo json_encode($postRequestArr);
+              // echo '-----------------------------------';
+              // echo json_encode($response['body']);
+              // echo '-----------------------------------';
               // exit;
 
               if (is_wp_error($response)) {
@@ -547,11 +573,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              echo '-----------------------------------';
-              echo json_encode($postRequestArr);
-              echo '-----------------------------------';
-              echo json_encode($response['body']);
-              echo '-----------------------------------';
+              // echo '-----------------------------------';
+              // echo json_encode($postRequestArr);
+              // echo '-----------------------------------';
+              // echo json_encode($response['body']);
+              // echo '-----------------------------------';
               // exit;
 
               if (is_wp_error($response)) {
