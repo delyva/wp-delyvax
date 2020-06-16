@@ -123,6 +123,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
+            'processing_days' => array(
+                'title'    	=> __( 'Processing days', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('0', 'delyvax'),
+                'id' => 'delyvax_processing_days',
+                'description' => __( 'Number of processing days. e.g. 0 - same day ship out; 1 - next day ship out.' ),
+            ),
             // 'api_webhook_key' => array(
             //     'title' => __('API API Webhook Key', 'delyvax'),
             //     'type' => 'text',

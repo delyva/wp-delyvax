@@ -19,6 +19,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $user_id = $settings['user_id'];
             $customer_id = $settings['customer_id'];
             $api_token = $settings['api_token'];
+            $processing_days = $settings['processing_days'];
 
             $postRequestArr = [
                 // 'companyId' => $company_id,
@@ -74,6 +75,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $user_id = $settings['user_id'];
               $customer_id = $settings['customer_id'];
               $api_token = $settings['api_token'];
+              $processing_days = $settings['processing_days'];
 
               //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
               $gmtoffset = get_option('gmt_offset');
@@ -88,7 +90,12 @@ if (!class_exists('DelyvaX_Shipping_API')) {
 
               $delivery_date = new DateTime();
               $delivery_date->setTimezone($dtimezone);
-              // $delivery_date->modify('+1 day');
+
+              if($processing_days > 0)
+              {
+                  $delivery_date->modify('+'.$processing_days.' day');
+              }
+
               $delivery_date->format('d-m-Y H:i:s');
               // echo '<br>';
               if($order->get_meta( 'delivery_date' ) != null)
@@ -490,11 +497,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              // echo '-----------------------------------';
-              // echo json_encode($postRequestArr);
-              // echo '-----------------------------------';
-              // echo json_encode($response['body']);
-              // echo '-----------------------------------';
+              echo '-----------------------------------';
+              echo json_encode($postRequestArr);
+              echo '-----------------------------------';
+              echo json_encode($response['body']);
+              echo '-----------------------------------';
               // exit;
 
               if (is_wp_error($response)) {
@@ -529,6 +536,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $user_id = $settings['user_id'];
               $customer_id = $settings['customer_id'];
               $api_token = $settings['api_token'];
+              $processing_days = $settings['processing_days'];
 
               //service
               $serviceCode = "";
@@ -573,11 +581,11 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              // echo '-----------------------------------';
-              // echo json_encode($postRequestArr);
-              // echo '-----------------------------------';
-              // echo json_encode($response['body']);
-              // echo '-----------------------------------';
+              echo '-----------------------------------';
+              echo json_encode($postRequestArr);
+              echo '-----------------------------------';
+              echo json_encode($response['body']);
+              echo '-----------------------------------';
               // exit;
 
               if (is_wp_error($response)) {
