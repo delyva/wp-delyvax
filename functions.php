@@ -143,10 +143,6 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
 
                 $sub_order_status = $sub_order->get_status();
 
-                $seller_id = dokan_get_seller_id_by_order($sub->ID);
-                $store_info = dokan_get_store_info( $seller_id );
-                // echo '<pre>'.print_r($store_info).'</pre>';
-
                 if($sub_order_status != 'preparing' && $sub_order_status != 'cancelled' )
                 {
                     $proceed_create_order = false;
@@ -375,6 +371,17 @@ function delyvax_post_create_order($order, $user) {
       $total_price = 0;
       $order_notes = '';
 
+      $store_name = null;
+      $store_phone = null;
+      $store_email = null;
+      $store_address_1 = null;
+      $store_address_2 = null;
+      $store_city = null;
+      $store_postcode = null;
+      $store_country = null;
+      $store_country = null;
+
+
       //loop inventory main n suborder
       if($order->parent_id)
       {
@@ -402,9 +409,20 @@ function delyvax_post_create_order($order, $user) {
                   {
                       $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
                       $store_info = dokan_get_store_info( $seller_id );
-                      $store_name = $store_info['store_name'];
-                      $store_phone = $store_info['phone'];
+
                       // echo '<pre>'.print_r($store_info).'</pre>';
+
+                      $store_name = $store_info['store_name'];
+                      $store_first_name = $store_info['first_name'];
+                      $store_last_name = $store_info['last_name'];
+                      $store_phone = $store_info['phone'];
+                      $store_email = $store_info['email'];
+                      $store_address_1 = $store_info['address']['street_1'];
+                      $store_address_2 = $store_info['address']['street_2'];
+                      $store_city = $store_info['address']['city'];
+                      $store_state = $store_info['address']['state'];
+                      $store_postcode = $store_info['address']['zip'];
+                      $store_country = $store_info['address']['country'];
                   }
 
                   foreach ( $sub_order->get_items() as $item )
@@ -476,9 +494,20 @@ function delyvax_post_create_order($order, $user) {
                   {
                       $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
                       $store_info = dokan_get_store_info( $seller_id );
-                      $store_name = $store_info['store_name'];
-                      $store_phone = $store_info['phone'];
+
                       // echo '<pre>'.print_r($store_info).'</pre>';
+
+                      $store_name = $store_info['store_name'];
+                      $store_first_name = $store_info['first_name'];
+                      $store_last_name = $store_info['last_name'];
+                      $store_phone = $store_info['phone'];
+                      $store_email = $store_info['email'];
+                      $store_address_1 = $store_info['address']['street_1'];
+                      $store_address_2 = $store_info['address']['street_2'];
+                      $store_city = $store_info['address']['city'];
+                      $store_state = $store_info['address']['state'];
+                      $store_postcode = $store_info['address']['zip'];
+                      $store_country = $store_info['address']['country'];
                   }
 
                   $_pf = new WC_Product_Factory();
@@ -542,9 +571,20 @@ function delyvax_post_create_order($order, $user) {
               {
                   $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
-                  $store_name = $store_info['store_name'];
-                  $store_phone = $store_info['phone'];
+
                   // echo '<pre>'.print_r($store_info).'</pre>';
+
+                  $store_name = $store_info['store_name'];
+                  $store_first_name = $store_info['first_name'];
+                  $store_last_name = $store_info['last_name'];
+                  $store_phone = $store_info['phone'];
+                  $store_email = $store_info['email'];
+                  $store_address_1 = $store_info['address']['street_1'];
+                  $store_address_2 = $store_info['address']['street_2'];
+                  $store_city = $store_info['address']['city'];
+                  $store_state = $store_info['address']['state'];
+                  $store_postcode = $store_info['address']['zip'];
+                  $store_country = $store_info['address']['country'];
               }
 
               $_pf = new WC_Product_Factory();
@@ -585,33 +625,39 @@ function delyvax_post_create_order($order, $user) {
       }
 
       //origin
+      //Origin! -- hanlde multivendor, pickup address from vendor address or woocommerce address
+
       // The main address pieces:
-      $store_address     = get_option( 'woocommerce_store_address' );
-      $store_address_2   = get_option( 'woocommerce_store_address_2' );
-      $store_city        = get_option( 'woocommerce_store_city' );
-      $store_postcode    = get_option( 'woocommerce_store_postcode' );
+      if($store_name == null) $store_name = $order->get_shipping_first_name().' '.$order->get_shipping_last_name();
+      if($store_email == null) $store_email = $order->get_billing_email();
+      if($store_phone == null) $store_phone = $order->get_billing_phone();
+      if($store_address_1 == null) $store_address_1     = get_option( 'woocommerce_store_address' );
+      if($store_address_2 == null) $store_address_2   = get_option( 'woocommerce_store_address_2' );
+      if($store_city == null) $store_city        = get_option( 'woocommerce_store_city' );
+      if($store_postcode == null) $store_postcode    = get_option( 'woocommerce_store_postcode' );
 
       // The country/state
-      $store_raw_country = get_option( 'woocommerce_default_country' );
+      if($store_country == null)
+      {
+          $store_raw_country = get_option( 'woocommerce_default_country' );
 
-      // Split the country/state
-      $split_country = explode( ":", $store_raw_country );
+          // Split the country/state
+          $split_country = explode( ":", $store_raw_country );
 
-      // Country and state separated:
-      $store_country = $split_country[0];
-      $store_state   = $split_country[1];
-
-      //TODO! Origin! -- hanlde multivendor, pickup address from vendor address
+          // Country and state separated:
+          $store_country = $split_country[0];
+          $store_state   = $split_country[1];
+      }
 
       $origin = array(
           "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
           "inventory" => $inventories,
           "contact" => array(
-              "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
-              "email" => $order->get_billing_email(),
-              "phone" => $order->get_billing_phone(),
-              "mobile" => $order->get_billing_phone(),
-              "address1" => $store_address,
+              "name" => $store_name,
+              "email" => $store_email,
+              "phone" => $store_phone,
+              "mobile" => $store_phone,
+              "address1" => $store_address_1,
               "address2" => $store_address_2,
               "city" => $store_city,
               "state" => $store_state,
