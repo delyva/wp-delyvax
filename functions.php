@@ -119,7 +119,7 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
 
         delyvax_create_order($order, $user);
     }
-    return 'preparing';
+    return 'processing';
 }
 
 function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
@@ -180,13 +180,15 @@ function delyvax_create_order($order, $user) {
 
         if($DelyvaXOrderID == null && $DelyvaXTrackingCode == null)
         {
-            $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
+            // $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
+            $resultCreate = delyvax_post_create_order($order, $user);
 
             if($resultCreate)
             {
                   $shipmentId = $resultCreate["id"];
 
-                  $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
+                  // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
+                  $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
 
                   if($resultProcess)
                   {
@@ -237,12 +239,458 @@ function delyvax_create_order($order, $user) {
 
 //rewire logic here, API is only for post
 function delyvax_post_create_order($order, $user) {
+      //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
+      $gmtoffset = get_option('gmt_offset');
+      // echo '<br>';
+      $stimezone = get_option('timezone_string');
+      // echo '<br>';
 
+      $dtimezone = new DateTimeZone($stimezone);
+
+      // echo date('d-m-Y H:i:s');
+      $timeslot = null;
+
+      $delivery_date = new DateTime();
+      $delivery_date->setTimezone($dtimezone);
+
+      if($processing_days > 0)
+      {
+          $delivery_date->modify('+'.$processing_days.' day');
+      }
+
+      $delivery_date->format('d-m-Y H:i:s');
+      // echo '<br>';
+      if($order->get_meta( 'delivery_date' ) != null)
+      {
+          $delivery_date = new DateTime('@' .$order->get_meta( 'delivery_date' ));
+          $delivery_date->setTimezone($dtimezone);
+          // $delivery_type = $order->get_meta( 'delivery_type' );
+      }
+      // $delivery_date->format('d-m-Y H:i:s');
+      // echo '<br>';
+
+      // echo $delivery_time = '08:00'; //8AM
+      $delivery_time = date("H", strtotime("+2 hours"));
+      // echo '<br>';
+      if($order->get_meta( 'delivery_time' ) != null)
+      {
+          $w_delivery_time = $order->get_meta( 'delivery_time' ); //1440 minutes / 24
+          // echo '<br>';
+
+          $a_delivery_time = explode(",",$w_delivery_time);
+          if(sizeof($a_delivery_time) > 0)
+          {
+              $delivery_time = $a_delivery_time[0]/60;
+          }
+
+          if(sizeof($a_delivery_time) > 1)
+          {
+              $timeslot_from = $a_delivery_time[0]/60;
+              $timeslot_to = $a_delivery_time[1]/60;
+
+              $timeslot_from_hour = 0;
+              $timeslot_from_min = 0;
+
+              $timeslot_to_hour = 0;
+              $timeslot_to_min = 0;
+
+              if ( strpos( $timeslot_from, "." ) !== false ) {
+                  $timeslot_from_hour = $timeslot_from - 0.5;
+                  $timeslot_from_min = "30";
+              }else {
+                  $timeslot_from_hour = $timeslot_from;
+                  $timeslot_from_min = "00";
+              }
+
+              if ( strpos( $timeslot_to, "." ) !== false ) {
+                  $timeslot_to_hour = $timeslot_to - 0.5;
+                  $timeslot_to_min = "30";
+              }else {
+                  $timeslot_to_hour = $timeslot_to;
+                  $timeslot_to_min = "00";
+              }
+
+              $timeslot = $timeslot_from_hour.':'.$timeslot_from_min.' - '.$timeslot_to_hour.':'.$timeslot_to_min.' (24H)';
+          }
+      }
+
+      $delivery_type = 'delivery';
+      // echo '<br>';
+      if($order->get_meta( 'delivery_type' ) != null)
+      {
+          $delivery_type = $order->get_meta( 'delivery_type' );
+      }
+      // echo $delivery_type;
+
+      // $my_date_time = date("Y-m-d H:i:s", strtotime("+1 hours"));
+
+      $scheduledAt = $delivery_date;
+      $scheduledAt->setTime($delivery_time,00,00);
+
+      // echo $delivery_date->format('d-m-Y H:i');
+      // echo '<br>';
+
+      // $scheduledAt = $scheduledAt->format('c');
+      // echo '<br>';
+
+      // echo $scheduledAt->format('d/m/Y H:i:s');
+      // echo $scheduledAt->format('Y-m-d H:i:s');
+
+      // echo $scheduledAt->format('d-m-Y H:i:s');
+
+      // $scheduledAt = (new DateTime($my_date_time))->format('c');
+      //2020-06-10T23:13:51-04:00 / "scheduledAt": "2019-11-15T12:00:00+0800", //echo date_format(date_create('17 Oct 2008'), 'c');
+
+      //service
+      $serviceCode = "";
+
+      $main_order = $order;
+
+      if($order->parent_id)
+      {
+          $main_order = wc_get_order($order->parent_id);
+      }
+
+      // Iterating through order shipping items
+      foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
+      {
+          $serviceobject = $shipping_item_obj->get_meta_data();
+
+          // print_r($serviceobject);
+
+          // echo json_encode($serviceobject);
+          for($i=0; $i < sizeof($serviceobject); $i++)
+          {
+              if($serviceobject[$i]->key == "service_code")
+              {
+                  $serviceCode = $serviceobject[0]->value;
+              }
+          }
+      }
+
+      //inventory / items
+      $count = 0;
+      $inventories = array();
+      $total_weight = 0;
+      $total_price = 0;
+      $order_notes = '';
+
+      //loop inventory main n suborder
+      if($order->parent_id)
+      {
+          $main_order = wc_get_order($order->parent_id);
+
+          $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
+          $order_notes = $order_notes.'Date Time: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
+
+          if($timeslot)
+          {
+              $order_notes = $order_notes.'Time slot: '.$timeslot.'';
+          }
+
+          $sub_orders = get_children( array( 'post_parent' => $main_order->get_id(), 'post_type' => 'shop_order' ) );
+
+          if ( $sub_orders )
+          {
+              foreach ($sub_orders as $sub)
+              {
+                  $sub_order = wc_get_order($sub->ID);
+
+                  $store_name = 'N/A';
+                  $store_phone = '-';
+                  if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+                  {
+                      $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
+                      $store_info = dokan_get_store_info( $seller_id );
+                      $store_name = $store_info['store_name'];
+                      $store_phone = $store_info['phone'];
+                      // echo '<pre>'.print_r($store_info).'</pre>';
+                  }
+
+                  foreach ( $sub_order->get_items() as $item )
+                  {
+                      $product_id = $item->get_product_id();
+                      $product_variation_id = $item->get_variation_id();
+                      $product = $item->get_product();
+                      $product_name = $item->get_name();
+                      $quantity = $item->get_quantity();
+                      $subtotal = $item->get_subtotal();
+                      $total = $item->get_total();
+                      $tax = $item->get_subtotal_tax();
+                      $taxclass = $item->get_tax_class();
+                      $taxstat = $item->get_tax_status();
+                      $allmeta = $item->get_meta_data();
+                      // $somemeta = $item->get_meta( '_whatever', true );
+                      $type = $item->get_type();
+
+                      // print_r($allmeta);
+
+                      $_pf = new WC_Product_Factory();
+
+                      $product = $_pf->get_product($product_id);
+
+                      $inventories[$count] = array(
+                          "name" => $product_name,
+                          "type" => "PARCEL", //$type PARCEL / FOOD
+                          "price" => array(
+                              "amount" => $total,
+                              "currency" => $main_order->get_currency(),
+                          ),
+                          "weight" => array(
+                              "value" => ($product->get_weight()*$quantity),
+                              "unit" => "kg"
+                          ),
+                          "quantity" => $quantity,
+                          "description" => '[Store: '.$store_name.'] '.$product_name
+                      );
+
+                      $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                      $total_price = $total_price + $total;
+
+                      // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+
+                      $count++;
+                  }
+              }
+          }else {
+              foreach ( $main_order->get_items() as $item )
+              {
+                  $product_id = $item->get_product_id();
+                  $product_variation_id = $item->get_variation_id();
+                  $product = $item->get_product();
+                  $product_name = $item->get_name();
+                  $quantity = $item->get_quantity();
+                  $subtotal = $item->get_subtotal();
+                  $total = $item->get_total();
+                  $tax = $item->get_subtotal_tax();
+                  $taxclass = $item->get_tax_class();
+                  $taxstat = $item->get_tax_status();
+                  $allmeta = $item->get_meta_data();
+                  // $somemeta = $item->get_meta( '_whatever', true );
+                  $type = $item->get_type();
+
+                  //get seller info
+                  $store_name = 'N/A';
+                  $store_phone = '-';
+                  if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+                  {
+                      $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
+                      $store_info = dokan_get_store_info( $seller_id );
+                      $store_name = $store_info['store_name'];
+                      $store_phone = $store_info['phone'];
+                      // echo '<pre>'.print_r($store_info).'</pre>';
+                  }
+
+                  $_pf = new WC_Product_Factory();
+
+                  $product = $_pf->get_product($product_id);
+
+                  $inventories[$count] = array(
+                      "name" => $product_name,
+                      "type" => "PARCEL", //$type PARCEL / FOOD
+                      "price" => array(
+                          "amount" => $total,
+                          "currency" => $main_order->get_currency(),
+                      ),
+                      "weight" => array(
+                          "value" => ($product->get_weight()*$quantity),
+                          "unit" => "kg"
+                      ),
+                      "quantity" => $quantity,
+                      "description" => '[Store: '.$store_name.'] '.$product_name
+                  );
+
+                  $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                  $total_price = $total_price + $total;
+
+                  // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+
+                  $count++;
+              }
+          }
+      }else {
+          $main_order = $order;
+
+          $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
+          $order_notes = $order_notes.'Date Time: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
+
+          if($timeslot)
+          {
+              $order_notes = $order_notes.'Time slot: '.$timeslot.'';
+          }
+
+          foreach ( $main_order->get_items() as $item )
+          {
+              $product_id = $item->get_product_id();
+              $product_variation_id = $item->get_variation_id();
+              $product = $item->get_product();
+              $product_name = $item->get_name();
+              $quantity = $item->get_quantity();
+              $subtotal = $item->get_subtotal();
+              $total = $item->get_total();
+              $tax = $item->get_subtotal_tax();
+              $taxclass = $item->get_tax_class();
+              $taxstat = $item->get_tax_status();
+              $allmeta = $item->get_meta_data();
+              // $somemeta = $item->get_meta( '_whatever', true );
+              $type = $item->get_type();
+
+              //get seller info
+              $store_name = 'N/A';
+              $store_phone = '-';
+              if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+              {
+                  $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
+                  $store_info = dokan_get_store_info( $seller_id );
+                  $store_name = $store_info['store_name'];
+                  $store_phone = $store_info['phone'];
+                  // echo '<pre>'.print_r($store_info).'</pre>';
+              }
+
+              $_pf = new WC_Product_Factory();
+
+              $product = $_pf->get_product($product_id);
+
+              $inventories[$count] = array(
+                  "name" => $product_name,
+                  "type" => "PARCEL", //$type PARCEL / FOOD
+                  "price" => array(
+                      "amount" => $total,
+                      "currency" => $main_order->get_currency(),
+                  ),
+                  "weight" => array(
+                      "value" => ($product->get_weight()*$quantity),
+                      "unit" => "kg"
+                  ),
+                  "quantity" => $quantity,
+                  "description" => '[Store: '.$store_name.'] '.$product_name
+              );
+
+              $total_weight = $total_weight + ($product->get_weight()*$quantity);
+              $total_price = $total_price + $total;
+
+              // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+
+              $count++;
+          }
+      }
+
+      /// check payment method and set codAmount
+      $codAmount = 0;
+      $codCurrency = $order->get_currency();
+
+      if($order->get_payment_method() == 'cod')
+      {
+          $codAmount = $main_order->get_total();
+      }
+
+      //origin
+      // The main address pieces:
+      $store_address     = get_option( 'woocommerce_store_address' );
+      $store_address_2   = get_option( 'woocommerce_store_address_2' );
+      $store_city        = get_option( 'woocommerce_store_city' );
+      $store_postcode    = get_option( 'woocommerce_store_postcode' );
+
+      // The country/state
+      $store_raw_country = get_option( 'woocommerce_default_country' );
+
+      // Split the country/state
+      $split_country = explode( ":", $store_raw_country );
+
+      // Country and state separated:
+      $store_country = $split_country[0];
+      $store_state   = $split_country[1];
+
+      //TODO! Origin! -- hanlde multivendor, pickup address from vendor address
+
+      $origin = array(
+          "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
+          "inventory" => $inventories,
+          "contact" => array(
+              "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
+              "email" => $order->get_billing_email(),
+              "phone" => $order->get_billing_phone(),
+              "mobile" => $order->get_billing_phone(),
+              "address1" => $store_address,
+              "address2" => $store_address_2,
+              "city" => $store_city,
+              "state" => $store_state,
+              "postcode" => $store_postcode,
+              "country" => $store_country,
+              // "coord" => array(
+              //     "lat" => "",
+              //     "lon" => ""
+              // )
+          ),
+          "note"=> $order_notes
+      );
+
+      //destination
+      $destination = array(
+          "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
+          "inventory" => $inventories,
+          "contact" => array(
+              "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
+              "email" => $order->get_billing_email(),
+              "phone" => $order->get_billing_phone(),
+              "mobile" => $order->get_billing_phone(),
+              "address1" => $order->get_shipping_address_1(),
+              "address2" => $order->get_shipping_address_2(),
+              "city" => $order->get_shipping_city(),
+              "state" => $order->get_shipping_state(),
+              "postcode" => $order->get_shipping_postcode(),
+              "country" => $order->get_shipping_country(),
+              // "coord" => array(
+              //     "lat" => "",
+              //     "lon" => ""
+              // )
+          ),
+          "note"=> $order_notes
+      );
+
+      $weight = array(
+        "unit" => "kg",
+        "value" => $total_weight
+      );
+
+      $cod = array(
+        "amount" => $codAmount,
+        "currency" => $codCurrency
+      );
+
+      return $resultCreate = DelyvaX_Shipping_API::postCreateOrder($origin, $destination, $serviceCode, $order_notes, $cod);
 }
 
 //rewire logic here, API is only for post
 function delyvax_post_process_order($order, $user, $shipmentId) {
+      //service
+      $serviceCode = "";
 
+      $main_order = $order;
+
+      if($order->parent_id)
+      {
+          $main_order = wc_get_order($order->parent_id);
+      }
+
+      // Iterating through order shipping items
+      foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
+      {
+          $serviceobject = $shipping_item_obj->get_meta_data();
+
+          // print_r($serviceobject);
+
+          // echo json_encode($serviceobject);
+          for($i=0; $i < sizeof($serviceobject); $i++)
+          {
+              if($serviceobject[$i]->key == "service_code")
+              {
+                  $serviceCode = $serviceobject[0]->value;
+              }
+          }
+      }
+
+      return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($shipmentId, $serviceCode);
 }
 
 //subscribe to webhook here or when save the settings ?
@@ -345,27 +793,6 @@ function delyvax_webhook_get_tracking()
                           echo 'order_id'.$orders[$i]->get_id();
                           echo 'status'.$order->get_status();
 
-                          // if($statusCode == 100)
-                          // {
-                          //     //SaveTrackingNo($order_id, $consignmentNo);
-                          //     if (!empty($order))
-                          //     {
-                          //         if( ! $order->has_status('preparing') )
-                          //         {
-                          //             echo 'preparing';
-                          //             // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                          //             // $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
-                          //             $order->set_status('preparing', 'Order status changed to Preparing', true); // order note is optional, if you want to  add a note to order
-                          //             // $order->save();
-                          //         }
-                          //     }
-                          // }
-                          // if ( strtolower( $order->get_status() ) == 'pending' ) {
-              								// $order->payment_complete();
-                              //
-              								// $order->add_order_note( 'Payment completed.');
-                              // echo $order->get_status();
-            							// }
                           if($statusCode == 200)
                           {
                               if (!empty($order))
@@ -642,147 +1069,3 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
     return $new_actions;
 }
 add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 20, 1 );
-
-
-/*
-function delyvax_woocommerce_exclude_order_status( $query_vars )
-{
-      global $typenow;
-
-      // Using wc_get_order_types() instead of 'shop_order' as other order types could be added by other plugins
-      if ( in_array( $typenow, wc_get_order_types( 'order-meta-boxes' ), true ) )
-      {
-          if ( isset( $_GET['exclude_status'] ) && '' != $_GET['exclude_status'] && isset( $query_vars['post_status'] ) )
-          {
-              $exclude_status = explode( ',', $_GET['exclude_status'] );
-              foreach ( $exclude_status as $key => $value )
-              {
-                  if ( ( $key = array_search( $value, $query_vars['post_status'] ) ) !== false)
-                  {
-                      unset( $query_vars['post_status'][$key] );
-                  }
-              }
-          }
-      }
-      return $query_vars;
-}
-add_filter( 'request', 'delyvax_woocommerce_exclude_order_status', 20, 1 );
-*/
-
-/*
-{ data:
-   { companyId: 'e44c7375-c4dc-47e9-8b24-70a28e024a83',
-     orderId: 'b21a5f81-c68c-49b2-90e9-19d1148a28db',
-     customerId: 18,
-     userId: 'd50d1780-aabc-11ea-8557-fb3ba8b0c74b',
-     consignmentNo: 'MDH00000007MY',
-     statusCode: 625,
-     statusText: null,
-     description: 'DROPOFF arrived, WP2/2',
-     location: '-',
-     driverId: 4,
-     taskId: 531,
-     id: 3833,
-     createdAt: '2020-06-12T08:59:51.743Z',
-     coord: { lon: 101.7650304, lat: 3.2156424 },
-     personnel:
-      { name: '',
-        phone: '',
-        vehicleName: '',
-        vehicleType: '',
-        vehicleRegNo: '' } },
-  apiSecret: '53dc2e95-75f6-4ac6-8eb6-9f7ff52b38a2',
-  event: 'order_tracking.update',
-  url: 'https://matdespatch.com/my/makan'
-}
-*/
-
-// function SaveShipmentId( $order_id, $shipmentId ) {
-//     if (!class_exists('DelyvaX_Shipping_API')) {
-//         include_once 'includes/delyvax-api.php';
-//     }
-//     try {
-//         //save tracking no into order and suborders
-//         $order = wc_get_order ( $order_id );
-//       	if ( $order ) {
-//             global $wpdb;
-//             $TableName = $wpdb->prefix . "posts";
-//             $wpdb->update( $TableName,
-//                 array(
-//                     'ShipmentId' => $shipmentId,
-//                     ),
-//                 array( 'id' => $order_id )
-//             );
-//       	}
-//     } catch (Exception $e) {
-//
-//     }
-// }
-
-/*
-function SaveTrackingNo( $order_id, $trackingNo ) {
-    try {
-        //save tracking no into order and suborders
-        $order = wc_get_order ( $order_id );
-      	if ( $order ) {
-            global $wpdb;
-            $TableName = $wpdb->prefix . "posts";
-            $wpdb->update( $TableName,
-                array(
-                    'TrackingCode' => $trackingNo,
-                    ),
-                array( 'id' => $order_id )
-            );
-      	}
-    } catch (Exception $e) {
-
-    }
-}
-
-function SaveOrderTrackingNo( $order_id, $shipmentId ) {
-    if (!class_exists('DelyvaX_Shipping_API')) {
-        include_once 'includes/delyvax-api.php';
-    }
-    try {
-        $result = DelyvaX_Shipping_API::getTrackOrderByOrderId($shipmentId);
-
-        $consignmentNo = $result["consignmentNo"];
-
-        //save tracking no into order and suborders
-        $order = wc_get_order ( $order_id );
-      	if ( $order ) {
-            $TrackingCode = $consignmentNo;
-
-            global $wpdb;
-            $TableName = $wpdb->prefix . "posts";
-            $wpdb->update( $TableName,
-                array(
-                    'TrackingCode' => $TrackingCode,
-                    ),
-                array( 'id' => $order_id )
-            );
-      	}
-    } catch (Exception $e) {
-
-    }
-}
-*/
-
-/*
-function getOrderIdByShipmentId( $shipmentId) {
-    $order_id = null;
-
-    global $wpdb;
-    $TableName = $wpdb->prefix . "posts";
-    $result = $wpdb->get_results("SELECT * FROM $TableName WHERE id = 1");
-
-    $wpdb->update( $TableName,
-        array(
-            'TrackingCode' => $trackingNo,
-            ),
-        array( 'id' => $order_id )
-    );
-
-    return $order_id;
-}
-*/

@@ -61,14 +61,14 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default'	=> 'yes'
             ),
             'create_shipment_on_paid' => array(
-                'title'    	=> __( 'Auto Create Shipment on Order Paid', 'delyvax' ),
+                'title'    	=> __( 'Auto Create Shipment on Payment Complete', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_paid',
                 'description'  	=> __( 'Create shipment on successful payment by customer', 'delyvax' ),
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
             'create_shipment_on_confirm' => array(
-                'title'    	=> __( 'Auto Create Shipment on Order Acceptance', 'delyvax' ),
+                'title'    	=> __( 'Auto Create Shipment on Preparing', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_confirm',
                 'description'  	=> __( 'Create shipment on order status = "preparing" by Store/Merchant/Vendor', 'delyvax' ),
                 'type'     	=> 'checkbox',
@@ -94,6 +94,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default' => __('', 'delyvax'),
                 'id' => 'delyvax_company_code',
                 'description' => __( 'DelyvaX Company Code (e.g. matdespatch-my)' ),
+            ),
+            'company_name' => array(
+                'title' => __('Company Name', 'delyvax'),
+                'type' => 'text',
+                'default' => __('', 'delyvax'),
+                'id' => 'delyvax_company_name',
+                'description' => __( 'DelyvaX Company Name (e.g. Matdespatch)' ),
             ),
             'user_id' => array(
                 'title' => __('User ID', 'delyvax'),

@@ -23,6 +23,13 @@ function ShowBox( $post ) {
 		$settings = get_option( 'woocommerce_delyvax_settings' );
 		$company_id = $settings['company_id'];
 		$company_code = $settings['company_code'];
+		$company_name = $settings['company_name'];
+		$create_shipment_on_confirm = $settings['create_shipment_on_confirm'];
+
+		if($company_name == null)
+		{
+				$company_name = 'DelyvaX';
+		}
 
 		$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
 		$TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
@@ -32,12 +39,27 @@ function ShowBox( $post ) {
 
     if ($TrackingCode == 'Service Unavailable') {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
-        echo "<div><p>Failed to create shipment in DelyvaX, you can try again by changing order status to <b>Preparing</b></p></div>";
+        echo "<div><p>Failed to create shipment in ".$company_name.", you can try again by changing order status to <b>Preparing</b></p></div>";
     } else if ( $order->has_status( array( 'processing' ) ) ) {
-				// echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
-        echo "<div><p>
-            <a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=preparing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Fulfill with DelyvaX</a>
-            </p></div>";
+				if($TrackingCode)
+				{
+						echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
+						echo "<div>
+						<p>
+								Set your order to <b>Preparing</b> to print label and track your shipment with ".$company_name.".
+						</p>
+						</div>";
+						echo "<div><p>
+		            <a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=preparing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Set to Preparing</a>
+		            </p></div>";
+				}
+
+				if($create_shipment_on_confirm == 'yes')
+				{
+						echo "<div><p>
+							<a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=preparing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Fulfill with ".$company_name."</a>
+							</p></div>";
+				}
 	  } else if ( $order->has_status( array( 'preparing' ) ) ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
 				if($TrackingCode)
@@ -49,14 +71,14 @@ function ShowBox( $post ) {
 			          <a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
 			          </p></div>";
 				}else {
-					echo "<div>
-					<p>
-							Set your order to <b>Processing</b> again to fulfill with DelyvaX, it also works with <i>bulk actions</i> too!
-					</p>
-					</div>";
-					echo "<div><p>
-	            <a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=processing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Set to Processing</a>
-	            </p></div>";
+						echo "<div>
+						<p>
+								Set your order to <b>Processing</b> again to fulfill with ".$company_name.", it also works with <i>bulk actions</i> too!
+						</p>
+						</div>";
+						echo "<div><p>
+		            <a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=processing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Set to Processing</a>
+		            </p></div>";
 				}
     } else if ( $order->has_status( array( 'completed' ) ) ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
@@ -77,7 +99,7 @@ function ShowBox( $post ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         echo "<div>
         <p>
-            Set your order to <b>Processing</b> to fulfill with DelyvaX, it also works with <i>bulk actions</i> too!
+            Set your order to <b>Processing</b> to fulfill with ".$company_name.", it also works with <i>bulk actions</i> too!
         </p>
     		</div>";
     }
