@@ -173,6 +173,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
        */
       public function calculate_shipping($package = array())
       {
+            // print_r($package);
+
             $pdestination = $package["destination"];
             $items = array();
             $product_factory = new WC_Product_Factory();
@@ -253,38 +255,43 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             }
 
             // The main address pieces:
+            $store_address_1     = get_option( 'woocommerce_store_address' );
+            $store_address_2   = get_option( 'woocommerce_store_address_2' );
+            $store_city        = get_option( 'woocommerce_store_city' );
+            $store_postcode    = get_option( 'woocommerce_store_postcode' );
+
+            // The country/state
+            $store_raw_country = get_option( 'woocommerce_default_country' );
+
+            // Split the country/state
+            $split_country = explode( ":", $store_raw_country );
+
+            // Country and state separated:
+            $store_country = $split_country[0];
+            $store_state   = $split_country[1];
+
             if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
             {
                 $seller_id = $package['seller_id'];
 
-                $store_info = dokan_get_store_info( $seller_id );
-
-                $store_name = $store_info['store_name'];
-                $store_first_name = $store_info['first_name'];
-                $store_last_name = $store_info['last_name'];
-                $store_phone = $store_info['phone'];
-                $store_email = $store_info['email'];
-                $store_address_1 = $store_info['address']['street_1'];
-                $store_address_2 = $store_info['address']['street_2'];
-                $store_city = $store_info['address']['city'];
-                $store_state = $store_info['address']['state'];
-                $store_postcode = $store_info['address']['zip'];
-                $store_country = $store_info['address']['country'];
-            } else {
-                $store_address_1     = get_option( 'woocommerce_store_address' );
-                $store_address_2   = get_option( 'woocommerce_store_address_2' );
-                $store_city        = get_option( 'woocommerce_store_city' );
-                $store_postcode    = get_option( 'woocommerce_store_postcode' );
-
-                // The country/state
-                $store_raw_country = get_option( 'woocommerce_default_country' );
-
-                // Split the country/state
-                $split_country = explode( ":", $store_raw_country );
-
-                // Country and state separated:
-                $store_country = $split_country[0];
-                $store_state   = $split_country[1];
+                if($seller_id)
+                {
+                    $store_info = dokan_get_store_info( $seller_id );
+                    if($store_info)
+                    {
+                        $store_name = $store_info['store_name'];
+                        $store_first_name = $store_info['first_name'];
+                        $store_last_name = $store_info['last_name'];
+                        $store_phone = $store_info['phone'];
+                        $store_email = $store_info['email'];
+                        $store_address_1 = $store_info['address']['street_1'];
+                        $store_address_2 = $store_info['address']['street_2'];
+                        $store_city = $store_info['address']['city'];
+                        $store_state = $store_info['address']['state'];
+                        $store_postcode = $store_info['address']['zip'];
+                        $store_country = $store_info['address']['country'];
+                    }
+                }
             }
 
             $origin = array(
@@ -299,6 +306,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 //     "lon" => ""
                 // )
             );
+
+            // print_r($origin);
 
             $destination = array(
                 "address1" => $pdestination["address"],
