@@ -1,7 +1,7 @@
 <?php
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+defined( 'ABSPATH' ) or die( 'No script kiddies please!');
 register_activation_hook('delyvax/delyvax.php', 'delyvaxPluginActivated');
-register_deactivation_hook('delyvax/delyvax.php', 'delyvaxPluginDeActivated' );
+register_deactivation_hook('delyvax/delyvax.php', 'delyvaxPluginDeActivated');
 register_uninstall_hook('delyvax/delyvax.php', 'delyvaxPluginUninstalled');
 
 add_filter('parse_request', 'delyvaxRequest');
@@ -9,12 +9,12 @@ add_filter('parse_request', 'delyvaxRequest');
 add_action('woocommerce_check_cart_items','delyvax_check_cart_weight');
 add_action('woocommerce_checkout_before_customer_details', 'delyvax_check_checkout_weight');
 
-add_action( 'woocommerce_payment_complete', 'delyvax_payment_complete' );
+add_action( 'woocommerce_payment_complete', 'delyvax_payment_complete');
 add_action( 'woocommerce_order_status_changed', 'delyvax_order_confirmed', 10, 3 );
 add_filter( 'woocommerce_cod_process_payment_order_status', 'delyvax_change_cod_payment_order_status', 10, 2 );
 
-add_action( 'widgets_init', 'delyvax_webhook_subscribe' );
-add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking' );
+add_action( 'widgets_init', 'delyvax_webhook_subscribe');
+add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking');
 
 
 function delyvax_check_cart_weight(){
@@ -23,11 +23,11 @@ function delyvax_check_cart_weight(){
     $max_weight = 10000; // kg
 
     if($weight < $min_weight){
-        wc_add_notice( sprintf( __( 'You have %s kg weight and we allow minimum ' . $min_weight . '  kg of weight per order. Increase the cart weight by adding more items to proceed checkout.', 'woocommerce' ), $weight ), 'error' );
+        wc_add_notice( sprintf( __( 'You have %s kg weight and we allow minimum ' . $min_weight . '  kg of weight per order. Increase the cart weight by adding more items to proceed checkout.', 'woocommerce' ), $weight ), 'error');
     }
 
     if($weight > $max_weight){
-        wc_add_notice( sprintf( __( 'You have %s kg weight and we allow maximum' . $max_weight . '  kg of weight per order. Reduce the cart weight by removing some items to proceed checkout.', 'woocommerce' ), $weight ), 'error' );
+        wc_add_notice( sprintf( __( 'You have %s kg weight and we allow maximum' . $max_weight . '  kg of weight per order. Reduce the cart weight by removing some items to proceed checkout.', 'woocommerce' ), $weight ), 'error');
     }
 }
 
@@ -98,7 +98,7 @@ function delyvaxRequest() {
 
 
 function delyvax_payment_complete( $order_id ){
-    $settings = get_option( 'woocommerce_delyvax_settings' );
+    $settings = get_option( 'woocommerce_delyvax_settings');
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
@@ -110,7 +110,7 @@ function delyvax_payment_complete( $order_id ){
 }
 
 function delyvax_change_cod_payment_order_status( $order_status, $order ) {
-    $settings = get_option( 'woocommerce_delyvax_settings' );
+    $settings = get_option( 'woocommerce_delyvax_settings');
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
@@ -123,7 +123,7 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
 }
 
 function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
-    $settings = get_option( 'woocommerce_delyvax_settings' );
+    $settings = get_option( 'woocommerce_delyvax_settings');
 
     if ($settings['create_shipment_on_confirm'] == 'yes')
     {
@@ -171,8 +171,8 @@ function delyvax_create_order($order, $user) {
             include_once 'includes/delyvax-api.php';
         }
 
-        $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
-        $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
+        $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
+        $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
 
         if($DelyvaXOrderID == null && $DelyvaXTrackingCode == null)
         {
@@ -260,7 +260,7 @@ function delyvax_post_create_order($order, $user) {
       {
           $delivery_date = new DateTime('@' .$order->get_meta( 'delivery_date' ));
           $delivery_date->setTimezone($dtimezone);
-          // $delivery_type = $order->get_meta( 'delivery_type' );
+          // $delivery_type = $order->get_meta( 'delivery_type');
       }
       // $delivery_date->format('d-m-Y H:i:s');
       // echo '<br>';
@@ -270,7 +270,7 @@ function delyvax_post_create_order($order, $user) {
       // echo '<br>';
       if($order->get_meta( 'delivery_time' ) != null)
       {
-          $w_delivery_time = $order->get_meta( 'delivery_time' ); //1440 minutes / 24
+          $w_delivery_time = $order->get_meta( 'delivery_time'); //1440 minutes / 24
           // echo '<br>';
 
           $a_delivery_time = explode(",",$w_delivery_time);
@@ -314,7 +314,7 @@ function delyvax_post_create_order($order, $user) {
       // echo '<br>';
       if($order->get_meta( 'delivery_type' ) != null)
       {
-          $delivery_type = $order->get_meta( 'delivery_type' );
+          $delivery_type = $order->get_meta( 'delivery_type');
       }
       // echo $delivery_type;
 
@@ -403,14 +403,15 @@ function delyvax_post_create_order($order, $user) {
               {
                   $sub_order = wc_get_order($sub->ID);
 
-                  $store_name = 'N/A';
-                  $store_phone = '-';
+                  $product_store_name = 'N/A';
+
                   if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
                   {
                       $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
                       $store_info = dokan_get_store_info( $seller_id );
 
                       // echo '<pre>'.print_r($store_info).'</pre>';
+                      $product_store_name = $store_info['store_name'];
 
                       $store_name = $store_info['store_name'];
                       $store_first_name = $store_info['first_name'];
@@ -459,7 +460,7 @@ function delyvax_post_create_order($order, $user) {
                               "unit" => "kg"
                           ),
                           "quantity" => $quantity,
-                          "description" => '[Store: '.$store_name.'] '.$product_name
+                          "description" => '[Store: '.$product_store_name.'] '.$product_name
                       );
 
                       $total_weight = $total_weight + ($product->get_weight()*$quantity);
@@ -488,14 +489,15 @@ function delyvax_post_create_order($order, $user) {
                   $type = $item->get_type();
 
                   //get seller info
-                  $store_name = 'N/A';
-                  $store_phone = '-';
+                  $product_store_name = 'N/A';
+
                   if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
                   {
                       $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
                       $store_info = dokan_get_store_info( $seller_id );
 
                       // echo '<pre>'.print_r($store_info).'</pre>';
+                      $product_store_name = $store_info['store_name'];
 
                       $store_name = $store_info['store_name'];
                       $store_first_name = $store_info['first_name'];
@@ -526,7 +528,7 @@ function delyvax_post_create_order($order, $user) {
                           "unit" => "kg"
                       ),
                       "quantity" => $quantity,
-                      "description" => '[Store: '.$store_name.'] '.$product_name
+                      "description" => '[Store: '.$product_store_name.'] '.$product_name
                   );
 
                   $total_weight = $total_weight + ($product->get_weight()*$quantity);
@@ -565,14 +567,15 @@ function delyvax_post_create_order($order, $user) {
               $type = $item->get_type();
 
               //get seller info
-              $store_name = 'N/A';
-              $store_phone = '-';
+              $product_store_name = 'N/A';
+
               if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
               {
                   $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
 
                   // echo '<pre>'.print_r($store_info).'</pre>';
+                  $product_store_name = $store_info['store_name'];
 
                   $store_name = $store_info['store_name'];
                   $store_first_name = $store_info['first_name'];
@@ -603,7 +606,7 @@ function delyvax_post_create_order($order, $user) {
                       "unit" => "kg"
                   ),
                   "quantity" => $quantity,
-                  "description" => '[Store: '.$store_name.'] '.$product_name
+                  "description" => '[Store: '.$product_store_name.'] '.$product_name
               );
 
               $total_weight = $total_weight + ($product->get_weight()*$quantity);
@@ -631,15 +634,15 @@ function delyvax_post_create_order($order, $user) {
       if($store_name == null) $store_name = $order->get_shipping_first_name().' '.$order->get_shipping_last_name();
       if($store_email == null) $store_email = $order->get_billing_email();
       if($store_phone == null) $store_phone = $order->get_billing_phone();
-      if($store_address_1 == null) $store_address_1     = get_option( 'woocommerce_store_address' );
-      if($store_address_2 == null) $store_address_2   = get_option( 'woocommerce_store_address_2' );
-      if($store_city == null) $store_city        = get_option( 'woocommerce_store_city' );
-      if($store_postcode == null) $store_postcode    = get_option( 'woocommerce_store_postcode' );
+      if($store_address_1 == null) $store_address_1     = get_option( 'woocommerce_store_address');
+      if($store_address_2 == null) $store_address_2   = get_option( 'woocommerce_store_address_2');
+      if($store_city == null) $store_city        = get_option( 'woocommerce_store_city');
+      if($store_postcode == null) $store_postcode    = get_option( 'woocommerce_store_postcode');
 
       // The country/state
       if($store_country == null)
       {
-          $store_raw_country = get_option( 'woocommerce_default_country' );
+          $store_raw_country = get_option( 'woocommerce_default_country');
 
           // Split the country/state
           $split_country = explode( ":", $store_raw_country );
@@ -741,7 +744,7 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
 
 //subscribe to webhook here or when save the settings ?
 function delyvax_webhook_subscribe() {
-    $settings = get_option( 'woocommerce_delyvax_settings' );
+    $settings = get_option( 'woocommerce_delyvax_settings');
 
     if ($settings['api_webhook_enable'] == 'yes') {
 
@@ -810,7 +813,7 @@ function delyvax_webhook_get_tracking()
 
             if( isset($data['orderId']) && isset($data['consignmentNo']) && isset($data['statusCode']) )
             {
-                $settings = get_option( 'woocommerce_delyvax_settings' );
+                $settings = get_option( 'woocommerce_delyvax_settings');
 
                 if ($settings['change_order_status'] == 'yes') {
 
@@ -834,7 +837,7 @@ function delyvax_webhook_get_tracking()
 
                       for($i=0; $i < sizeof($orders); $i++)
                       {
-                          $order = new WC_Order($orders[$i]->get_id());
+                          $order = wc_get_order($orders[$i]->get_id());
 
                           echo 'order_id'.$orders[$i]->get_id();
                           echo 'status'.$order->get_status();
@@ -847,11 +850,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('courier-accepted') )
                                   {
                                       echo 'courier-accepted';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('courier-accepted', 'Order status changed to Courier accepted.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                      $order->update_status('wc-courier-accepted', 'Order status changed to Courier accepted.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('courier-accepted');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else if($statusCode == 400)
@@ -862,11 +876,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('start-collecting') )
                                   {
                                       echo 'start-collecting';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('start-collecting', 'Order status changed to Pending pick up.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                      $order->update_status('wc-start-collecting', 'Order status changed to Pending pick up.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('start-collecting');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else if($statusCode == 475)
@@ -877,11 +902,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('failed-collection') )
                                   {
                                       echo 'failed-collection';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('failed-collection', 'Order status changed to Pick up failed.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                      $order->update_status('wc-failed-collection', 'Order status changed to Pick up failed.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('failed-collection');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else if($statusCode == 500) // }else if($statusCode == 500)
@@ -892,11 +928,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('collected') )
                                   {
                                       echo 'collected';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('collected', 'Order status changed to Pick up complete.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to start_collecting' );
+                                      $order->update_status('wc-collected', 'Order status changed to Pick up complete.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('collected');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else if($statusCode == 600)
@@ -907,11 +954,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('start-delivery') )
                                   {
                                       echo 'start-delivery';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('start-delivery', 'Order status changed to On the way for delivery.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                      $order->update_status('wc-start-delivery', 'Order status changed to On the way for delivery.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('start-delivery');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else if($statusCode == 650)
@@ -922,11 +980,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('failed-delivery') )
                                   {
                                       echo 'failed-delivery';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('failed-delivery', 'Order status changed to Delivery failed.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                      $order->update_status('wc-failed-delivery', 'Order status changed to Delivery failed.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('failed-delivery');
+                                      //     }
+                                      // }
+                                      // //end update sub orders
                                   }
                               }
                           }else if($statusCode == 700 || $statusCode == 1000)
@@ -936,11 +1005,22 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('completed') )
                                   {
                                       echo 'completed';
-                                      // $order->set_status('completed', 'Order status changed to Completed', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('completed', 'Order status changed to Completed', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Completed' );
+                                      $order->update_status('wc-completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('completed');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else if($statusCode == 900)
@@ -951,16 +1031,27 @@ function delyvax_webhook_get_tracking()
                                   if( !$order->has_status('cancelled') )
                                   {
                                       echo 'cancelled';
-                                      // $order->set_status('collected', 'Order status changed to Collected.', true); // order note is optional, if you want to  add a note to order
+                                      // $order->set_status('collected', 'Order status changed to Collected.', false); // order note is optional, if you want to  add a note to order
                                       // $order->save();
 
-                                      $order->update_status('cancelled', 'Order status changed to Cancelled.', true); // order note is optional, if you want to  add a note to order
-                                      // $order->add_order_note( 'Order status changed to Driver On the way to the restaurant' );
+                                      $order->update_status('wc-cancelled', 'Order status changed to Cancelled.', false); // order note is optional, if you want to  add a note to order
+
+                                      //start update sub orders
+                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                                      //
+                                      // if ( $sub_orders ) {
+                                      //     foreach ($sub_orders as $sub)
+                                      //     {
+                                      //         $sub_order = wc_get_order($sub->ID);
+                                      //         $sub_order->update_status('cancelled');
+                                      //     }
+                                      // }
+                                      //end update sub orders
                                   }
                               }
                           }else
                           {
-                              // $order->update_status('cancelled', 'Order status changed to Cancelled', true); // order note is optional, if you want to  add a note to order
+                              // $order->update_status('wc-cancelled', 'Order status changed to Cancelled', false); // order note is optional, if you want to  add a note to order
                               echo 'else';
                           }
                           echo $order->get_status();
@@ -976,7 +1067,7 @@ function delyvax_webhook_get_tracking()
 
 // Register new status
 function delyvax_register_order_statuses() {
-    register_post_status( 'preparing', array(
+    register_post_status( 'wc-preparing', array(
         'label'                     => _x('Preparing', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -984,7 +1075,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Preparing (%s)', 'Preparing (%s)' )
     ) );
-    register_post_status( 'ready-to-collect', array(
+    register_post_status( 'wc-ready-to-collect', array(
         'label'                     => _x('Ready to collect', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -992,7 +1083,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Ready to collect (%s)', 'Ready to collect (%s)' )
     ) );
-    register_post_status( 'courier-accepted', array(
+    register_post_status( 'wc-courier-accepted', array(
         'label'                     => _x('Courier accepted', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1001,7 +1092,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Courier accepted (%s)', 'Courier accepted (%s)' )
         // 'label_count'               => _n_noop( 'Courier accepted class="count">(%s)</span>', 'Courier accepted <span class="count">(%s)</span>' )
     ) );
-    register_post_status( 'start-collecting', array(
+    register_post_status( 'wc-start-collecting', array(
         'label'                     => _x('Pending pick up', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1009,7 +1100,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Pending pick up (%s)', 'Pending pick up (%s)' )
     ) );
-    register_post_status( 'collected', array(
+    register_post_status( 'wc-collected', array(
         'label'                     => _x('Pick up complete', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1017,7 +1108,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Pick up complete (%s)', 'Pick up complete (%s)' )
     ) );
-    register_post_status( 'failed-collection', array(
+    register_post_status( 'wc-failed-collection', array(
         'label'                     => _x('Pick up failed', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1025,7 +1116,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Pick up failed (%s)', 'Pick up failed (%s)' )
     ) );
-    register_post_status( 'start-delivery', array(
+    register_post_status( 'wc-start-delivery', array(
         'label'                     => _x('On the way for delivery', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1033,7 +1124,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'On the way for delivery (%s)', 'On the way for delivery (%s)' )
     ) );
-    register_post_status( 'failed-delivery', array(
+    register_post_status( 'wc-failed-delivery', array(
         'label'                     => _x('Delivery failed', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1041,7 +1132,7 @@ function delyvax_register_order_statuses() {
         'show_in_admin_status_list' => true,
         'label_count'               => _n_noop( 'Delivery failed (%s)', 'Delivery failed (%s)' )
     ) );
-    register_post_status( 'request-refund', array(
+    register_post_status( 'wc-request-refund', array(
         'label'                     => _x('Request refund', 'woocommerce' ),
         'public'                    => true,
         'exclude_from_search'       => false,
@@ -1050,17 +1141,17 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Request refund (%s)', 'Request refund (%s)' )
     ) );
 }
-add_action( 'init', 'delyvax_register_order_statuses' );
+add_action( 'init', 'delyvax_register_order_statuses');
 
-//
-// add_filter( 'woocommerce_reports_order_statuses', 'include_custom_order_status_to_reports', 20, 1 );
-// function include_custom_order_status_to_reports( $statuses ){
-//     // Adding the custom order status to the 3 default woocommerce order statuses
-//     return array( 'preparing', 'ready-to-collect', 'courier-accepted',
-//       'start-collecting', 'collected', 'failed-collection',
-//       'start-delivery', 'failed-delivery', 'request-refund'
-//     );
-// }
+
+add_filter( 'woocommerce_reports_order_statuses', 'include_custom_order_status_to_reports', 20, 1 );
+function include_custom_order_status_to_reports( $statuses ){
+    // Adding the custom order status to the 3 default woocommerce order statuses
+    return array( 'wc-preparing', 'wc-ready-to-collect', 'wc-courier-accepted',
+      'wc-start-collecting', 'wc-collected', 'wc-failed-collection',
+      'wc-start-delivery', 'wc-failed-delivery', 'wc-request-refund'
+    );
+}
 
 // Add to list of WC Order statuses
 // Add custom status to order edit page drop down (and displaying orders with this custom status in the list)
@@ -1073,21 +1164,21 @@ function delyvax_add_to_order_statuses( $order_statuses ) {
         $new_order_statuses[ $key ] = $status;
 
         if ( 'wc-processing' === $key ) {
-            $new_order_statuses['wc-preparing'] = _x('Preparing', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-ready-to-collect'] = _x('Ready to collect', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-courier-accepted'] = _x('Courier accepted', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-start-collecting'] = _x('Pending pick up', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-collected'] = _x('Pick up complete', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-failed-collection'] = _x('Pick up failed', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-start-delivery'] = _x('On the way for delivery', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-failed-delivery'] = _x('Delivery failed', 'Order status', 'woocommerce' );
-            $new_order_statuses['wc-request-refund'] = _x('Request refund', 'Order status', 'woocommerce' );
+            $new_order_statuses['wc-preparing'] = _x('Preparing', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-ready-to-collect'] = _x('Ready to collect', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-courier-accepted'] = _x('Courier accepted', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-start-collecting'] = _x('Pending pick up', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-collected'] = _x('Pick up complete', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-failed-collection'] = _x('Pick up failed', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-start-delivery'] = _x('On the way for delivery', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-failed-delivery'] = _x('Delivery failed', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-request-refund'] = _x('Request refund', 'Order status', 'woocommerce');
         }
     }
 
     return $new_order_statuses;
 }
-add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses' );
+add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses');
 //
 
 // Adding custom status  to admin order list bulk actions dropdown
@@ -1100,15 +1191,15 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
 
         if ('mark_processing' === $key)
         {
-            $new_actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce' );
-            $new_actions['mark_ready-to-collect'] = __( 'Mark as Ready to collect', 'woocommerce' );
-            $new_actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce' );
-            $new_actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce' );
-            $new_actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce' );
-            $new_actions['mark_failed-collection'] = __( 'Mark as Pick up failed', 'woocommerce' );
-            $new_actions['mark_start-delivery'] = __( 'Mark as On the way for delivery', 'woocommerce' );
-            $new_actions['mark_failed-delivery'] = __( 'Mark as Delivery failed', 'woocommerce' );
-            $new_actions['mark_request-refund'] = __( 'Mark as Request refund', 'woocommerce' );
+            $new_actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce');
+            $new_actions['mark_ready-to-collect'] = __( 'Mark as Ready to collect', 'woocommerce');
+            $new_actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce');
+            $new_actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce');
+            $new_actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce');
+            $new_actions['mark_failed-collection'] = __( 'Mark as Pick up failed', 'woocommerce');
+            $new_actions['mark_start-delivery'] = __( 'Mark as On the way for delivery', 'woocommerce');
+            $new_actions['mark_failed-delivery'] = __( 'Mark as Delivery failed', 'woocommerce');
+            $new_actions['mark_request-refund'] = __( 'Mark as Request refund', 'woocommerce');
         }
     }
 

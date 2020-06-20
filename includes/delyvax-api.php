@@ -158,6 +158,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               echo '-----------------------------------';
               echo json_encode($response['body']);
               echo '-----------------------------------';
+              echo json_encode($body['data']);
+              echo '-----------------------------------';
               // exit;
 
               if (is_wp_error($response)) {
@@ -169,8 +171,9 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   }
               } else {
                   if ($response['response']['code'] == 200) {
-                      $body = json_decode($response['body'], true);
-                      return $body;
+                    $body = json_decode($response['body'], true);
+                    // return $body['data'];
+                    return $body;
                   } else {
                       throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                   }

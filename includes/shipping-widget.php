@@ -37,6 +37,29 @@ function ShowBox( $post ) {
 		$trackUrl = 'https://'.$company_code.'.delyva.app/customer/track/&trackingNo='.$TrackingCode;
 		$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$DelyvaXOrderID.'/label?companyId='.$company_id;
 
+		print_r($order);
+
+		echo json_encode($order);
+
+		// echo $order->get_status();
+		// // $order->update_status('completed');
+		// $order->set_status('completed');
+		// $order->save();
+		// $order = wc_get_order ( $post->ID );
+		// echo $order->get_status();
+
+		//start update sub orders
+		// $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+		//
+		// if ( $sub_orders ) {
+		// 		foreach ($sub_orders as $sub)
+		// 		{
+		// 				$sub_order = wc_get_order($sub->ID);
+		// 				$sub_order->update_status($order->get_status());
+		// 		}
+		// }
+		//
+
     if ($TrackingCode == 'Service Unavailable') {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         echo "<div><p>Failed to create shipment in ".$company_name.", you can try again by changing order status to <b>Preparing</b></p></div>";
