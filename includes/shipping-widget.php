@@ -31,6 +31,8 @@ function ShowBox( $post ) {
 				$company_name = 'DelyvaX';
 		}
 
+		
+
 		$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
 		$TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
 
