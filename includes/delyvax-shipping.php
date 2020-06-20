@@ -175,6 +175,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
       {
             // print_r($package);
 
+            $status_allow_checkout = true;
+
             $pdestination = $package["destination"];
             $items = array();
             $product_factory = new WC_Product_Factory();
@@ -309,6 +311,11 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             // print_r($origin);
 
+            if($pdestination["postcode"] == '' || $pdestination["state"] == '' || $pdestination["country"] == '')
+            {
+                $status_allow_checkout = false;
+            }
+
             $destination = array(
                 "address1" => $pdestination["address"],
                 "address2" => $pdestination["address_2"],
@@ -365,9 +372,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                             'service_code' => $shipper['service']['code'],
                         ),
                     );
-                    // Register the rate
-                    wp_cache_add('delyvax' . $rate["id"], $rate);
-                    $this->add_rate($rate);
+
+                    if($status_allow_checkout)
+                    {
+                        // Register the rate
+                        wp_cache_add('delyvax' . $rate["id"], $rate);
+                        $this->add_rate($rate);
+                    }
                 }
             }
             //end DelyvaX API
