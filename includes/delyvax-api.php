@@ -387,7 +387,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 "cn" => $consignmentNo,
                 "price" => $price,
                 'waypoint' => $waypoints,
-                'note' => $order_notes
+                "note" => $order_notes
             ];
 
             $response = wp_remote_post($url, array(
@@ -400,8 +400,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'timeout' => 25
             ));
 
-            // echo '-----------------------------------';
-            // echo json_encode($postRequestArr);
+            echo '-----------------------------------';
+            echo json_encode($postRequestArr);
             echo '-----------------------------------';
             echo json_encode($response['body']);
             echo '-----------------------------------';

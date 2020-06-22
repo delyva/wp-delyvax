@@ -921,7 +921,11 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
                                       //     "lon" => ""
                                       // )
                                   ),
-                                  "note"=> $order_notes
+                                  "note"=> $order_notes,
+                                  "flag" => array(
+                                      "confirmFeedback" => false,
+                                      "confirmSignature" => false,
+                                  )
                               ));
 
                               //
