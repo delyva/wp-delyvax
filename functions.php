@@ -211,11 +211,6 @@ function delyvax_post_create_order($order, $user) {
       $delivery_date = new DateTime();
       $delivery_date->setTimezone($dtimezone);
 
-      if($processing_days > 0)
-      {
-          $delivery_date->modify('+'.$processing_days.' day');
-      }
-
       $delivery_date->format('d-m-Y H:i:s');
       // echo '<br>';
       if($order->get_meta( 'delivery_date' ) != null)
@@ -223,15 +218,22 @@ function delyvax_post_create_order($order, $user) {
           $delivery_date = new DateTime('@' .$order->get_meta( 'delivery_date' ));
           $delivery_date->setTimezone($dtimezone);
           // $delivery_type = $order->get_meta( 'delivery_type');
+      }else if($processing_days > 0)
+      {
+          $delivery_date->modify('+'.$processing_days.' day');
+      }else {
+          $delivery_date->modify('+1 day');
       }
       // $delivery_date->format('d-m-Y H:i:s');
       // echo '<br>';
 
       // echo $delivery_time = '08:00'; //8AM
-      if($processing_hours > 0)
-      {
-          $delivery_time = date("H", strtotime("+".$processing_hours." hours"));
-      }
+
+      $timeslot_from_hour = 0;
+      $timeslot_from_min = 0;
+
+      $timeslot_to_hour = 0;
+      $timeslot_to_min = 0;
 
       // echo '<br>';
       if($order->get_meta( 'delivery_time' ) != null)
@@ -249,12 +251,6 @@ function delyvax_post_create_order($order, $user) {
           {
               $timeslot_from = $a_delivery_time[0]/60;
               $timeslot_to = $a_delivery_time[1]/60;
-
-              $timeslot_from_hour = 0;
-              $timeslot_from_min = 0;
-
-              $timeslot_to_hour = 0;
-              $timeslot_to_min = 0;
 
               if ( strpos( $timeslot_from, "." ) !== false ) {
                   $timeslot_from_hour = $timeslot_from - 0.5;
@@ -274,6 +270,11 @@ function delyvax_post_create_order($order, $user) {
 
               $timeslot = $timeslot_from_hour.':'.$timeslot_from_min.' - '.$timeslot_to_hour.':'.$timeslot_to_min.' (24H)';
           }
+      }else if($processing_hours > 0)
+      {
+          $timeslot_from_hour = date("H", strtotime("+".$processing_hours." hours"));
+      }else {
+          $timeslot_from_hour = date("H", strtotime("+24 hours"));
       }
 
       $delivery_type = 'delivery';
@@ -292,8 +293,10 @@ function delyvax_post_create_order($order, $user) {
       // echo $delivery_date->format('d-m-Y H:i');
       // echo '<br>';
 
-      // $scheduledAt = $scheduledAt->format('c');
+      // date("H", strtotime("+2 hours"));
       // echo '<br>';
+
+      // $scheduledAt = $scheduledAt->format('c');
 
       // echo $scheduledAt->format('d/m/Y H:i:s');
       // echo $scheduledAt->format('Y-m-d H:i:s');
