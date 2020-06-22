@@ -178,53 +178,6 @@ function delyvax_create_order($order, $user) {
         {
             // $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
             $resultCreate = delyvax_post_create_order($order, $user);
-
-            if($resultCreate)
-            {
-                  $shipmentId = $resultCreate["id"];
-
-                  // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
-                  $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
-
-                  if($resultProcess)
-                  {
-                      $trackingNo = $resultProcess["consignmentNo"];
-
-                      //save tracking no into order to all parent order and suborders
-                      if($order->parent_id)
-                      {
-                          $main_order = wc_get_order($order->parent_id);
-
-                          $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                          $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                          $main_order->save();
-
-                          // update $sub_orders
-                          $sub_orders = get_children( array( 'post_parent' => $order_id, 'post_type' => 'shop_order' ) );
-
-                          if ( $sub_orders ) {
-                              $proceed_create_order = true;
-
-                              foreach ($sub_orders as $sub)
-                              {
-                                  $sub_order = wc_get_order($sub->ID);
-
-                                  $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                                  $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                                  $sub_order->save();
-                              }
-                          }
-                          //
-                      }else {
-                          $main_order = $order;
-
-                          $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                          $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                          $main_order->save();
-                      }
-                      ///
-                  }
-            }
         }
         // exit;
     } catch (Exception $e) {
@@ -235,6 +188,15 @@ function delyvax_create_order($order, $user) {
 
 //rewire logic here, API is only for post
 function delyvax_post_create_order($order, $user) {
+      $settings = get_option( 'woocommerce_delyvax_settings' );
+
+      $company_id = $settings['company_id'];
+      $user_id = $settings['user_id'];
+      $customer_id = $settings['customer_id'];
+      $api_token = $settings['api_token'];
+      $processing_days = $settings['processing_days'];
+      $processing_hours = $settings['processing_hours'];
+
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
       $gmtoffset = get_option('gmt_offset');
       // echo '<br>';
@@ -266,7 +228,11 @@ function delyvax_post_create_order($order, $user) {
       // echo '<br>';
 
       // echo $delivery_time = '08:00'; //8AM
-      $delivery_time = date("H", strtotime("+2 hours"));
+      if($processing_hours > 0)
+      {
+          $delivery_time = date("H", strtotime("+".$processing_hours." hours"));
+      }
+
       // echo '<br>';
       if($order->get_meta( 'delivery_time' ) != null)
       {
@@ -321,7 +287,7 @@ function delyvax_post_create_order($order, $user) {
       // $my_date_time = date("Y-m-d H:i:s", strtotime("+1 hours"));
 
       $scheduledAt = $delivery_date;
-      $scheduledAt->setTime($delivery_time,00,00);
+      $scheduledAt->setTime($timeslot_from_hour,$timeslot_from_min,00);
 
       // echo $delivery_date->format('d-m-Y H:i');
       // echo '<br>';
@@ -707,7 +673,78 @@ function delyvax_post_create_order($order, $user) {
         "currency" => $codCurrency
       );
 
-      return $resultCreate = DelyvaX_Shipping_API::postCreateOrder($origin, $destination, $serviceCode, $order_notes, $cod);
+      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($origin, $destination, $serviceCode, $order_notes, $cod);
+
+      if($resultCreate)
+      {
+            $shipmentId = $resultCreate["id"];
+
+            // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
+            $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
+
+            if($resultProcess)
+            {
+                $trackingNo = $resultProcess["consignmentNo"];
+
+                //save tracking no into order to all parent order and suborders
+                if($order->parent_id)
+                {
+                    $main_order = wc_get_order($order->parent_id);
+
+                    $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                    $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                    $main_order->save();
+
+                    // update $sub_orders
+                    $sub_orders = get_children( array( 'post_parent' => $order_id, 'post_type' => 'shop_order' ) );
+
+                    if ( $sub_orders ) {
+                        $proceed_create_order = true;
+
+                        $x = 0;
+                        foreach ($sub_orders as $sub)
+                        {
+                            $sub_order = wc_get_order($sub->ID);
+
+                            $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                            $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                            $sub_order->save();
+
+                            $consignmentNo = $trackingNo."-".($x+1);
+
+                            //create task
+                            delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
+                            //
+
+                            $x++;
+                        }
+                    }else {
+                        $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                        $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                        $main_order->save();
+
+                        $consignmentNo = $trackingNo."-1";
+
+                        //create task
+                        delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
+                        //
+                    }
+                    //
+                }else {
+                    $main_order = $order;
+
+                    $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                    $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                    $main_order->save();
+
+                    $consignmentNo = $trackingNo."-1";
+
+                    //create tasks if split tasks
+                    delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
+                    //end
+                }
+            }
+      }
 }
 
 //rewire logic here, API is only for post
@@ -741,6 +778,177 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
 
       return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($shipmentId, $serviceCode);
 }
+
+
+//get driver by extId = 1926
+function delyvax_get_personnel($extIdType, $extId) {
+    $driver = null;
+
+    try {
+        //create order
+        //start DelyvaX API
+        if (!class_exists('DelyvaX_Shipping_API')) {
+            include_once 'includes/delyvax-api.php';
+        }
+
+        $result = DelyvaX_Shipping_API::getDrivers($extIdType, $extId);
+
+        if($result)
+        {
+            $driver = $result;
+        }
+    } catch (Exception $e) {
+        print_r($e);
+        // exit;
+    }
+    return $driver;
+}
+
+//create task
+
+//1926
+
+function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduledAt) {
+    try {
+        $settings = get_option( 'woocommerce_delyvax_settings');
+
+        //create task
+        //start DelyvaX API
+        if (!class_exists('DelyvaX_Shipping_API')) {
+            include_once 'includes/delyvax-api.php';
+        }
+
+        //if split_tasks
+        if($settings['split_tasks'] == 'yes')
+        {
+              //get driver
+              if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+              {
+                  // echo 'function_exists';
+
+                  $seller_id = dokan_get_seller_id_by_order($order->get_id());
+                  $store_info = dokan_get_store_info( $seller_id );
+
+                  $product_store_name = $store_info['store_name'];
+
+                  if($seller_id)
+                  {
+                      $scheduledAt = $scheduledAt->sub(new DateInterval('PT30M'));
+
+                      $extIdType = null;
+                      if(isset($settings['ext_id_type']))
+                      {
+                          $extIdType = $settings['ext_id_type'];
+                      }
+
+                      $driver = delyvax_get_personnel($extIdType, $seller_id);
+
+                      if($driver)
+                      {
+                          $driver_id = $driver["id"];
+
+                          if($driver_id)
+                          {
+                              $inventories = array();
+
+                              $order_notes = 'Order No: #'.$order->get_id().' <br>';
+                              $order_notes = $order_notes.'Date Time: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
+                              $order_notes = $order_notes.'Time slot: '.$scheduledAt->format('H:i').'';
+
+                              $count = 0;
+
+                              foreach ( $order->get_items() as $item )
+                              {
+                                  $product_id = $item->get_product_id();
+                                  $product_variation_id = $item->get_variation_id();
+                                  $product = $item->get_product();
+                                  $product_name = $item->get_name();
+                                  $quantity = $item->get_quantity();
+                                  $subtotal = $item->get_subtotal();
+                                  $total = $item->get_total();
+                                  $tax = $item->get_subtotal_tax();
+                                  $taxclass = $item->get_tax_class();
+                                  $taxstat = $item->get_tax_status();
+                                  $allmeta = $item->get_meta_data();
+                                  // $somemeta = $item->get_meta( '_whatever', true );
+                                  $type = $item->get_type();
+
+                                  $_pf = new WC_Product_Factory();
+
+                                  $product = $_pf->get_product($product_id);
+
+                                  $inventories[$count] = array(
+                                      "name" => $product_name,
+                                      "type" => "PARCEL", //$type PARCEL / FOOD
+                                      "price" => array(
+                                          "amount" => $total,
+                                          "currency" => $order->get_currency(),
+                                      ),
+                                      "weight" => array(
+                                          "value" => ($product->get_weight()*$quantity),
+                                          "unit" => "kg"
+                                      ),
+                                      "quantity" => $quantity,
+                                      "description" => '[Store: '.$product_store_name.'] '.$product_name
+                                  );
+
+                                  $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                                  $total_price = $total_price + $total;
+
+                                  // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+
+                                  $count++;
+                              }
+
+                              //for task
+                              $waypoints = array(array(
+                                  "type" => "dropoff",
+                                  "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
+                                  "inventory" => $inventories,
+                                  "contact" => array(
+                                      "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
+                                      "email" => $order->get_billing_email(),
+                                      "phone" => $order->get_billing_phone(),
+                                      "mobile" => $order->get_billing_phone(),
+                                      "address1" => $order->get_shipping_address_1(),
+                                      "address2" => $order->get_shipping_address_2(),
+                                      "city" => $order->get_shipping_city(),
+                                      "state" => $order->get_shipping_state(),
+                                      "postcode" => $order->get_shipping_postcode(),
+                                      "country" => $order->get_shipping_country(),
+                                      // "coord" => array(
+                                      //     "lat" => "",
+                                      //     "lon" => ""
+                                      // )
+                                  ),
+                                  "note"=> $order_notes
+                              ));
+
+                              //
+                              $price = array(
+                                  "amount" => 0,
+                                  "currency" => $order->get_currency(),
+                              );
+
+                              //create and assign task
+                              $resultPostCreateTask = DelyvaX_Shipping_API::postCreateTask($shipmentId, $trackingNo, $waypoints, $price, $driver_id, $order_notes);
+
+                              print_r($resultPostCreateTask);
+
+                              //
+                          }
+                      }
+                  }
+              }
+        }
+        //end
+    } catch (Exception $e) {
+        print_r($e);
+    }
+    // exit;
+}
+
+
 
 //subscribe to webhook here or when save the settings ?
 function delyvax_webhook_subscribe() {
@@ -822,7 +1030,7 @@ function delyvax_webhook_get_tracking()
                       $companyId = $data['companyId'];
                       $shipmentId = $data['orderId'];
                       $consignmentNo = $data['consignmentNo'];
-                      echo $statusCode = $data['statusCode'];
+                      $statusCode = $data['statusCode'];
 
                       global $woocommerce;
 
@@ -853,8 +1061,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'courier-accepted';
 
-                                      // $order->update_status('wc-courier-accepted', 'Order status changed to Courier accepted.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('courier-accepted');
+                                      $order->update_status('courier-accepted', 'Order status changed to Courier accepted.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('courier-accepted');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-courier-accepted']);
 
@@ -882,8 +1090,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'start-collecting';
 
-                                      // $order->update_status('wc-start-collecting', 'Order status changed to Pending pick up.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('start-collecting');
+                                      $order->update_status('start-collecting', 'Order status changed to Pending pick up.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('start-collecting');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-start-collecting']);
 
@@ -910,8 +1118,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'failed-collection';
 
-                                      // $order->update_status('wc-failed-collection', 'Order status changed to Pick up failed.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('failed-collection');
+                                      $order->update_status('failed-collection', 'Order status changed to Pick up failed.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('failed-collection');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-failed-collection']);
 
@@ -938,8 +1146,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'collected';
 
-                                      // $order->update_status('wc-collected', 'Order status changed to Pick up complete.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('collected');
+                                      $order->update_status('collected', 'Order status changed to Pick up complete.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('collected');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-collected']);
 
@@ -966,8 +1174,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'start-delivery';
 
-                                      // $order->update_status('wc-start-delivery', 'Order status changed to On the way for delivery.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('start-delivery');
+                                      $order->update_status('start-delivery', 'Order status changed to On the way for delivery.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('start-delivery');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-start-delivery']);
 
@@ -994,8 +1202,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'failed-delivery';
 
-                                      // $order->update_status('wc-failed-delivery', 'Order status changed to Delivery failed.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('failed-delivery');
+                                      $order->update_status('failed-delivery', 'Order status changed to Delivery failed.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('failed-delivery');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-failed-delivery']);
 
@@ -1021,8 +1229,8 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'completed';
 
-                                      // $order->update_status('wc-completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('completed');
+                                      $order->update_status('completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('completed');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-completed']);
 
@@ -1049,10 +1257,7 @@ function delyvax_webhook_get_tracking()
                                   {
                                       echo 'cancelled';
 
-                                      // $order->update_status('wc-cancelled', 'Order status changed to Cancelled.', false); // order note is optional, if you want to  add a note to order
-                                      $order->update_status('wc-cancelled');
-                                      $order->set_status('wc-cancelled');
-                                      $order->save();
+                                      $order->update_status('cancelled', 'Order status changed to Cancelled.', false); // order note is optional, if you want to  add a note to order
 
                                       //start update sub orders
                                       $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
@@ -1062,6 +1267,7 @@ function delyvax_webhook_get_tracking()
                                           {
                                               $sub_order = wc_get_order($sub->ID);
                                               $sub_order->update_status('cancelled');
+                                              wp_update_post(['ID' => $sub->ID, 'post_status' => 'cancelled']);
                                           }
                                       }
                                       //end update sub orders
@@ -1077,7 +1283,6 @@ function delyvax_webhook_get_tracking()
         }
     }
 }
-
 
 // Register new status
 function delyvax_register_order_statuses() {

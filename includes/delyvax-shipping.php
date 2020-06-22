@@ -137,6 +137,27 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'delyvax_processing_days',
                 'description' => __( 'Number of processing days. e.g. 0 - same day ship out; 1 - next day ship out.' ),
             ),
+            'processing_hours' => array(
+                'title'    	=> __( 'Processing hours', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('0', 'delyvax'),
+                'id' => 'delyvax_processing_hours',
+                'description' => __( 'Number of processing hours. e.g. 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
+            ),
+            'split_tasks' => array(
+                'title'    	=> __( 'Fulfilment by vendors', 'delyvax' ),
+                'id'       	=> 'delyvax_split_tasks',
+                'description'  	=> __( 'Create tasks and assign to vendors by ext id type and ext id', 'delyvax' ),
+                'type'     	=> 'checkbox',
+                'default'	=> ''
+            ),
+            'ext_id_type' => array(
+                'title'    	=> __( 'Personnel External ID Type', 'delyvax' ),
+                'type' => 'text',
+                'default'	=> '',
+                'id'       	=> 'delyvax_ext_id_type',
+                'description'  	=> __( 'Personnel External ID Type. e.g. dokan', 'delyvax' ),
+            ),
             // 'api_webhook_key' => array(
             //     'title' => __('API API Webhook Key', 'delyvax'),
             //     'type' => 'text',
