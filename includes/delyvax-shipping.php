@@ -144,6 +144,20 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'delyvax_processing_hours',
                 'description' => __( 'Number of processing hours. e.g. 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
             ),
+            'item_type' => array(
+                'title'    	=> __( 'Default Order - Item type', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('0', 'delyvax'),
+                'id' => 'delyvax_item_type',
+                'description' => __( 'Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
+            ),
+            'task_item_type' => array(
+                'title'    	=> __( 'Default Task - Item type', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('0', 'delyvax'),
+                'id' => 'delyvax_task_item_type',
+                'description' => __( 'Default task - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
+            ),
             'split_tasks' => array(
                 'title'    	=> __( 'Fulfilment by vendors', 'delyvax' ),
                 'id'       	=> 'delyvax_split_tasks',

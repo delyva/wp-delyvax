@@ -20,6 +20,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $customer_id = $settings['customer_id'];
             $api_token = $settings['api_token'];
             $processing_days = $settings['processing_days'];
+            $item_type = ($settings['item_type']) ? $settings['item_type'] : "PARCEL" ;
 
             $postRequestArr = [
                 // 'companyId' => $company_id,
@@ -28,7 +29,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'origin' => $origin,
                 'destination' => $destination,
                 "weight" => $weight,
-                "itemType" => "PARCEL",
+                "itemType" => $item_type,
                 // "cod" => $cod,
             ];
 
@@ -160,7 +161,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               echo '-----------------------------------';
               echo json_encode($body['data']);
               echo '-----------------------------------';
-              // exit;
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
