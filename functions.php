@@ -261,8 +261,7 @@ function set_pickup_delivery_time($order)
         $pickup_date = $delivery_date;
         $dx_pickup_date = $pickup_date->getTimestamp();
     }else {
-        $pickup_date = $delivery_date;
-        $dx_pickup_date = $pickup_date->getTimestamp();
+        $dx_pickup_date = $dx_delivery_date;
     }
 
     //set pickup time
@@ -793,13 +792,14 @@ function delyvax_get_personnel($extIdType, $extId) {
 }
 
 //create task
-
-//1926
-
 function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduledAt) {
     try {
         $settings = get_option( 'woocommerce_delyvax_settings');
         $item_type = ($settings['task_item_type']) ? $settings['task_item_type'] : "PARCEL" ;
+
+        $stimezone = get_option('timezone_string');
+
+        $dtimezone = new DateTimeZone($stimezone);
 
         //create task
         //start DelyvaX API
@@ -822,9 +822,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                   if($seller_id)
                   {
-                      //get pick up time TODO!
-
-                      $pickup_date = new DateTime('@'.$order->get_meta( 'dx_delivery_date' ));
+                      $pickup_date = new DateTime('@'.$order->get_meta( 'dx_pickup_date' ));
                       $pickup_date->setTimezone($dtimezone);
 
                       $pickup_time = $pickup_date;
