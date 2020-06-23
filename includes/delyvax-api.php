@@ -104,7 +104,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               echo '-----------------------------------';
               echo json_encode($response['body']);
               echo '-----------------------------------';
-              // exit;
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
@@ -336,13 +335,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'timeout' => 25
             ));
 
-            // echo '-----------------------------------';
-            // echo json_encode($postRequestArr);
-            // echo '-----------------------------------';
-            // echo json_encode($response['body']);
-            // echo '-----------------------------------';
-            // exit;
-
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
                 if ($error_message == 'fsocket timed out') {
@@ -405,7 +397,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             echo '-----------------------------------';
             echo json_encode($response['body']);
             echo '-----------------------------------';
-            // exit;
 
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
@@ -424,62 +415,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
             ///
         }
-
-        /**
-        public static function patchAssignTask($taskId, $driverId)
-        {
-            $url = Self::$api_endpoint . "/task/:taskId";
-
-            $url = str_replace(":taskId", $taskId, $url);
-
-            $settings = get_option( 'woocommerce_delyvax_settings' );
-
-            $company_id = $settings['company_id'];
-            $user_id = $settings['user_id'];
-            $customer_id = $settings['customer_id'];
-            $api_token = $settings['api_token'];
-            $processing_days = $settings['processing_days'];
-
-            $postRequestArr = [
-                "status" => "ASSIGN",
-                'driverId'=> $driverId
-            ];
-
-            $response = wp_remote_post($url, array(
-                'headers' => array(
-                  'content-type' => 'application/json',
-                  'X-Delyvax-Access-Token' => $api_token
-                ),
-                'body' => json_encode($postRequestArr),
-                'method' => 'PATCH',
-                'timeout' => 25
-            ));
-
-            echo '-----------------------------------';
-            echo json_encode($postRequestArr);
-            echo '-----------------------------------';
-            echo json_encode($response['body']);
-            echo '-----------------------------------';
-            // exit;
-
-            if (is_wp_error($response)) {
-                $error_message = $response->get_error_message();
-                if ($error_message == 'fsocket timed out') {
-                    throw new Exception("Sorry, unable to create shipment, please try again later");
-                } else {
-                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                }
-            } else {
-                if ($response['response']['code'] == 200) {
-                    $body = json_decode($response['body'], true);
-                    return $body['data'];
-                } else {
-                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                }
-            }
-            ///
-        }
-        **/
 
     }
 }

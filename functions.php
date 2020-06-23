@@ -22,9 +22,9 @@ function delyvax_check_cart_weight(){
     $min_weight = 0.1; // kg
     $max_weight = 10000; // kg
 
-    if($weight < $min_weight){
-        wc_add_notice( sprintf( __( 'You have %s kg weight and we allow minimum ' . $min_weight . '  kg of weight per order. Increase the cart weight by adding more items to proceed checkout.', 'default' ), $weight ), 'error');
-    }
+    // if($weight < $min_weight){
+    //     wc_add_notice( sprintf( __( 'You have %s kg weight and we allow minimum ' . $min_weight . '  kg of weight per order. Increase the cart weight by adding more items to proceed checkout.', 'default' ), $weight ), 'error');
+    // }
 
     if($weight > $max_weight){
         wc_add_notice( sprintf( __( 'You have %s kg weight and we allow maximum' . $max_weight . '  kg of weight per order. Reduce the cart weight by removing some items to proceed checkout.', 'default' ), $weight ), 'error');
@@ -259,13 +259,9 @@ function set_pickup_delivery_time($order)
     }else if($processing_days > 0)
     {
         $pickup_date = $delivery_date;
-        $pickup_date->modify('+'.$processing_days.' day');
-
         $dx_pickup_date = $pickup_date->getTimestamp();
     }else {
         $pickup_date = $delivery_date;
-        $pickup_date->modify('+1 day');
-
         $dx_pickup_date = $pickup_date->getTimestamp();
     }
 
@@ -319,10 +315,8 @@ function delyvax_create_order($order, $user) {
             // $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
             $resultCreate = delyvax_post_create_order($order, $user);
         }
-        // exit;
     } catch (Exception $e) {
         print_r($e);
-        // exit;
     }
 }
 
@@ -492,7 +486,7 @@ function delyvax_post_create_order($order, $user) {
 
                   $product = $_pf->get_product($product_id);
 
-                  echo $product_description = '[Store: '.$product_store_name.'] '.$product_name;
+                  echo $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$sub->ID;
 
                   $inventories[$count] = array(
                       "name" => $product_name,
@@ -569,7 +563,7 @@ function delyvax_post_create_order($order, $user) {
 
               $product = $_pf->get_product($product_id);
 
-              echo $product_description = '[Store: '.$product_store_name.'] '.$product_name;
+              echo $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
 
               $inventories[$count] = array(
                   "name" => $product_name,
@@ -603,8 +597,6 @@ function delyvax_post_create_order($order, $user) {
       {
           $codAmount = $main_order->get_total();
       }
-
-      // exit;
 
       //origin
       //Origin! -- hanlde multivendor, pickup address from vendor address or woocommerce address
@@ -710,7 +702,7 @@ function delyvax_post_create_order($order, $user) {
                     $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
                     $main_order->save();
 
-                    $x = 0;
+                    $count = 0;
                     foreach ($sub_orders as $sub)
                     {
                         $sub_order = wc_get_order($sub->ID);
@@ -719,13 +711,13 @@ function delyvax_post_create_order($order, $user) {
                         $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
                         $sub_order->save();
 
-                        $consignmentNo = $trackingNo."-".($x+1);
+                        $consignmentNo = $trackingNo."-".($count+1);
 
                         //create task
                         delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
                         //
 
-                        $x++;
+                        $count++;
                     }
                 }else {
                     $main_order = $order;
@@ -796,7 +788,6 @@ function delyvax_get_personnel($extIdType, $extId) {
         }
     } catch (Exception $e) {
         print_r($e);
-        // exit;
     }
     return $driver;
 }
@@ -889,7 +880,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                                   $product = $_pf->get_product($product_id);
 
-                                  echo $product_description = '[Store: '.$product_store_name.'] '.$product_name;
+                                  echo $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$order->get_id();
 
                                   $inventories[$count] = array(
                                       "name" => $product_name,
@@ -963,7 +954,6 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
     } catch (Exception $e) {
         print_r($e);
     }
-    // exit;
 }
 
 
@@ -1064,8 +1054,6 @@ function delyvax_webhook_get_tracking()
                       for($i=0; $i < sizeof($orders); $i++)
                       {
                           $order = wc_get_order($orders[$i]->get_id());
-                          // $order = WC_Order($orders[$i]->get_id());
-                          // $order = wc_update_order($orders[$i]->get_id());
 
                           echo 'order_id'.$orders[$i]->get_id();
                           echo 'status'.$order->get_status();
