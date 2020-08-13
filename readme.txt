@@ -1,5 +1,5 @@
 === delyvax ===
-Contributors: delyva
+Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 4.4
 Tested up to: 5.4
