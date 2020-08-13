@@ -19,7 +19,7 @@ add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_trackin
 
 function delyvax_check_cart_weight(){
     $weight = WC()->cart->get_cart_contents_weight();
-    $min_weight = 0.1; // kg
+    $min_weight = 0.000; // kg
     $max_weight = 10000; // kg
 
     // if($weight < $min_weight){
@@ -33,7 +33,7 @@ function delyvax_check_cart_weight(){
 
 function  delyvax_check_checkout_weight() {
     $weight = WC()->cart->get_cart_contents_weight();
-    $min_weight = 0.1; // kg
+    $min_weight = 0.000; // kg
     $max_weight = 10000; // kg
 
     if($weight < $min_weight) {
@@ -153,6 +153,7 @@ function set_pickup_delivery_time($order)
 
     $processing_days = $settings['processing_days'];
     $processing_hours = $settings['processing_hours'];
+    $pickup_minutes = $settings['pickup_minutes'];
 
     $gmtoffset = get_option('gmt_offset');
     $stimezone = get_option('timezone_string');
@@ -165,8 +166,6 @@ function set_pickup_delivery_time($order)
 
     $pickup_time = new DateTime();
     $pickup_time->setTimezone($dtimezone);
-
-    $dx_pickup_time = "00:00";
     //
 
     //
@@ -178,30 +177,47 @@ function set_pickup_delivery_time($order)
 
     $dx_delivery_date = null;
     $dx_delivery_time = null;
+    $dx_delivery_date_format = null;
 
     $dx_pickup_date = null;
     $dx_pickup_time = null;
-    //
+    $dx_pickup_date_format = null;
+
+    $delivery_type = null;
+
+    //pickup / delivery
+    $delivery_type = $order->get_meta( 'delivery_type');
+    //if = pickup, take dx_delivery_date from pickup_date //WooDelivery
 
     //set delivery_date
     if($order->get_meta( 'dx_delivery_date' ) != null)
     {
         $dx_delivery_date = $order->get_meta( 'dx_delivery_date' );
+
+        $delivery_date = new DateTime( '@'.$order->get_meta( 'dx_delivery_date' ));
+        $delivery_date->setTimezone($dtimezone);
+        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
     }else if($order->get_meta( 'delivery_date' ) != null)
     {
         $delivery_date = new DateTime( '@'.$order->get_meta( 'delivery_date' ));
         $delivery_date->setTimezone($dtimezone);
 
         $dx_delivery_date = $delivery_date->getTimestamp();
+
+        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
     }else if($processing_days > 0)
     {
         $delivery_date->modify('+'.$processing_days.' day');
 
         $dx_delivery_date = $delivery_date->getTimestamp();
+
+        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
     }else {
         $delivery_date->modify('+1 day');
 
         $dx_delivery_date = $delivery_date->getTimestamp();
+
+        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
     }
 
     //set delivery time
@@ -250,24 +266,40 @@ function set_pickup_delivery_time($order)
     if($order->get_meta( 'dx_pickup_date' ) != null)
     {
         $dx_pickup_date = $order->get_meta( 'dx_pickup_date' );
+
+        $pickup_date = new DateTime( '@'.$order->get_meta( 'dx_pickup_date' ));
+        $pickup_date->setTimezone($dtimezone);
+        $dx_pickup_date_format = $pickup_date->format('d-M-Y');
     }else if($order->get_meta( 'pickup_date' ) != null)
     {
         $pickup_date = new DateTime( '@'.$order->get_meta( 'pickup_date' ));
         $pickup_date->setTimezone($dtimezone);
 
         $dx_pickup_date = $pickup_date->getTimestamp();
+
+        $dx_pickup_date_format = $pickup_date->format('d-M-Y');
     }else if($processing_days > 0)
     {
         $pickup_date = $delivery_date;
         $dx_pickup_date = $pickup_date->getTimestamp();
+
+        $dx_pickup_date_format = $pickup_date->format('d-M-Y');
     }else {
         $dx_pickup_date = $dx_delivery_date;
+
+        $dx_pickup_date_format = $dx_delivery_date_format;
     }
 
     //set pickup time
     if($order->get_meta( 'dx_pickup_time' ) != null)
     {
         $dx_pickup_time = $order->get_meta( 'dx_pickup_time' );
+    }else if($pickup_minutes > 0)
+    {
+        $pickup_time = $delivery_time;
+        $pickup_time->sub(new DateInterval('PT'.$pickup_minutes.'M'));
+
+        $dx_pickup_time = $pickup_time->format('H:i');
     }else {
         //minus 30 minutes
         $pickup_time = $delivery_time;
@@ -290,9 +322,11 @@ function set_pickup_delivery_time($order)
 
     $order->update_meta_data( 'dx_delivery_date', $dx_delivery_date );
     $order->update_meta_data( 'dx_delivery_time', $dx_delivery_time );
+    $order->update_meta_data( 'dx_delivery_date_format', $dx_delivery_date_format );
 
     $order->update_meta_data( 'dx_pickup_date', $dx_pickup_date );
     $order->update_meta_data( 'dx_pickup_time', $dx_pickup_time );
+    $order->update_meta_data( 'dx_pickup_date_format', $dx_pickup_date_format );
 
     $order->save();
 }
@@ -361,7 +395,7 @@ function delyvax_post_create_order($order, $user) {
       // echo '<br>';
       if($order->get_meta( 'delivery_type' ) != null)
       {
-          $delivery_type = $order->get_meta( 'delivery_type');
+          $delivery_type = $order->get_meta( 'delivery_type'); //pickup / delivery
       }
 
       $delivery_date = new DateTime('@'.$order->get_meta( 'dx_delivery_date' ));

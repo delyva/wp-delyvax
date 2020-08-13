@@ -172,6 +172,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id'       	=> 'delyvax_ext_id_type',
                 'description'  	=> __( 'Personnel External ID Type. e.g. dokan', 'delyvax' ),
             ),
+            'pickup_minutes' => array(
+                'title'    	=> __( 'Fulfilment minutes before delivery', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('0', 'delyvax'),
+                'id' => 'delyvax_processing_hours',
+                'description' => __( 'Number of minutes before delivery. e.g. 30 - 30 minutes befor delivery time; 60 - 60 minutes befor delivery time.' ),
+            ),
             // 'api_webhook_key' => array(
             //     'title' => __('API API Webhook Key', 'delyvax'),
             //     'type' => 'text',
@@ -382,8 +389,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 include_once 'delyvax-api.php';
             }
 
+            $rates = array();
+
             try {
-                $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod);
+                if(strlen($pdestination["postcode"]) > 3 && strlen($pdestination["city"]) > 1 && strlen($pdestination["state"]) > 1 && $total_weight > 0)
+                {
+                    $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod);
+                }
             } catch (Exception $e) {
                 $rates = array();
             }
