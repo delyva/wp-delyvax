@@ -458,7 +458,7 @@ function delyvax_post_create_order($order, $user) {
       $store_country = null;
 
       //loop inventory main n suborder
-      $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+      $sub_orders = get_children( array( 'post_parent' => $main_order->get_id(), 'post_type' => 'shop_order' ) );
 
       if ( sizeof($sub_orders) > 0 )
       {
