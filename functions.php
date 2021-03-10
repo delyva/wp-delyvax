@@ -22,10 +22,6 @@ function delyvax_check_cart_weight(){
     $min_weight = 0.000; // kg
     $max_weight = 10000; // kg
 
-    // if($weight < $min_weight){
-    //     wc_add_notice( sprintf( __( 'You have %s kg weight and we allow minimum ' . $min_weight . '  kg of weight per order. Increase the cart weight by adding more items to proceed checkout.', 'default' ), $weight ), 'error');
-    // }
-
     if($weight > $max_weight){
         wc_add_notice( sprintf( __( 'You have %s kg weight and we allow maximum' . $max_weight . '  kg of weight per order. Reduce the cart weight by removing some items to proceed checkout.', 'default' ), $weight ), 'error');
     }
@@ -52,19 +48,7 @@ function delyvaxPluginActivated() {
 }
 
 function delyvaxPluginDeActivated() {
-  // delete_option('delyvax_pricing_enable');
-  // delete_option('delyvax_create_shipment_on_paid');
-  // delete_option('delyvax_create_shipment_on_confirm');
-  // delete_option('delyvax_change_order_status');
-  // delete_option('delyvax_company_id');
-  // delete_option('delyvax_user_id');
-  // delete_option('delyvax_customer_id');
-  // delete_option('delyvax_api_token');
-  // delete_option('delyvax_api_webhook_enable');
-  // delete_option('delyvax_api_webhook_key');
-  // delete_option('wc_settings_delyvax_shipping_rate_adjustment');
-  // delete_option('delyvax_rate_adjustment_percentage');
-  // delete_option('delyvax_rate_adjustment_flat');
+
 }
 
 function delyvaxPluginUninstalled() {
@@ -308,18 +292,6 @@ function set_pickup_delivery_time($order)
         $dx_pickup_time = $pickup_time->format('H:i');
     }
 
-    echo 'delivery_date'.$dx_delivery_date;
-    echo '<br>';
-
-    echo 'delivery_time'.$dx_delivery_time;
-    echo '<br>';
-
-    echo 'pickup_date'.$dx_pickup_date;
-    echo '<br>';
-
-    echo 'pickup_time'.$dx_pickup_time;
-    echo '<br>';
-
     $order->update_meta_data( 'dx_delivery_date', $dx_delivery_date );
     $order->update_meta_data( 'dx_delivery_time', $dx_delivery_time );
     $order->update_meta_data( 'dx_delivery_date_format', $dx_delivery_date_format );
@@ -367,9 +339,8 @@ function delyvax_post_create_order($order, $user) {
 
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
       $gmtoffset = get_option('gmt_offset');
-      // echo '<br>';
+
       $stimezone = get_option('timezone_string');
-      // echo '<br>';
 
       $dtimezone = new DateTimeZone($stimezone);
 
@@ -382,14 +353,6 @@ function delyvax_post_create_order($order, $user) {
 
       $delivery_time = new DateTime();
       $delivery_time->setTimezone($dtimezone);
-
-      //delivery_date use dx_delivery_date
-      // if($order->get_meta( 'dx_delivery_date' ) != null)
-      // {
-      //     $delivery_date = new DateTime( $order->get_meta( 'dx_delivery_date' ));
-      // }else {
-      //     $delivery_date->modify('+1 day');
-      // }
 
       $delivery_type = 'delivery';
       // echo '<br>';

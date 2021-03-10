@@ -351,8 +351,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 // )
             );
 
-            // print_r($origin);
-
             if($pdestination["postcode"] == '' || $pdestination["state"] == '' || $pdestination["country"] == '')
             {
                 $status_allow_checkout = false;

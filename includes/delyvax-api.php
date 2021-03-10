@@ -33,8 +33,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 // "cod" => $cod,
             ];
 
-            // print_r(json_encode($postRequestArr));
-
             $response = wp_remote_post($url, array(
                 'headers' => array(
                   'content-type' => 'application/json',
@@ -44,8 +42,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'method' => 'POST',
                 'timeout' => 25
             ));
-
-            // print_r($response['body']);
 
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
@@ -99,12 +95,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              echo '-----------------------------------';
-              echo json_encode($postRequestArr);
-              echo '-----------------------------------';
-              echo json_encode($response['body']);
-              echo '-----------------------------------';
-
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
                   if ($error_message == 'fsocket timed out') {
@@ -152,14 +142,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'method' => 'POST',
                   'timeout' => 25
               ));
-
-              // echo '-----------------------------------';
-              // echo json_encode($postRequestArr);
-              // echo '-----------------------------------';
-              // echo json_encode($response['body']);
-              echo '-----------------------------------';
-              echo json_encode($body['data']);
-              echo '-----------------------------------';
 
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
@@ -321,10 +303,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $api_token = $settings['api_token'];
             $processing_days = $settings['processing_days'];
 
-            // $postRequestArr = [
-            //     'extId' => $extId,
-            // ];
-
             $response = wp_remote_post($url, array(
                 'headers' => array(
                   'content-type' => 'application/json',
@@ -391,12 +369,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'method' => 'POST',
                 'timeout' => 25
             ));
-
-            echo '-----------------------------------';
-            echo json_encode($postRequestArr);
-            echo '-----------------------------------';
-            echo json_encode($response['body']);
-            echo '-----------------------------------';
 
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
