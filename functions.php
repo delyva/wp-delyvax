@@ -92,7 +92,9 @@ function delyvax_payment_complete( $order_id ){
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
-        delyvax_create_order($order, $user);
+        delyvax_create_order($order, $user, true);
+    }else {
+        delyvax_create_order($order, $user, false);
     }
 }
 
@@ -107,7 +109,9 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
         // $order = wc_get_order( $order_id );
         $user = $order->get_user();
 
-        delyvax_create_order($order, $user);
+        delyvax_create_order($order, $user, true);
+    }else {
+        delyvax_create_order($order, $user, false);
     }
     return 'processing';
 }
@@ -125,8 +129,10 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
     {
         if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
         {
-            delyvax_create_order($order, $user);
+            delyvax_create_order($order, $user, true);
         }
+    }else {
+        delyvax_create_order($order, $user, false);
     }
 }
 
@@ -304,7 +310,7 @@ function set_pickup_delivery_time($order)
 }
 
 
-function delyvax_create_order($order, $user) {
+function delyvax_create_order($order, $user, $process=true) {
     try {
         //create order
         //start DelyvaX API
@@ -315,10 +321,12 @@ function delyvax_create_order($order, $user) {
         $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
         $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
 
-        if($DelyvaXOrderID == null && $DelyvaXTrackingCode == null)
+        if($DelyvaXOrderID == null)
         {
-            // $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $user);
             $resultCreate = delyvax_post_create_order($order, $user);
+        }else {
+            //process order
+            $resultCreate = delyvax_post_process_order($order, $user, $DelyvaXOrderID);
         }
     } catch (Exception $e) {
         print_r($e);
