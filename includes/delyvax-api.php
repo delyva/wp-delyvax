@@ -173,7 +173,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $url = Self::$api_endpoint . "/order/:orderId/track";
 
             $url = str_replace(":orderId", $shipmentId, $url);
-            // echo $url;
 
             $response = wp_remote_post($url, array(
                 'headers' => array(

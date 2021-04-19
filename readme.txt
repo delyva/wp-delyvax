@@ -1,14 +1,14 @@
 === delyvax ===
 Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
-Requires at least: 4.4
-Tested up to: 5.4
-Stable tag: 1.0.0
-Requires PHP: 5.6
+Requires at least: 5.4
+Tested up to: 5.7
+Stable tag: 1.1.0
+Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The official DelyvaX plugin helps store owners integrate WooCommerce with [DelyvaX](https://delyvax.com) and expedite the shipping process.
+The official DelyvaX plugin helps store owners to integrate WooCommerce with [DelyvaX](https://delyva.com/solutions) for seamless service comparison and order processing.
 
 == Description ==
 
@@ -29,5 +29,5 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
-= 1.0.0 - August 13 2020 =
-* Initial Release
+= 1.1.0 - April 19 2022 = Bug fixes, and improvements to comply with Wordpress standards.
+= 1.0.0 - August 13 2020 = Initial Release.

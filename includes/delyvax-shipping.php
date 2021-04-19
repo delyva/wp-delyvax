@@ -14,7 +14,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
           $this->method_title = __('DelyvaX', 'delyvax');  // Title shown in admin
           $settings = get_option( 'woocommerce_delyvax_settings' );
           if ($settings['api_token']) {
-              $this->method_description = __('<a href="https://www.delyvax.com" target="_blank">DelyvaX</a> dynamic shipping rates at checkout.', 'delyvax');
+              $this->method_description = __('<a href="https://www.delyva.com/solutions" target="_blank">DelyvaX</a> dynamic shipping rates at checkout.', 'delyvax');
           } else {
               $this->method_description = __('<h3 style="color:red"><b>NOTICE!</b> This app is not configured! Please contact your account manager.</h3>', 'delyvax');
           }
@@ -61,14 +61,14 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default'	=> 'yes'
             ),
             'create_shipment_on_paid' => array(
-                'title'    	=> __( 'Auto Create Shipment on Payment Complete', 'delyvax' ),
+                'title'    	=> __( 'Auto Create Delivery Order on Payment Complete', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_paid',
                 'description'  	=> __( 'Create shipment on successful payment by customer', 'delyvax' ),
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
             'create_shipment_on_confirm' => array(
-                'title'    	=> __( 'Auto Create Shipment on Preparing', 'delyvax' ),
+                'title'    	=> __( 'Manual Create Delivery Order on Preparing', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_confirm',
                 'description'  	=> __( 'Create shipment on order status = "preparing" by Store/Merchant/Vendor', 'delyvax' ),
                 'type'     	=> 'checkbox',
@@ -203,6 +203,12 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type' => 'text',
                 'default' => __('0', 'delyvax'),
                 'id' => 'delyvax_rate_adjustment_flat'
+            ),
+            'rate_adjustment_type' => array(
+                'title' => __('Rate Adjustment Type ("discount"/"markup")', 'delyvax'),
+                'type' => 'text',
+                'default' => __('discount', 'delyvax'),
+                'id' => 'delyvax_rate_rate_adjustment_type'
             )
           );
       }
@@ -289,6 +295,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             } else {
                 $total_cart_with_discount = WC()->cart->cart_contents_total;
             }
+
             if ($this->control_discount != $total_cart_with_discount) {
                 if (is_array($items) && isset($items[0]) && isset($items[0]['declared_customs_value'])) {
                     $diff = round(($total_cart_with_discount - $this->control_discount), 2);
@@ -403,14 +410,25 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             foreach ($services as $shipper) {
                 if (isset($shipper['service']['name'])) {
                     $settings = get_option( 'woocommerce_delyvax_settings' );
+
+                    $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
+
                     $ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
                     $percentRate = $ra_percentage / 100 * $shipper['price']['amount'];
+
                     $flatRate = $settings['rate_adjustment_flat'] ?? 0;
+
+                    if($rate_adjustment_type == 'markup')
+                    {
+                        $cost = round($shipper['price']['amount'] + $percentRate + $flatRate, 2);
+                    }else {
+                        $cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
+                    }
 
                     $rate = array(
                         'id' => $shipper['service']['code'],
                         'label' => $shipper['service']['name'],
-                        'cost' => round($shipper['price']['amount'] + $percentRate + $flatRate, 2),
+                        'cost' => $cost,
                         'taxes' => 'false',
                         'calc_tax' => 'per_order',
                         'meta_data' => array(

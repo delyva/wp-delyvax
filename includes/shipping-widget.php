@@ -1,22 +1,22 @@
 <?php
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
-add_action ( 'add_meta_boxes', 'AddBox' );
+add_action ( 'add_meta_boxes', 'delyvax_add_box' );
 // add_action ( 'woocommerce_process_shop_order_meta', 'SaveData');
 // add_action( 'woocommerce_order_status_completed', 'GetTrackingCode');
 
-function AddBox() {
+function delyvax_add_box() {
 
 	add_meta_box (
 	    'DelyvaTrackingMetaBox',
 	    'DelyvaX',
-	    'ShowBox',
+	    'delyvax_show_box',
 	    'shop_order',
 	    'side',
 	    'high'
     );
 }
 
-function ShowBox( $post ) {
+function delyvax_show_box( $post ) {
     $order = wc_get_order ( $post->ID );
     // $TrackingCode = isset( $post->TrackingCode ) ? $post->TrackingCode : '';
 
@@ -30,8 +30,6 @@ function ShowBox( $post ) {
 		{
 				$company_name = 'DelyvaX';
 		}
-
-
 
 		$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
 		$TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );

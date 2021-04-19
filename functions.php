@@ -88,7 +88,7 @@ function delyvax_payment_complete( $order_id ){
     $user = $order->get_user();
 
     //set pickup date, time and delivery date and time
-    set_pickup_delivery_time($order);
+    delyvax_set_pickup_delivery_time($order);
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
@@ -102,7 +102,7 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
     $settings = get_option( 'woocommerce_delyvax_settings');
 
     //set pickup date, time and delivery date and time
-    set_pickup_delivery_time($order);
+    delyvax_set_pickup_delivery_time($order);
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
@@ -123,7 +123,7 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
     $user = $order->get_user();
 
     //set pickup date, time and delivery date and time
-    set_pickup_delivery_time($order);
+    delyvax_set_pickup_delivery_time($order);
 
     if ($settings['create_shipment_on_confirm'] == 'yes')
     {
@@ -137,7 +137,7 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
 }
 
 
-function set_pickup_delivery_time($order)
+function delyvax_set_pickup_delivery_time($order)
 {
     $settings = get_option( 'woocommerce_delyvax_settings' );
 
@@ -150,15 +150,13 @@ function set_pickup_delivery_time($order)
 
     $dtimezone = new DateTimeZone($stimezone);
 
-    //
+    //initialise
     $pickup_date = new DateTime();
     $pickup_date->setTimezone($dtimezone);
 
     $pickup_time = new DateTime();
-    $pickup_time->setTimezone($dtimezone);
-    //
+    // $pickup_time->setTimezone($dtimezone);
 
-    //
     $delivery_date = new DateTime();
     $delivery_date->setTimezone($dtimezone);
 
@@ -174,128 +172,142 @@ function set_pickup_delivery_time($order)
     $dx_pickup_date_format = null;
 
     $delivery_type = null;
+    //
 
-    //pickup / delivery
-    $delivery_type = $order->get_meta( 'delivery_type');
-    //if = pickup, take dx_delivery_date from pickup_date //WooDelivery
+    try {
+        //pickup / delivery
+        $delivery_type = $order->get_meta( 'delivery_type');
+        //if = pickup, take dx_delivery_date from pickup_date //WooDelivery
 
-    //set delivery_date
-    if($order->get_meta( 'dx_delivery_date' ) != null)
-    {
-        $dx_delivery_date = $order->get_meta( 'dx_delivery_date' );
-
-        $delivery_date = new DateTime( '@'.$order->get_meta( 'dx_delivery_date' ));
-        $delivery_date->setTimezone($dtimezone);
-        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-    }else if($order->get_meta( 'delivery_date' ) != null)
-    {
-        $delivery_date = new DateTime( '@'.$order->get_meta( 'delivery_date' ));
-        $delivery_date->setTimezone($dtimezone);
-
-        $dx_delivery_date = $delivery_date->getTimestamp();
-
-        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-    }else if($processing_days > 0)
-    {
-        $delivery_date->modify('+'.$processing_days.' day');
-
-        $dx_delivery_date = $delivery_date->getTimestamp();
-
-        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-    }else {
-        $delivery_date->modify('+1 day');
-
-        $dx_delivery_date = $delivery_date->getTimestamp();
-
-        $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-    }
-
-    //set delivery time
-    if($order->get_meta( 'dx_delivery_time' ) != null)
-    {
-        $dx_delivery_time = $order->get_meta( 'dx_delivery_time' );
-
-    }else if($order->get_meta( 'delivery_time' ) != null)
-    {
-        $w_delivery_time = $order->get_meta( 'delivery_time'); //1440 minutes / 24
-        $a_delivery_time = explode(",",$w_delivery_time);
-
-        $timeslot_from_hour = 0;
-        $timeslot_from_min = 0;
-
-        if(sizeof($a_delivery_time) > 0)
+        //set delivery_date
+        if($order->get_meta( 'dx_delivery_date' ) != null)
         {
-            $timeslot_from = $a_delivery_time[0]/60; //e.g. 675/60 = 11.25 =  11.15am
+            $dx_delivery_date = $order->get_meta( 'dx_delivery_date' );
 
-            $timeslot_from_hour = floor($timeslot_from);
-            $timeslot_from_min = fmod($timeslot_from, 1) * 60;
+            $delivery_date = new DateTime( '@'.(int)$order->get_meta( 'dx_delivery_date' ));
+            $delivery_date->setTimezone($dtimezone);
+            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
+        }else if($order->get_meta( 'delivery_date' ) != null)
+        {
+            $delivery_date = new DateTime($order->get_meta( 'delivery_date' ));
+            $delivery_date->setTimezone($dtimezone);
+
+            $dx_delivery_date = $delivery_date->getTimestamp();
+
+            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
+        }else if($processing_days > 0)
+        {
+            $delivery_date->modify('+'.$processing_days.' day');
+
+            $dx_delivery_date = $delivery_date->getTimestamp();
+
+            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
         }else {
-            //set current time add 1 hour
-            $delivery_time->add(new DateInterval("PT1H"));
+            $delivery_date->modify('+1 day');
 
-            $timeslot_from_hour = $delivery_time->format('H');
-            $timeslot_from_min = $delivery_time->format('i');
+            $dx_delivery_date = $delivery_date->getTimestamp();
+
+            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
         }
 
-        $delivery_time = $delivery_date;
-        $delivery_time->setTime($timeslot_from_hour,$timeslot_from_min,00);
+        //set delivery time
+        if($order->get_meta( 'dx_delivery_time' ) != null)
+        {
+            $dx_delivery_time = $order->get_meta( 'dx_delivery_time' );
 
-        $dx_delivery_time = $delivery_time->format('H:i');
-    }else if($processing_hours > 0)
-    {
-        $delivery_time->add(new DateInterval("PT".$processing_hours."H"));
+        }else if($order->get_meta( 'delivery_time' ) != null)
+        {
+            $w_delivery_time = $order->get_meta( 'delivery_time'); //1440 minutes / 24
+            $a_delivery_time = explode(",",$w_delivery_time);
 
-        $dx_delivery_time = $delivery_time->format('H:i');
-    }else {
-        $delivery_time->add(new DateInterval("PT1H"));
+            $timeslot_from_hour = 0;
+            $timeslot_from_min = 0;
 
-        $dx_delivery_time = $delivery_time->format('H:i');
-    }
+            if(sizeof($a_delivery_time) > 0)
+            {
+                $timeslot_from = $a_delivery_time[0]/60; //e.g. 675/60 = 11.25 =  11.15am
 
-    //set pick up date
-    if($order->get_meta( 'dx_pickup_date' ) != null)
-    {
-        $dx_pickup_date = $order->get_meta( 'dx_pickup_date' );
+                $timeslot_from_hour = floor($timeslot_from);
+                $timeslot_from_min = fmod($timeslot_from, 1) * 60;
+            }else {
+                //set current time add 1 hour
+                $delivery_time->add(new DateInterval("PT1H"));
 
-        $pickup_date = new DateTime( '@'.$order->get_meta( 'dx_pickup_date' ));
-        $pickup_date->setTimezone($dtimezone);
-        $dx_pickup_date_format = $pickup_date->format('d-M-Y');
-    }else if($order->get_meta( 'pickup_date' ) != null)
-    {
-        $pickup_date = new DateTime( '@'.$order->get_meta( 'pickup_date' ));
-        $pickup_date->setTimezone($dtimezone);
+                $timeslot_from_hour = $delivery_time->format('H');
+                $timeslot_from_min = $delivery_time->format('i');
+            }
 
-        $dx_pickup_date = $pickup_date->getTimestamp();
+            $delivery_time = $delivery_date;
+            $delivery_time->setTime($timeslot_from_hour,$timeslot_from_min,00);
 
-        $dx_pickup_date_format = $pickup_date->format('d-M-Y');
-    }else if($processing_days > 0)
-    {
-        $pickup_date = $delivery_date;
-        $dx_pickup_date = $pickup_date->getTimestamp();
+            $dx_delivery_time = $delivery_time->format('H:i');
+        }else if($processing_hours > 0)
+        {
+            $delivery_time->add(new DateInterval("PT".$processing_hours."H"));
 
-        $dx_pickup_date_format = $pickup_date->format('d-M-Y');
-    }else {
-        $dx_pickup_date = $dx_delivery_date;
+            $dx_delivery_time = $delivery_time->format('H:i');
+        }else {
+            $delivery_time->add(new DateInterval("PT1H"));
 
-        $dx_pickup_date_format = $dx_delivery_date_format;
-    }
+            $dx_delivery_time = $delivery_time->format('H:i');
+        }
 
-    //set pickup time
-    if($order->get_meta( 'dx_pickup_time' ) != null)
-    {
-        $dx_pickup_time = $order->get_meta( 'dx_pickup_time' );
-    }else if($pickup_minutes > 0)
-    {
-        $pickup_time = $delivery_time;
-        $pickup_time->sub(new DateInterval('PT'.$pickup_minutes.'M'));
+        //set pick up date
+        if($order->get_meta( 'dx_pickup_date' ) != null)
+        {
+            $dx_pickup_date = $order->get_meta( 'dx_pickup_date' );
 
-        $dx_pickup_time = $pickup_time->format('H:i');
-    }else {
-        //minus 30 minutes
-        $pickup_time = $delivery_time;
-        $pickup_time->sub(new DateInterval('PT30M'));
+            $pickup_date = new DateTime( '@'.(int)$order->get_meta( 'dx_pickup_date' ));
+            $pickup_date->setTimezone($dtimezone);
+            $dx_pickup_date_format = $pickup_date->format('d-M-Y');
+        }else if($order->get_meta( 'pickup_date' ) != null)
+        {
+            $pickup_date = new DateTime( $order->get_meta( 'pickup_date' ));
+            $pickup_date->setTimezone($dtimezone);
 
-        $dx_pickup_time = $pickup_time->format('H:i');
+            $dx_pickup_date = $pickup_date->getTimestamp();
+
+            $dx_pickup_date_format = $pickup_date->format('d-M-Y');
+        }else if($processing_days > 0)
+        {
+            $pickup_date = $delivery_date;
+            $dx_pickup_date = $pickup_date->getTimestamp();
+
+            $dx_pickup_date_format = $pickup_date->format('d-M-Y');
+        }else {
+            $dx_pickup_date = $dx_delivery_date;
+
+            $dx_pickup_date_format = $dx_delivery_date_format;
+        }
+
+        //set pickup time
+        if($order->get_meta( 'dx_pickup_time' ) != null)
+        {
+            $dx_pickup_time = $order->get_meta( 'dx_pickup_time' );
+        }else if($pickup_minutes > 0)
+        {
+            $pickup_time = $delivery_time;
+            $pickup_time->sub(new DateInterval('PT'.$pickup_minutes.'M'));
+
+            $dx_pickup_time = $pickup_time->format('H:i');
+        }else {
+            //minus 30 minutes
+            $pickup_time = $delivery_time;
+            $pickup_time->sub(new DateInterval('PT30M'));
+
+            $dx_pickup_time = $pickup_time->format('H:i');
+        }
+
+    } catch(Exception $e) {
+          echo 'Message: ' .$e->getMessage();
+
+          $dx_delivery_date = $delivery_date->getTimestamp();
+          $dx_delivery_time = $delivery_time->format('H:i');
+          $dx_delivery_date_format = $delivery_date->format('d-M-Y');
+
+          $dx_pickup_date = $dx_delivery_date;
+          $dx_pickup_time = $dx_delivery_time;
+          $dx_pickup_date_format = $dx_delivery_date_format;
     }
 
     $order->update_meta_data( 'dx_delivery_date', $dx_delivery_date );
@@ -323,7 +335,7 @@ function delyvax_create_order($order, $user, $process=true) {
 
         if($DelyvaXOrderID == null)
         {
-            $resultCreate = delyvax_post_create_order($order, $user);
+            $resultCreate = delyvax_post_create_order($order, $user, $process);
         }else {
             //process order
             $resultCreate = delyvax_post_process_order($order, $user, $DelyvaXOrderID);
@@ -334,7 +346,7 @@ function delyvax_create_order($order, $user, $process=true) {
 }
 
 //rewire logic here, API is only for post
-function delyvax_post_create_order($order, $user) {
+function delyvax_post_create_order($order, $user, $process=true) {
       $settings = get_option( 'woocommerce_delyvax_settings' );
 
       $company_id = $settings['company_id'];
@@ -352,7 +364,6 @@ function delyvax_post_create_order($order, $user) {
 
       $dtimezone = new DateTimeZone($stimezone);
 
-      // echo date('d-m-Y H:i:s');
       $timeslot_hour = 0;
       $timeslot_min = 0;
 
@@ -363,13 +374,13 @@ function delyvax_post_create_order($order, $user) {
       $delivery_time->setTimezone($dtimezone);
 
       $delivery_type = 'delivery';
-      // echo '<br>';
+
       if($order->get_meta( 'delivery_type' ) != null)
       {
           $delivery_type = $order->get_meta( 'delivery_type'); //pickup / delivery
       }
 
-      $delivery_date = new DateTime('@'.$order->get_meta( 'dx_delivery_date' ));
+      $delivery_date = new DateTime('@'.(int)$order->get_meta( 'dx_delivery_date' ));
       $delivery_date->setTimezone($dtimezone);
 
       $dx_delivery_time = $order->get_meta( 'dx_delivery_time' );
@@ -381,8 +392,6 @@ function delyvax_post_create_order($order, $user) {
 
       $scheduledAt = $delivery_date;
       $scheduledAt->setTime($timeslot_hour,$timeslot_min,00);
-
-      // echo $scheduledAt->format('c');
 
       //service
       $serviceCode = "";
@@ -401,7 +410,6 @@ function delyvax_post_create_order($order, $user) {
 
           // print_r($serviceobject);
 
-          // echo json_encode($serviceobject);
           for($i=0; $i < sizeof($serviceobject); $i++)
           {
               if($serviceobject[$i]->key == "service_code")
@@ -433,8 +441,6 @@ function delyvax_post_create_order($order, $user) {
 
       if ( sizeof($sub_orders) > 0 )
       {
-          echo '$sub_orders';
-
           $main_order = $order;
 
           $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
@@ -452,13 +458,12 @@ function delyvax_post_create_order($order, $user) {
                   $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
 
-                  // echo '<pre>'.print_r($store_info).'</pre>';
-                  echo $product_store_name = $store_info['store_name'];
+                  $product_store_name = $store_info['store_name'];
 
-                  $store_name = $store_info['store_name'];
-                  $store_first_name = $store_info['first_name'];
-                  $store_last_name = $store_info['last_name'];
-                  $store_phone = $store_info['phone'];
+                  if($store_info['store_name']) $store_name = $store_info['store_name'];
+                  if($store_info['first_name']) $store_first_name = $store_info['first_name'];
+                  if($store_info['last_name']) $store_last_name = $store_info['last_name'];
+                  if($store_info['phone']) $store_phone = $store_info['phone'];
                   $store_email = $store_info['email'];
                   $store_address_1 = $store_info['address']['street_1'];
                   $store_address_2 = $store_info['address']['street_2'];
@@ -490,7 +495,7 @@ function delyvax_post_create_order($order, $user) {
 
                   $product = $_pf->get_product($product_id);
 
-                  echo $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$sub->ID;
+                  $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$sub->ID;
 
                   $inventories[$count] = array(
                       "name" => $product_name,
@@ -516,7 +521,6 @@ function delyvax_post_create_order($order, $user) {
               }
           }
       }else {
-          echo '$main_order = $order';
           $main_order = $order;
 
           $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
@@ -547,7 +551,6 @@ function delyvax_post_create_order($order, $user) {
                   $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
 
-                  // echo '<pre>'.print_r($store_info).'</pre>';
                   $product_store_name = $store_info['store_name'];
 
                   $store_name = $store_info['store_name'];
@@ -567,7 +570,7 @@ function delyvax_post_create_order($order, $user) {
 
               $product = $_pf->get_product($product_id);
 
-              echo $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
+              $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
 
               $inventories[$count] = array(
                   "name" => $product_name,
@@ -688,53 +691,56 @@ function delyvax_post_create_order($order, $user) {
       {
             $shipmentId = $resultCreate["id"];
 
-            // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
-            $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
-
-            if($resultProcess)
+            if($process)
             {
-                $trackingNo = $resultProcess["consignmentNo"];
+                // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
+                $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
 
-                //save tracking no into order to all parent order and suborders
-                $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-
-                if( sizeof($sub_orders) > 0 )
+                if($resultProcess)
                 {
-                    $main_order = wc_get_order($order->get_id());
+                    $trackingNo = $resultProcess["consignmentNo"];
 
-                    $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                    $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                    $main_order->save();
+                    //save tracking no into order to all parent order and suborders
+                    $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
 
-                    $count = 0;
-                    foreach ($sub_orders as $sub)
+                    if( sizeof($sub_orders) > 0 )
                     {
-                        $sub_order = wc_get_order($sub->ID);
+                        $main_order = wc_get_order($order->get_id());
 
-                        $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                        $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                        $sub_order->save();
+                        $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                        $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                        $main_order->save();
 
-                        $consignmentNo = $trackingNo."-".($count+1);
+                        $count = 0;
+                        foreach ($sub_orders as $sub)
+                        {
+                            $sub_order = wc_get_order($sub->ID);
 
-                        //create task
-                        delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
-                        //
+                            $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                            $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                            $sub_order->save();
 
-                        $count++;
+                            $consignmentNo = $trackingNo."-".($count+1);
+
+                            //create task
+                            delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
+                            //
+
+                            $count++;
+                        }
+                    }else {
+                        $main_order = $order;
+
+                        $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                        $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                        $main_order->save();
+
+                        $consignmentNo = $trackingNo."-1";
+
+                        //create tasks if split tasks
+                        delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
+                        //end
                     }
-                }else {
-                    $main_order = $order;
-
-                    $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                    $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                    $main_order->save();
-
-                    $consignmentNo = $trackingNo."-1";
-
-                    //create tasks if split tasks
-                    delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
-                    //end
                 }
             }
       }
@@ -759,7 +765,6 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
 
           // print_r($serviceobject);
 
-          // echo json_encode($serviceobject);
           for($i=0; $i < sizeof($serviceobject); $i++)
           {
               if($serviceobject[$i]->key == "service_code")
@@ -818,7 +823,6 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
               //get driver
               if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
               {
-                  // echo 'function_exists';
 
                   $seller_id = dokan_get_seller_id_by_order($order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
@@ -827,7 +831,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                   if($seller_id)
                   {
-                      $pickup_date = new DateTime('@'.$order->get_meta( 'dx_pickup_date' ));
+                      $pickup_date = new DateTime($order->get_meta( 'dx_pickup_date' ));
                       $pickup_date->setTimezone($dtimezone);
 
                       $pickup_time = $pickup_date;
@@ -883,7 +887,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                                   $product = $_pf->get_product($product_id);
 
-                                  echo $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$order->get_id();
+                                  $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$order->get_id();
 
                                   $inventories[$count] = array(
                                       "name" => $product_name,
@@ -1058,8 +1062,8 @@ function delyvax_webhook_get_tracking()
                       {
                           $order = wc_get_order($orders[$i]->get_id());
 
-                          echo 'order_id'.$orders[$i]->get_id();
-                          echo 'status'.$order->get_status();
+                          $orders[$i]->get_id();
+                          $order->get_status();
 
                           if($statusCode == 200)
                           {
@@ -1068,8 +1072,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-courier-accepted') )
                                   {
-                                      echo 'courier-accepted';
-
                                       $order->update_status('courier-accepted', 'Order status changed to Courier accepted.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('courier-accepted');
 
@@ -1097,8 +1099,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-start-collecting') )
                                   {
-                                      echo 'start-collecting';
-
                                       $order->update_status('start-collecting', 'Order status changed to Pending pick up.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('start-collecting');
 
@@ -1125,8 +1125,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-failed-collection') )
                                   {
-                                      echo 'failed-collection';
-
                                       $order->update_status('failed-collection', 'Order status changed to Pick up failed.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('failed-collection');
 
@@ -1153,8 +1151,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-collected') )
                                   {
-                                      echo 'collected';
-
                                       $order->update_status('collected', 'Order status changed to Pick up complete.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('collected');
 
@@ -1181,8 +1177,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-start-delivery') )
                                   {
-                                      echo 'start-delivery';
-
                                       $order->update_status('start-delivery', 'Order status changed to On the way for delivery.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('start-delivery');
 
@@ -1209,8 +1203,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-failed-delivery') )
                                   {
-                                      echo 'failed-delivery';
-
                                       $order->update_status('failed-delivery', 'Order status changed to Delivery failed.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('failed-delivery');
 
@@ -1236,8 +1228,6 @@ function delyvax_webhook_get_tracking()
                               {
                                   if( !$order->has_status('wc-completed') )
                                   {
-                                      echo 'completed';
-
                                       $order->update_status('completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('completed');
 
@@ -1264,8 +1254,6 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-cancelled') )
                                   {
-                                      echo 'cancelled';
-
                                       $order->update_status('cancelled', 'Order status changed to Cancelled.', false); // order note is optional, if you want to  add a note to order
 
                                       //start update sub orders

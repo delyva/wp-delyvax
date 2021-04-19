@@ -1,12 +1,12 @@
 <?php
     /*
     Plugin Name: DelyvaX
-    Plugin URI: https://delyvax.com/
-    description: A plugin to automate shipping and fulfilment via DelyvaX, the next generation courier operating system. Requires : WooCommerce
-    Version: 1.0
+    Plugin URI: https://delyva.com/solutions
+    description: The official DelyvaX plugin helps store owners to integrate WooCommerce with [DelyvaX](https://delyva.com/solutions) for seamless service comparison and order processing.
+    Version: 1.1.0
     Author: DelyvaX
-    Author URI: https://delyvax.com
-    License: GPL2
+    Author URI: https://delyva.com/solutions
+    License: GPLv3
     */
 
     // Include functions.php, use require_once to stop the script if functions.php is not found
