@@ -151,34 +151,48 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'delyvax_item_type',
                 'description' => __( 'Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
             ),
-            'task_item_type' => array(
-                'title'    	=> __( 'Default Task - Item type', 'delyvax' ),
+            'weight_option' => array(
+                'title'    	=> __( 'Weight consideration', 'delyvax' ),
                 'type' => 'text',
-                'default' => __('0', 'delyvax'),
-                'id' => 'delyvax_task_item_type',
-                'description' => __( 'Default task - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
+                'default' => __('BEST', 'delyvax'),
+                'id' => 'delyvax_item_type',
+                'description' => __( 'e.g. BEST-Whichever is higher / ACTUAL-Actual weight / VOL-Volumetric Weight.' ),
             ),
-            'split_tasks' => array(
-                'title'    	=> __( 'Fulfilment by vendors', 'delyvax' ),
-                'id'       	=> 'delyvax_split_tasks',
-                'description'  	=> __( 'Create tasks and assign to vendors by ext id type and ext id', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> ''
-            ),
-            'ext_id_type' => array(
-                'title'    	=> __( 'Personnel External ID Type', 'delyvax' ),
+            'volumetric_constant' => array(
+                'title'    	=> __( 'Volumetric weight constant', 'delyvax' ),
                 'type' => 'text',
-                'default'	=> '',
-                'id'       	=> 'delyvax_ext_id_type',
-                'description'  	=> __( 'Personnel External ID Type. e.g. dokan', 'delyvax' ),
+                'default' => __('5000', 'delyvax'),
+                'id' => 'delyvax_item_type',
+                'description' => __( 'e.g. 1000 / 5000 / 6000.' ),
             ),
-            'pickup_minutes' => array(
-                'title'    	=> __( 'Fulfilment minutes before delivery', 'delyvax' ),
-                'type' => 'text',
-                'default' => __('0', 'delyvax'),
-                'id' => 'delyvax_processing_hours',
-                'description' => __( 'Number of minutes before delivery. e.g. 30 - 30 minutes befor delivery time; 60 - 60 minutes befor delivery time.' ),
-            ),
+            // 'task_item_type' => array(
+            //     'title'    	=> __( 'Default Task - Item type', 'delyvax' ),
+            //     'type' => 'text',
+            //     'default' => __('0', 'delyvax'),
+            //     'id' => 'delyvax_task_item_type',
+            //     'description' => __( 'Default task - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
+            // ),
+            // 'split_tasks' => array(
+            //     'title'    	=> __( 'Fulfilment by vendors', 'delyvax' ),
+            //     'id'       	=> 'delyvax_split_tasks',
+            //     'description'  	=> __( 'Create tasks and assign to vendors by ext id type and ext id', 'delyvax' ),
+            //     'type'     	=> 'checkbox',
+            //     'default'	=> ''
+            // ),
+            // 'ext_id_type' => array(
+            //     'title'    	=> __( 'Personnel External ID Type', 'delyvax' ),
+            //     'type' => 'text',
+            //     'default'	=> '',
+            //     'id'       	=> 'delyvax_ext_id_type',
+            //     'description'  	=> __( 'Personnel External ID Type. e.g. dokan', 'delyvax' ),
+            // ),
+            // 'pickup_minutes' => array(
+            //     'title'    	=> __( 'Fulfilment minutes before delivery', 'delyvax' ),
+            //     'type' => 'text',
+            //     'default' => __('0', 'delyvax'),
+            //     'id' => 'delyvax_processing_hours',
+            //     'description' => __( 'Number of minutes before delivery. e.g. 30 - 30 minutes befor delivery time; 60 - 60 minutes befor delivery time.' ),
+            // ),
             // 'api_webhook_key' => array(
             //     'title' => __('API API Webhook Key', 'delyvax'),
             //     'type' => 'text',
@@ -231,6 +245,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $currency = get_woocommerce_currency();
 
             $total_weight = 0;
+            $total_dimension = 0;
+            $total_volumetric_weight = 0;
 
             if (defined('WOOCS_VERSION')) {
                 $currency = get_option('woocs_welcome_currency');
@@ -288,6 +304,10 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     );
 
                     $total_weight = $total_weight + $this->weightToKg($product->get_weight());
+
+                    $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
+                          * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                          * $this->defaultDimension($this->dimensionToCm($product->get_height())));
                 }
             }
             if (method_exists(WC()->cart, 'get_cart_contents_total')) {
@@ -320,6 +340,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             // Country and state separated:
             $store_country = $split_country[0];
             $store_state   = $split_country[1];
+
+            $weight_option = $settings['weight_option'] ?? 'BEST';
+            $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
 
             if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
             {
@@ -375,6 +398,40 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 //     "lon" => ""
                 // )
             );
+
+            //calculate volumetric weight
+            $total_actual_weight = $total_weight;
+
+            if($total_dimension > 0)
+            {
+                if($volumetric_constant == 1000)
+                {
+                    $total_volumetric_weight = $total_dimension/1000;
+                }else if($volumetric_constant == 6000)
+                {
+                    $total_volumetric_weight = $total_dimension/6000;
+                }else {
+                    $total_volumetric_weight = $total_dimension/5000;
+                }
+            }else {
+                $total_volumetric_weight = $total_actual_weight;
+            }
+
+            if($weight_option == 'ACTUAL')
+            {
+                $total_weight = $total_actual_weight;
+            }else if($weight_option == 'VOL')
+            {
+                $total_weight = $total_volumetric_weight;
+            }else {
+                if($total_actual_weight > $total_volumetric_weight)
+                {
+                    $total_weight = $total_actual_weight;
+                }else {
+                    $total_weight = $total_volumetric_weight;
+                }
+            }
+            //
 
             //
             $weight = array(

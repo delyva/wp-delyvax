@@ -423,6 +423,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       $count = 0;
       $inventories = array();
       $total_weight = 0;
+      $total_dimension = 0;
       $total_price = 0;
       $order_notes = '';
 
@@ -513,6 +514,11 @@ function delyvax_post_create_order($order, $user, $process=true) {
                   );
 
                   $total_weight = $total_weight + ($product->get_weight()*$quantity);
+
+                  $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
+                        * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                        * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+
                   $total_price = $total_price + $total;
 
                   // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
@@ -588,6 +594,11 @@ function delyvax_post_create_order($order, $user, $process=true) {
               );
 
               $total_weight = $total_weight + ($product->get_weight()*$quantity);
+
+              $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
+                    * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                    * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+
               $total_price = $total_price + $total;
 
               // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
@@ -674,6 +685,42 @@ function delyvax_post_create_order($order, $user, $process=true) {
           ),
           "note"=> $order_notes
       );
+
+      //
+
+      //calculate volumetric weight
+      $total_actual_weight = $total_weight;
+
+      if($total_dimension > 0)
+      {
+          if($volumetric_constant == 1000)
+          {
+              $total_volumetric_weight = $total_dimension/1000;
+          }else if($volumetric_constant == 6000)
+          {
+              $total_volumetric_weight = $total_dimension/6000;
+          }else {
+              $total_volumetric_weight = $total_dimension/5000;
+          }
+      }else {
+          $total_volumetric_weight = $total_actual_weight;
+      }
+
+      if($weight_option == 'ACTUAL')
+      {
+          $total_weight = $total_actual_weight;
+      }else if($weight_option == 'VOL')
+      {
+          $total_weight = $total_volumetric_weight;
+      }else {
+          if($total_actual_weight > $total_volumetric_weight)
+          {
+              $total_weight = $total_actual_weight;
+          }else {
+              $total_weight = $total_volumetric_weight;
+          }
+      }
+      //
 
       $weight = array(
         "unit" => "kg",
@@ -905,6 +952,11 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
                                   );
 
                                   $total_weight = $total_weight + ($product->get_weight()*$quantity);
+
+                                  $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
+                                        * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                                        * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+
                                   $total_price = $total_price + $total;
 
                                   // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
