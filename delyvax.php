@@ -3,7 +3,7 @@
     Plugin Name: DelyvaX
     Plugin URI: https://delyva.com/solutions
     description: The official DelyvaX plugin helps store owners to integrate WooCommerce with [DelyvaX](https://delyva.com/solutions) for seamless service comparison and order processing.
-    Version: 1.1.1
+    Version: 1.1.2
     Author: DelyvaX
     Author URI: https://delyva.com/solutions
     License: GPLv3

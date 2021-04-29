@@ -20,7 +20,7 @@ add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_trackin
 function delyvax_check_cart_weight(){
     $weight = WC()->cart->get_cart_contents_weight();
     $min_weight = 0.000; // kg
-    $max_weight = 10000; // kg
+    $max_weight = 100000; // kg
 
     if($weight > $max_weight){
         wc_add_notice( sprintf( __( 'You have %s kg weight and we allow maximum' . $max_weight . '  kg of weight per order. Reduce the cart weight by removing some items to proceed checkout.', 'default' ), $weight ), 'error');
@@ -30,7 +30,7 @@ function delyvax_check_cart_weight(){
 function  delyvax_check_checkout_weight() {
     $weight = WC()->cart->get_cart_contents_weight();
     $min_weight = 0.000; // kg
-    $max_weight = 10000; // kg
+    $max_weight = 100000; // kg
 
     if($weight < $min_weight) {
         wp_safe_redirect( wc_get_cart_url() );
@@ -515,9 +515,9 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                   $total_weight = $total_weight + ($product->get_weight()*$quantity);
 
-                  $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
-                        * $this->defaultDimension($this->dimensionToCm($product->get_length()))
-                        * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+                  $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()))
+                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()))
+                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height())));
 
                   $total_price = $total_price + $total;
 
@@ -595,9 +595,9 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
               $total_weight = $total_weight + ($product->get_weight()*$quantity);
 
-              $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
-                    * $this->defaultDimension($this->dimensionToCm($product->get_length()))
-                    * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+              $total_dimension = $total_dimension + ( delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()))
+                    * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()))
+                    * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height())) );
 
               $total_price = $total_price + $total;
 
@@ -953,9 +953,9 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                                   $total_weight = $total_weight + ($product->get_weight()*$quantity);
 
-                                  $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
-                                        * $this->defaultDimension($this->dimensionToCm($product->get_length()))
-                                        * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+                                  $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()))
+                                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()))
+                                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height())));
 
                                   $total_price = $total_price + $total;
 
@@ -1140,7 +1140,7 @@ function delyvax_webhook_get_tracking()
                                               wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-courier-accepted']);
                                           }
                                       }
-                                      // update_post_meta( $this_order_id, $key, $value);
+
                                       //end update sub orders
                                   }
                               }
@@ -1331,6 +1331,31 @@ function delyvax_webhook_get_tracking()
             }
         }
     }
+}
+
+function delyvax_dimension_to_cm($length)
+{
+  $dimension_unit = get_option('woocommerce_dimension_unit');
+  // convert other units into cm
+  if ($dimension_unit != 'cm') {
+      if ($dimension_unit == 'm') {
+          return $length * 100;
+      } else if ($dimension_unit == 'mm') {
+          return $length * 0.1;
+      } else if ($dimension_unit == 'in') {
+          return $length * 2.54;
+      } else if ($dimension_unit == 'yd') {
+          return $length * 91.44;
+      }
+  }
+  // already in cm
+  return $length;
+}
+
+function delyvax_default_dimension($length)
+{
+    // default dimension to 1 if it is 0
+    return $length > 0 ? $length : 1;
 }
 
 // Register new status
