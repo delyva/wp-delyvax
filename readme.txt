@@ -29,7 +29,7 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
-= 1.1.1 - April 30 2021 = Bug-fixes.
+= 1.1.2 - April 30 2021 = Bug-fixes.
 = 1.1.1 - April 26 2021 = Added support for volumetric or actual weight consideration.
 = 1.1.0 - April 19 2021 = Bug fixes, and improvements to comply with Wordpress standards.
 = 1.0.0 - August 13 2020 = Initial Release.
