@@ -62,6 +62,18 @@ function delyvaxPluginUninstalled() {
     delete_option('delyvax_api_token');
     delete_option('delyvax_api_webhook_enable');
     delete_option('delyvax_api_webhook_key');
+
+    delete_option('delyvax_shop_name');
+    delete_option('delyvax_shop_mobile');
+    delete_option('delyvax_shop_email');
+
+    delete_option('delyvax_processing_days');
+    delete_option('delyvax_processing_hours');
+    delete_option('delyvax_item_type');
+    delete_option('delyvax_volumetric_constant');
+    delete_option('delyvax_weight_option');
+    delete_option('delyvax_rate_adjustment_type');
+
     delete_option('wc_settings_delyvax_shipping_rate_adjustment');
     delete_option('delyvax_rate_adjustment_percentage');
     delete_option('delyvax_rate_adjustment_flat');
@@ -203,7 +215,7 @@ function delyvax_set_pickup_delivery_time($order)
 
             $dx_delivery_date_format = $delivery_date->format('d-M-Y');
         }else {
-            $delivery_date->modify('+1 day');
+            // $delivery_date->modify('+0 day');
 
             $dx_delivery_date = $delivery_date->getTimestamp();
 
@@ -620,9 +632,14 @@ function delyvax_post_create_order($order, $user, $process=true) {
       //Origin! -- hanlde multivendor, pickup address from vendor address or woocommerce address
 
       // The main address pieces:
-      if($store_name == null) $store_name = $order->get_shipping_first_name().' '.$order->get_shipping_last_name();
-      if($store_email == null) $store_email = $order->get_billing_email();
-      if($store_phone == null) $store_phone = $order->get_billing_phone();
+      // if($store_name == null) $store_name = $order->get_shipping_first_name().' '.$order->get_shipping_last_name();
+      // if($store_email == null) $store_email = $order->get_billing_email();
+      // if($store_phone == null) $store_phone = $order->get_billing_phone();
+
+      if($store_name == null) $store_name = $settings['shop_name'];
+      if($store_email == null) $store_email = $settings['shop_email'];
+      if($store_phone == null) $store_phone = $settings['shop_mobile'];
+
       if($store_address_1 == null) $store_address_1     = get_option( 'woocommerce_store_address');
       if($store_address_2 == null) $store_address_2   = get_option( 'woocommerce_store_address_2');
       if($store_city == null) $store_city        = get_option( 'woocommerce_store_city');

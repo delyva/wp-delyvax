@@ -130,6 +130,27 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
+            'shop_name' => array(
+                'title'    	=> __( 'Store - Contact Name', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('Store name', 'delyvax'),
+                'id' => 'delyvax_shop_name',
+                'description' => __( 'e.g. John Woo' ),
+            ),
+            'shop_mobile' => array(
+                'title'    	=> __( 'Store - Contact Mobile No', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('60129908855', 'delyvax'),
+                'id' => 'delyvax_shop_mobile',
+                'description' => __( 'e.g. 60129908855' ),
+            ),
+            'shop_email' => array(
+                'title'    	=> __( 'Store - Contact E-mail', 'delyvax' ),
+                'type' => 'text',
+                'default' => __('', 'delyvax'),
+                'id' => 'delyvax_shop_email',
+                'description' => __( 'e.g. 60129908855' ),
+            ),
             'processing_days' => array(
                 'title'    	=> __( 'Processing days', 'delyvax' ),
                 'type' => 'text',
