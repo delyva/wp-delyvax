@@ -3,18 +3,22 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The official DelyvaX plugin helps store owners to integrate WooCommerce with [DelyvaX](https://delyva.com/solutions) delivery management software as a service for seamless service comparison and order processing.
+The official DelyvaX plugin helps store owners to integrate WooCommerce store with [DelyvaX](https://delyva.com/solutions) delivery management software as a service for seamless service comparison and order processing.
 
 == Description ==
 
+The official DelyvaX plugin helps store owners to integrate WooCommerce store with [DelyvaX](https://delyva.com/solutions) delivery management software as a service for seamless service comparison and order processing.
+
+DelyvaX is an end-to-end Delivery Management Software with your own driver and customer apps. The best delivery management system for eCommerce, instant delivery, courier, logistics, taxi, manufacturing; with service comparison and seamless order processing.
+
 DelyvaX WooCommerce plugin
-- Create shipment automatically on 'payment complete' or manual click to fulfil order.
-- Fulfil shipment with 'Preparing' status
+- Create shipment automatically on 'payment completed' or manual click to fulfil order.
+- Fulfil shipment with 'Preparing' button click.
 - Edit order > Fulfil order
 - Edit order > Print label
 - Edit order > Track shipment
@@ -29,6 +33,7 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.4 - May 3 2021 = Added 'source' and updated description.
 = 1.1.3 - April 30 2021 = Add custom shop contact name, mobile no and email.
 = 1.1.2 - April 30 2021 = Bug-fixes.
 = 1.1.1 - April 26 2021 = Added support for volumetric or actual weight consideration.

@@ -76,13 +76,13 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   // 'companyId' => $company_id,
                   // 'userId' => $user_id,
                   "customerId" => $customer_id,
-                  // "consignmentNo": "CJ00000007MY",
                   "process" => false,
                   "serviceCode" => $serviceCode,
                   'origin' => $origin,
                   'destination' => $destination,
                   'note' => $order_notes,
-                  'cod'=>$cod
+                  'cod'=>$cod,
+                  'source'=>'woocommerce'
               ];
 
               $response = wp_remote_post($url, array(
