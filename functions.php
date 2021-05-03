@@ -348,12 +348,7 @@ function delyvax_create_order($order, $user, $process=true) {
         $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
         $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
 
-        if($DelyvaXOrderID)
-        {
-            echo 'Order ID already exists: '.$DelyvaXOrderID;            
-        }else {
-            $resultCreate = delyvax_post_create_order($order, $user, $process);
-        }
+        $resultCreate = delyvax_post_create_order($order, $user, $process);
     } catch (Exception $e) {
         print_r($e);
     }
