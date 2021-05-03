@@ -142,11 +142,12 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
         if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
         {
             delyvax_create_order($order, $user, true);
-        }else {
-            delyvax_create_order($order, $user, false);
         }
     }else {
-        delyvax_create_order($order, $user, false);
+        if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
+        {
+            delyvax_create_order($order, $user, false);
+        }
     }
 }
 
@@ -347,15 +348,11 @@ function delyvax_create_order($order, $user, $process=true) {
         $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
         $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
 
-        if($DelyvaXOrderID == null)
+        if($DelyvaXOrderID)
         {
-            $resultCreate = delyvax_post_create_order($order, $user, $process);
-        }else if($process == false) {
-            //do not process
-            $resultCreate = delyvax_post_create_order($order, $user, $process);
+            echo 'Order ID already exists: '.$DelyvaXOrderID;            
         }else {
-            //process order
-            $resultCreate = delyvax_post_process_order($order, $user, $DelyvaXOrderID);
+            $resultCreate = delyvax_post_create_order($order, $user, $process);
         }
     } catch (Exception $e) {
         print_r($e);
@@ -444,7 +441,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       $total_price = 0;
       $order_notes = '';
 
-      $store_name = null;
+      $store_name = get_bloginfo( 'name' );
       $store_phone = null;
       $store_email = null;
       $store_address_1 = null;
@@ -461,15 +458,13 @@ function delyvax_post_create_order($order, $user, $process=true) {
       {
           $main_order = $order;
 
-          $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
-          // $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
-          // $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
+          $order_notes = 'Order No: #'.$main_order->get_id().':';
 
           foreach ($sub_orders as $sub)
           {
               $sub_order = wc_get_order($sub->ID);
 
-              $product_store_name = 'N/A';
+              $product_store_name = get_bloginfo( 'name' );
 
               if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
               {
@@ -513,7 +508,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                   $product = $_pf->get_product($product_id);
 
-                  $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$sub->ID;
+                  $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$sub->ID;
 
                   $inventories[$count] = array(
                       "name" => $product_name,
@@ -538,7 +533,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                   $total_price = $total_price + $total;
 
-                  // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+                  $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
 
                   $count++;
               }
@@ -546,9 +541,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       }else {
           $main_order = $order;
 
-          $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
-          // $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
-          // $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
+          $order_notes = 'Order No: #'.$main_order->get_id().': ';
 
           foreach ( $main_order->get_items() as $item )
           {
@@ -567,7 +560,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
               $type = $item->get_type();
 
               //get seller info
-              $product_store_name = 'N/A';
+              $product_store_name = get_bloginfo( 'name' );
 
               if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
               {
@@ -593,7 +586,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
               $product = $_pf->get_product($product_id);
 
-              $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
+              $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
 
               $inventories[$count] = array(
                   "name" => $product_name,
@@ -618,7 +611,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
               $total_price = $total_price + $total;
 
-              // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+              $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
 
               $count++;
           }
@@ -938,7 +931,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
                   $seller_id = dokan_get_seller_id_by_order($order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
 
-                  $product_store_name = $store_info['store_name'];
+                  $product_store_name = get_bloginfo( 'name' );
 
                   if($seller_id)
                   {
@@ -972,9 +965,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
                           {
                               $inventories = array();
 
-                              $order_notes = 'Order No: #'.$order->get_id().' <br>';
-                              // $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
-                              // $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
+                              $order_notes = 'Order No: #'.$order->get_id().'.';
 
                               $count = 0;
 
@@ -998,7 +989,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                                   $product = $_pf->get_product($product_id);
 
-                                  $product_description = '[Store: '.$product_store_name.'] '.$product_name.' - Order ID #'.$order->get_id();
+                                  $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$order->get_id();
 
                                   $inventories[$count] = array(
                                       "name" => $product_name,
@@ -1023,7 +1014,7 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
 
                                   $total_price = $total_price + $total;
 
-                                  // $order_notes = $order_notes.'#'.($count+1).'. [Store: '.$store_name.'] '.$product_name.' X '.$quantity.'pcs          <br>';
+                                  $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
 
                                   $count++;
                               }
