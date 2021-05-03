@@ -462,8 +462,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
           $main_order = $order;
 
           $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
-          $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
-          $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
+          // $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
+          // $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
 
           foreach ($sub_orders as $sub)
           {
@@ -547,8 +547,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
           $main_order = $order;
 
           $order_notes = 'Order No: #'.$main_order->get_id().' <br>';
-          $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
-          $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
+          // $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
+          // $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
 
           foreach ( $main_order->get_items() as $item )
           {
@@ -705,7 +705,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
               //     "lon" => ""
               // )
           ),
-          "note"=> $order_notes
+          // "note"=> $order_notes
       );
 
       //
@@ -973,8 +973,8 @@ function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduled
                               $inventories = array();
 
                               $order_notes = 'Order No: #'.$order->get_id().' <br>';
-                              $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
-                              $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
+                              // $order_notes = $order_notes.'Date: '.$scheduledAt->format('d-m-Y H:i').' (24H) <br>';
+                              // $order_notes = $order_notes.'Time: '.$scheduledAt->format('H:i').' (24H) <br>';
 
                               $count = 0;
 
