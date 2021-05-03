@@ -72,18 +72,33 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $api_token = $settings['api_token'];
               $processing_days = $settings['processing_days'];
 
-              $postRequestArr = [
-                  // 'companyId' => $company_id,
-                  // 'userId' => $user_id,
-                  "customerId" => $customer_id,
-                  "process" => false,
-                  "serviceCode" => $serviceCode,
-                  'origin' => $origin,
-                  'destination' => $destination,
-                  'note' => $order_notes,
-                  'cod'=>$cod,
-                  'source'=>'woocommerce'
-              ];
+              if($serviceCode)
+              {
+                  $postRequestArr = [
+                      // 'companyId' => $company_id,
+                      // 'userId' => $user_id,
+                      "customerId" => $customer_id,
+                      "process" => false,
+                      "serviceCode" => $serviceCode,
+                      'origin' => $origin,
+                      'destination' => $destination,
+                      'note' => $order_notes,
+                      'cod'=>$cod,
+                      'source'=>'woocommerce'
+                  ];
+              }else {
+                  $postRequestArr = [
+                      // 'companyId' => $company_id,
+                      // 'userId' => $user_id,
+                      "customerId" => $customer_id,
+                      "process" => false,
+                      'origin' => $origin,
+                      'destination' => $destination,
+                      'note' => $order_notes,
+                      'cod'=>$cod,
+                      'source'=>'woocommerce'
+                  ];
+              }
 
               $response = wp_remote_post($url, array(
                   'headers' => array(

@@ -142,6 +142,8 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
         if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
         {
             delyvax_create_order($order, $user, true);
+        }else {
+            delyvax_create_order($order, $user, false);
         }
     }else {
         delyvax_create_order($order, $user, false);
@@ -347,6 +349,9 @@ function delyvax_create_order($order, $user, $process=true) {
 
         if($DelyvaXOrderID == null)
         {
+            $resultCreate = delyvax_post_create_order($order, $user, $process);
+        }else if($process == false) {
+            //do not process
             $resultCreate = delyvax_post_create_order($order, $user, $process);
         }else {
             //process order
@@ -806,6 +811,48 @@ function delyvax_post_create_order($order, $user, $process=true) {
                         //end
                     }
                 }
+            }else {
+                  //save tracking no into order to all parent order and suborders
+                  $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+
+                  if( sizeof($sub_orders) > 0 )
+                  {
+                      $main_order = wc_get_order($order->get_id());
+
+                      $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                      // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                      $main_order->save();
+
+                      $count = 0;
+                      foreach ($sub_orders as $sub)
+                      {
+                          $sub_order = wc_get_order($sub->ID);
+
+                          $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                          // $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                          $sub_order->save();
+
+                          $consignmentNo = $trackingNo."-".($count+1);
+
+                          //create task
+                          delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
+                          //
+
+                          $count++;
+                      }
+                  }else {
+                      $main_order = $order;
+
+                      $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                      // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                      $main_order->save();
+
+                      $consignmentNo = $trackingNo."-1";
+
+                      //create tasks if split tasks
+                      delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
+                      //end
+                  }
             }
       }
 }
