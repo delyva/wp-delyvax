@@ -149,7 +149,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type' => 'text',
                 'default' => __('', 'delyvax'),
                 'id' => 'delyvax_shop_email',
-                'description' => __( 'e.g. 60129908855' ),
+                'description' => __( 'e.g. your@email.com' ),
             ),
             'processing_days' => array(
                 'title'    	=> __( 'Processing days', 'delyvax' ),
