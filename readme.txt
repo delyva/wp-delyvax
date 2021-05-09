@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.5
+Stable tag: 1.1.6
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -33,6 +33,7 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.6 - May 9 2021 = Adjustments for international delivery.
 = 1.1.5 - May 3 2021 = Allow push draft delivery orders.
 = 1.1.4 - May 3 2021 = Added 'source' and updated description.
 = 1.1.3 - April 30 2021 = Add custom shop contact name, mobile no and email.
