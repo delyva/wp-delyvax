@@ -33,7 +33,7 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
-= 1.1.6 - May 9 2021 = Adjustments for international delivery.
+= 1.1.6 - May 9 2021 = Adjustments for international delivery. Supports multi-vendor with Dokan and WCFM Marketplace.
 = 1.1.5 - May 3 2021 = Allow push draft delivery orders.
 = 1.1.4 - May 3 2021 = Added 'source' and updated description.
 = 1.1.3 - April 30 2021 = Add custom shop contact name, mobile no and email.

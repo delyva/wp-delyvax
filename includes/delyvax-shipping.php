@@ -256,8 +256,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
        */
       public function calculate_shipping($package = array())
       {
-            // print_r($package);
-
             $status_allow_checkout = true;
 
             $pdestination = $package["destination"];
@@ -268,6 +266,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $total_weight = 0;
             $total_dimension = 0;
             $total_volumetric_weight = 0;
+
+            $product_id = null;
 
             if (defined('WOOCS_VERSION')) {
                 $currency = get_option('woocs_welcome_currency');
@@ -290,6 +290,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 unset($discount_for_item);
             }
             foreach ($package["contents"] as $key => $item) {
+                $product_id = $item["product_id"];
+
                 $product = $product_factory->get_product($item["product_id"]);
                 $skip_shipping_class = $this->get_option('skip_shipping_class');
                 if (!empty($skip_shipping_class) && ($product->get_shipping_class() === $skip_shipping_class)) {
@@ -387,6 +389,28 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         $store_country = $store_info['address']['country'];
                     }
                 }
+            }else if(function_exists(wcfm_get_vendor_id_by_post))
+            {
+                $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
+
+                $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
+
+                if($store_info)
+                {
+                    $store_name = $store_info['store_name'];
+                    $store_first_name = $store_info['store_name'];
+                    $store_last_name = $store_info['store_name'];
+                    $store_phone = $store_info['phone'];
+                    $store_email = $store_info['store_email'];
+                    $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
+                    $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
+                    $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
+                    $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
+                    $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
+                    $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+                }
+            }else {
+                // echo 'no multivendor';
             }
 
             $origin = array(
