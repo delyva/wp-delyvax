@@ -827,9 +827,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                             $consignmentNo = $trackingNo."-".($count+1);
 
-                            //create task
-                            delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
-                            //
 
                             $count++;
                         }
@@ -842,9 +839,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                         $consignmentNo = $trackingNo."-1";
 
-                        //create tasks if split tasks
-                        delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
-                        //end
                     }
                 }
             }else {
@@ -870,10 +864,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                           $consignmentNo = $trackingNo."-".($count+1);
 
-                          //create task
-                          delyvax_create_task($shipmentId, $consignmentNo, $sub_order, $user, $scheduledAt);
-                          //
-
                           $count++;
                       }
                   }else {
@@ -885,9 +875,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                       $consignmentNo = $trackingNo."-1";
 
-                      //create tasks if split tasks
-                      delyvax_create_task($shipmentId, $consignmentNo, $main_order, $user, $scheduledAt);
-                      //end
                   }
             }
       }
@@ -947,171 +934,6 @@ function delyvax_get_personnel($extIdType, $extId) {
     }
     return $driver;
 }
-
-//create task
-function delyvax_create_task($shipmentId, $trackingNo, $order, $user, $scheduledAt) {
-    try {
-        $settings = get_option( 'woocommerce_delyvax_settings');
-        $item_type = ($settings['task_item_type']) ? $settings['task_item_type'] : "PARCEL" ;
-
-        $stimezone = get_option('timezone_string');
-
-        $dtimezone = new DateTimeZone($stimezone);
-
-        //create task
-        //start DelyvaX API
-        if (!class_exists('DelyvaX_Shipping_API')) {
-            include_once 'includes/delyvax-api.php';
-        }
-
-        //if split_tasks
-        if($settings['split_tasks'] == 'yes')
-        {
-              //get driver
-              if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
-              {
-                  $seller_id = dokan_get_seller_id_by_order($order->get_id());
-                  $store_info = dokan_get_store_info( $seller_id );
-
-                  $product_store_name = get_bloginfo( 'name' );
-
-                  if($seller_id)
-                  {
-                      $pickup_date = new DateTime($order->get_meta( 'dx_pickup_date' ));
-                      $pickup_date->setTimezone($dtimezone);
-
-                      $pickup_time = $pickup_date;
-                      $dx_pickup_time = $order->get_meta( 'dx_pickup_time' );
-                      $split_dx_pickup_time = explode( ":", $dx_pickup_time );
-                      $pickup_time->setTime($split_dx_pickup_time[0],$split_dx_pickup_time[1],00);
-
-                      $timeslot_hour = $pickup_time->format('H');
-                      $timeslot_min = $pickup_time->format('i');
-
-                      $scheduledAt = $pickup_date;
-                      $scheduledAt->setTime($timeslot_hour,$timeslot_min,00);
-
-                      $extIdType = null;
-                      if(isset($settings['ext_id_type']))
-                      {
-                          $extIdType = $settings['ext_id_type'];
-                      }
-
-                      $driver = delyvax_get_personnel($extIdType, $seller_id);
-
-                      if($driver)
-                      {
-                          $driver_id = $driver["id"];
-
-                          if($driver_id)
-                          {
-                              $inventories = array();
-
-                              $order_notes = 'Order No: #'.$order->get_id().'.';
-
-                              $count = 0;
-
-                              foreach ( $order->get_items() as $item )
-                              {
-                                  $product_id = $item->get_product_id();
-                                  $product_variation_id = $item->get_variation_id();
-                                  $product = $item->get_product();
-                                  $product_name = $item->get_name();
-                                  $quantity = $item->get_quantity();
-                                  $subtotal = $item->get_subtotal();
-                                  $total = $item->get_total();
-                                  $tax = $item->get_subtotal_tax();
-                                  $taxclass = $item->get_tax_class();
-                                  $taxstat = $item->get_tax_status();
-                                  $allmeta = $item->get_meta_data();
-                                  // $somemeta = $item->get_meta( '_whatever', true );
-                                  $type = $item->get_type();
-
-                                  $_pf = new WC_Product_Factory();
-
-                                  $product = $_pf->get_product($product_id);
-
-                                  $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$order->get_id();
-
-                                  $inventories[$count] = array(
-                                      "name" => $product_name,
-                                      "type" => $item_type, //$type PARCEL / FOOD
-                                      "price" => array(
-                                          "amount" => $total,
-                                          "currency" => $order->get_currency(),
-                                      ),
-                                      "weight" => array(
-                                          "value" => ($product->get_weight()*$quantity),
-                                          "unit" => "kg"
-                                      ),
-                                      "quantity" => $quantity,
-                                      "description" => $product_description
-                                  );
-
-                                  $total_weight = $total_weight + ($product->get_weight()*$quantity);
-
-                                  $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()))
-                                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()))
-                                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height())));
-
-                                  $total_price = $total_price + $total;
-
-                                  $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
-
-                                  $count++;
-                              }
-
-                              //for task
-                              $waypoints = array(array(
-                                  "type" => "dropoff",
-                                  "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
-                                  "inventory" => $inventories,
-                                  "contact" => array(
-                                      "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
-                                      "email" => $order->get_billing_email(),
-                                      "phone" => $order->get_billing_phone(),
-                                      "mobile" => $order->get_billing_phone(),
-                                      "address1" => $order->get_shipping_address_1(),
-                                      "address2" => $order->get_shipping_address_2(),
-                                      "city" => $order->get_shipping_city(),
-                                      "state" => $order->get_shipping_state(),
-                                      "postcode" => $order->get_shipping_postcode(),
-                                      "country" => $order->get_shipping_country(),
-                                      // "coord" => array(
-                                      //     "lat" => "",
-                                      //     "lon" => ""
-                                      // )
-                                  ),
-                                  "note"=> $order_notes,
-                                  "flag" => array(
-                                      "confirmFeedback" => false,
-                                      "confirmSignature" => false,
-                                  )
-                              ));
-
-                              //
-                              $price = array(
-                                  "amount" => 0,
-                                  "currency" => $order->get_currency(),
-                              );
-
-                              //create and assign task
-                              $resultPostCreateTask = DelyvaX_Shipping_API::postCreateTask($shipmentId, $trackingNo, $waypoints, $price, $driver_id, $order_notes);
-
-                              print_r($resultPostCreateTask);
-
-                              //
-                          }
-                      }
-                  }
-              }
-        }
-        //end
-    } catch (Exception $e) {
-        print_r($e);
-    }
-}
-
 
 
 //subscribe to webhook here or when save the settings ?
