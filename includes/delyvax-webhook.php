@@ -72,7 +72,6 @@ function delyvax_webhook_subscribe() {
     for ($i=0; $i < sizeof($webhooks); $i++) {
       $wh = $webhooks[$i];
       if ($wh['url'] === $valid_url) {
-        echo $wh['event'].'|';
         unset($needed_event[array_search($wh['event'], $needed_event)]);
       }
     }
