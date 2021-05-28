@@ -1218,29 +1218,6 @@ function delyvax_webhook_get_tracking()
                                       //end update sub orders
                                   }
                               }
-                          }else if($statusCode == 900)
-                          {
-                              if (!empty($order))
-                              {
-                                  //on the way to pick up
-                                  if( !$order->has_status('wc-cancelled') )
-                                  {
-                                      $order->update_status('cancelled', 'Order status changed to Cancelled.', false); // order note is optional, if you want to  add a note to order
-
-                                      //start update sub orders
-                                      $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-
-                                      if ( $sub_orders ) {
-                                          foreach ($sub_orders as $sub)
-                                          {
-                                              $sub_order = wc_get_order($sub->ID);
-                                              $sub_order->update_status('cancelled');
-                                              wp_update_post(['ID' => $sub->ID, 'post_status' => 'cancelled']);
-                                          }
-                                      }
-                                      //end update sub orders
-                                  }
-                              }
                           }else
                           {
                               echo 'else';
