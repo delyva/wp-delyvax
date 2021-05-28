@@ -337,13 +337,4 @@ function delyvax_woocommerce_update_options( $array ) {
   } else {
     delyvax_webhook_unsubscribe();
   }
-
-  if (!class_exists('DelyvaX_Shipping_API')) {
-    include_once 'delyvax-api.php';
-  }
-
-  $webhooks = DelyvaX_Shipping_API::getWebhook();
-
-  print_r('hahahaha' . $settings['api_webhook_enable'] . '---');
-  print_r($webhooks);
 };
