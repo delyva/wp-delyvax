@@ -6,7 +6,7 @@ if (!defined('WPINC')) {
 if (!class_exists('DelyvaX_Shipping_API')) {
     class DelyvaX_Shipping_API
     {
-        private static $api_endpoint = "https://api.delyva.app";
+        private static $api_endpoint = "https://api.delyva.app/v1.0";
 
         //instant quote
         public static function getPriceQuote($origin, $destination, $weight, $cod)

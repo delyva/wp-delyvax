@@ -74,13 +74,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
-            'change_order_status' => array(
-                'title'    	=> __( 'Auto Change Order Status', 'delyvax' ),
-                'id'       	=> 'delyvax_change_order_status',
-                'description'  	=> __( 'Create webhook on DelyvaX customer profile pointing to your store url e.g. https://kedai.matdespatch.com', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> ''
-            ),
             'company_id' => array(
                 'title' => __('Company ID', 'delyvax'),
                 'type' => 'text',
@@ -124,7 +117,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'description' => __( 'DelyvaX API Token (e.g. d50d1780-aabc-11ea-8557-fb3ba8b0c74b)' ),
             ),
             'api_webhook_enable' => array(
-                'title'    	=> __( 'API Enable Webhook', 'delyvax' ),
+                'title'    	=> __( 'Auto Change Order Status', 'delyvax' ),
                 'id'       	=> 'delyvax_api_webhook_enable',
                 'description'  	=> __( 'Enable API Webhook for status tracking updates', 'delyvax' ),
                 'type'     	=> 'checkbox',

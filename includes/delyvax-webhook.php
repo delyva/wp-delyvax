@@ -103,7 +103,7 @@ function delyvax_webhook_get_tracking()
 
             if( isset($data['orderId']) && isset($data['consignmentNo']) && isset($data['statusCode']) && $settings['customer_id'] === $data['customerId'])
             {
-                if ($settings['change_order_status'] == 'yes') {
+                if ($settings['api_webhook_enable'] == 'yes') {
                       //get order id by tracking no
                       //order_tracking.update"
                       $companyId = $data['companyId'];
