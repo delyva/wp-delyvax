@@ -6,7 +6,7 @@ if (!defined('WPINC')) {
 if (!class_exists('DelyvaX_Shipping_API')) {
     class DelyvaX_Shipping_API
     {
-        private static $api_endpoint = "https://api.delyva.app";
+        private static $api_endpoint = "https://api.delyva.app/v1.0";
 
         //instant quote
         public static function getPriceQuote($origin, $destination, $weight, $cod)
@@ -36,7 +36,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $response = wp_remote_post($url, array(
                 'headers' => array(
                   'content-type' => 'application/json',
-                  'X-Delyvax-Access-Token' => $api_token
+                  'X-Delyvax-Access-Token' => $api_token,
+                  'X-Delyvax-Wp-Version' => DELYVAX_PLUGIN_VERSION,
                 ),
                 'body' => json_encode($postRequestArr),
                 'method' => 'POST',
@@ -103,7 +104,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $response = wp_remote_post($url, array(
                   'headers' => array(
                     'content-type' => 'application/json',
-                    'X-Delyvax-Access-Token' => $api_token
+                    'X-Delyvax-Access-Token' => $api_token,
+                    'X-Delyvax-Wp-Version' => DELYVAX_PLUGIN_VERSION,
                   ),
                   'body' => json_encode($postRequestArr),
                   'method' => 'POST',
@@ -151,7 +153,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $response = wp_remote_post($url, array(
                   'headers' => array(
                     'content-type' => 'application/json',
-                    'X-Delyvax-Access-Token' => $api_token
+                    'X-Delyvax-Access-Token' => $api_token,
+                    'X-Delyvax-Wp-Version' => DELYVAX_PLUGIN_VERSION,
                   ),
                   'body' => json_encode($postRequestArr),
                   'method' => 'POST',
@@ -257,6 +260,72 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
+        public static function getWebhook()
+        {
+            $url = Self::$api_endpoint . "/webhook";
+            $settings = get_option( 'woocommerce_delyvax_settings' );
+
+            $api_token = $settings['api_token'];
+
+            $response = wp_remote_post($url, array(
+                'headers' => array(
+                  'content-type' => 'application/json',
+                  'X-Delyvax-Access-Token' => $api_token
+                ),
+                'method' => 'GET',
+                'timeout' => 25
+            ));
+
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+                if ($error_message == 'fsocket timed out') {
+                    throw new Exception("Sorry, unable to get driver, please try again later");
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            } else {
+                if ($response['response']['code'] == 200) {
+                    $body = json_decode($response['body'], true);
+                    return $body['data'];
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            }
+        }
+
+        public static function deleteWebhook($webhook_id)
+        {
+            $url = Self::$api_endpoint . "/webhook/" . $webhook_id;
+            $settings = get_option( 'woocommerce_delyvax_settings' );
+
+            $api_token = $settings['api_token'];
+
+            $response = wp_remote_post($url, array(
+                'headers' => array(
+                  'content-type' => 'application/json',
+                  'X-Delyvax-Access-Token' => $api_token
+                ),
+                'method' => 'DELETE',
+                'timeout' => 25
+            ));
+
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+                if ($error_message == 'fsocket timed out') {
+                    throw new Exception("Sorry, unable to get driver, please try again later");
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            } else {
+                if ($response['response']['code'] == 200) {
+                    $body = json_decode($response['body'], true);
+                    return $body['data'];
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            }
+        }
+
         public static function postCreateWebhook($event_name)
         {
             $settings = get_option( 'woocommerce_delyvax_settings' );
@@ -269,7 +338,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $url = Self::$api_endpoint . "//webhook/";
 
             // get_option( 'woocommerce_store_url' );
-            $store_url = get_site_url()."/"; //"https://matdespatch.com/my/makan";
+            $store_url = get_site_url()."/?delyvax=webhook"; //"https://matdespatch.com/my/makan";
 
             $postRequestArr = array(
                 "event" => $event_name,
@@ -283,6 +352,51 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 ),
                 'body' => json_encode($postRequestArr),
                 'method' => 'POST',
+                'timeout' => 25
+            ));
+
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+                if ($error_message == 'fsocket timed out') {
+                    throw new Exception("Sorry, unable to create webhook, please try again later");
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            } else {
+                if ($response['response']['code'] == 200) {
+                    $body = json_decode($response['body'], true);
+
+                    return $body['data'];
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            }
+        }
+
+        public static function updateWebhookUrl($webhook_id)
+        {
+            $settings = get_option( 'woocommerce_delyvax_settings' );
+
+            $company_id = $settings['company_id'];
+            $user_id = $settings['user_id'];
+            $customer_id = $settings['customer_id'];
+            $api_token = $settings['api_token'];
+
+            $url = Self::$api_endpoint . "//webhook/" . $webhook_id;
+
+            $store_url = get_site_url()."/?delyvax=webhook"; //"https://matdespatch.com/my/makan";
+
+            $postRequestArr = array(
+                "url" => $store_url,
+            );
+
+            $response = wp_remote_post($url, array(
+                'headers' => array(
+                  'content-type' => 'application/json',
+                  'X-Delyvax-Access-Token' => $api_token
+                ),
+                'body' => json_encode($postRequestArr),
+                'method' => 'PATCH',
                 'timeout' => 25
             ));
 
@@ -331,63 +445,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 $error_message = $response->get_error_message();
                 if ($error_message == 'fsocket timed out') {
                     throw new Exception("Sorry, unable to get driver, please try again later");
-                } else {
-                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                }
-            } else {
-                if ($response['response']['code'] == 200) {
-                    $body = json_decode($response['body'], true);
-                    return $body['data'];
-                } else {
-                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                }
-            }
-            ///
-        }
-
-        public static function postCreateTask($shipmentId, $consignmentNo, $waypoints, $price, $driverId, $order_notes)
-        {
-            //POST {{API_ENDPOINT}}/task
-            $url = Self::$api_endpoint . "/task";// . trim(esc_attr($settings['integration_id']), " ");
-
-            $settings = get_option( 'woocommerce_delyvax_settings' );
-
-            $company_id = $settings['company_id'];
-            $user_id = $settings['user_id'];
-            $customer_id = $settings['customer_id'];
-            $api_token = $settings['api_token'];
-            $processing_days = $settings['processing_days'];
-
-            $postRequestArr = [
-                'companyId' => $company_id,
-                'userId' => $user_id,
-                "customerId" => $customer_id,
-                "orderId" => $shipmentId,
-                // "serviceCode" => $serviceCode,
-                // "serviceId" => "",
-                "driverId" => $driverId,
-                // "status" => "ASSIGN",
-                // "statusCode" => 200,
-                "cn" => $consignmentNo,
-                "price" => $price,
-                'waypoint' => $waypoints,
-                "note" => $order_notes
-            ];
-
-            $response = wp_remote_post($url, array(
-                'headers' => array(
-                  'content-type' => 'application/json',
-                  'X-Delyvax-Access-Token' => $api_token
-                ),
-                'body' => json_encode($postRequestArr),
-                'method' => 'POST',
-                'timeout' => 25
-            ));
-
-            if (is_wp_error($response)) {
-                $error_message = $response->get_error_message();
-                if ($error_message == 'fsocket timed out') {
-                    throw new Exception("Sorry, unable to create task, please try again later");
                 } else {
                     throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                 }
