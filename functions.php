@@ -909,30 +909,6 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
       return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($shipmentId, $serviceCode);
 }
 
-
-//get driver by extId = 1926
-function delyvax_get_personnel($extIdType, $extId) {
-    $driver = null;
-
-    try {
-        //create order
-        //start DelyvaX API
-        if (!class_exists('DelyvaX_Shipping_API')) {
-            include_once 'includes/delyvax-api.php';
-        }
-
-        $result = DelyvaX_Shipping_API::getDrivers($extIdType, $extId);
-
-        if($result)
-        {
-            $driver = $result;
-        }
-    } catch (Exception $e) {
-        print_r($e);
-    }
-    return $driver;
-}
-
 function delyvax_dimension_to_cm($length)
 {
   $dimension_unit = get_option('woocommerce_dimension_unit');

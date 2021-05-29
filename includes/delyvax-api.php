@@ -279,7 +279,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
                 if ($error_message == 'fsocket timed out') {
-                    throw new Exception("Sorry, unable to get driver, please try again later");
+                    throw new Exception("Sorry, unable to get webhook, please try again later");
                 } else {
                     throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                 }
@@ -312,7 +312,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
                 if ($error_message == 'fsocket timed out') {
-                    throw new Exception("Sorry, unable to get driver, please try again later");
+                    throw new Exception("Sorry, unable to delete webhook, please try again later");
                 } else {
                     throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                 }
@@ -403,7 +403,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             if (is_wp_error($response)) {
                 $error_message = $response->get_error_message();
                 if ($error_message == 'fsocket timed out') {
-                    throw new Exception("Sorry, unable to create webhook, please try again later");
+                    throw new Exception("Sorry, unable to update webhook, please try again later");
                 } else {
                     throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
                 }
@@ -417,47 +417,5 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 }
             }
         }
-
-        public static function getDrivers($extIdType, $extId)
-        {
-            // GET /fleet/driver?extId=
-            $url = Self::$api_endpoint . "/fleet/driver?extId=".$extId;
-
-            $settings = get_option( 'woocommerce_delyvax_settings' );
-
-            $company_id = $settings['company_id'];
-            $user_id = $settings['user_id'];
-            $customer_id = $settings['customer_id'];
-            $api_token = $settings['api_token'];
-            $processing_days = $settings['processing_days'];
-
-            $response = wp_remote_post($url, array(
-                'headers' => array(
-                  'content-type' => 'application/json',
-                  'X-Delyvax-Access-Token' => $api_token
-                ),
-                // 'body' => json_encode($postRequestArr),
-                'method' => 'GET',
-                'timeout' => 25
-            ));
-
-            if (is_wp_error($response)) {
-                $error_message = $response->get_error_message();
-                if ($error_message == 'fsocket timed out') {
-                    throw new Exception("Sorry, unable to get driver, please try again later");
-                } else {
-                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                }
-            } else {
-                if ($response['response']['code'] == 200) {
-                    $body = json_decode($response['body'], true);
-                    return $body['data'];
-                } else {
-                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                }
-            }
-            ///
-        }
-
     }
 }
