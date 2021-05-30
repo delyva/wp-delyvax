@@ -101,7 +101,8 @@ function delyvax_webhook_get_tracking()
             $data = $json;
             $settings = get_option( 'woocommerce_delyvax_settings');
 
-            if( isset($data['orderId']) && isset($data['consignmentNo']) && isset($data['statusCode']) && $settings['customer_id'] === $data['customerId'])
+            if( isset($data['orderId']) && isset($data['consignmentNo']) && isset($data['statusCode'])
+              && intval($settings['customer_id']) === intval($data['customerId']))
             {
                 if ($settings['api_webhook_enable'] == 'yes') {
                       //get order id by tracking no
