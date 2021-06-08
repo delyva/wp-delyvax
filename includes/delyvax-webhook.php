@@ -63,7 +63,7 @@ function delyvax_webhook_subscribe() {
   $settings = get_option( 'woocommerce_delyvax_settings');
 
   $valid_url = get_site_url()."/?delyvax=webhook";
-  $needed_event = ['order.created', 'order.failed', 'order.updated', 'order_tracking.update'];
+  $needed_event = ['order_tracking.update'];
 
   try {
     $webhooks = DelyvaX_Shipping_API::getWebhook();
