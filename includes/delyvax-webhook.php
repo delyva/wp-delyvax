@@ -324,6 +324,15 @@ function delyvax_webhook_get_tracking()
                       ], JSON_UNESCAPED_SLASHES));
                 }
             }
+
+            // TODO: Move up in next version. Leaving it here for backward compatibility with older version.
+            if ($_GET['delyvax'] === 'webhook') {
+              header('Content-Type: application/json');
+              die(json_encode([
+                'status' => 'AWE=' . $settings['api_webhook_enable'],
+                'version' => DELYVAX_PLUGIN_VERSION,
+              ], JSON_UNESCAPED_SLASHES));
+            }
         }
     }
 }
