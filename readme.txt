@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.8
+Stable tag: 1.1.9
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -33,13 +33,11 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
-= 1.1.8 - May 30 2021 = Important Update! Fix webhook failed to verify customerId.
-= 1.1.7 - May 28 2021 = Bug fixes. Refactor webhook function.
-= 1.1.6 - May 9 2021 = Adjustments for international delivery. Supports multi-vendor with Dokan and WCFM Marketplace.
-= 1.1.5 - May 3 2021 = Allow push draft delivery orders.
-= 1.1.4 - May 3 2021 = Added 'source' and updated description.
-= 1.1.3 - April 30 2021 = Add custom shop contact name, mobile no and email.
-= 1.1.2 - April 30 2021 = Bug-fixes.
-= 1.1.1 - April 26 2021 = Added support for volumetric or actual weight consideration.
-= 1.1.0 - April 19 2021 = Bug fixes, and improvements to comply with Wordpress standards.
-= 1.0.0 - August 13 2020 = Initial Release.
+= 1.1.9 =
+*Release Date - 9 June 2021*
+
+* Update to handle empty shipping address
+* Change list of required webhook event and, update webhook response
+* Moved older changelog entries to a separate file to keep the size of this readme reasonable
+
+For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.

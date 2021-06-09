@@ -3,7 +3,7 @@
     Plugin Name: DelyvaX
     Plugin URI: https://delyva.com/solutions
     description: The official DelyvaX plugin helps store owners to integrate WooCommerce with [DelyvaX](https://delyva.com/solutions) for seamless service comparison and order processing.
-    Version: 1.1.8
+    Version: 1.1.9
     Author: DelyvaX
     Author URI: https://delyva.com/solutions
     License: GPLv3
@@ -12,7 +12,7 @@
     // Include functions.php, use require_once to stop the script if functions.php is not found
     defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
     define('DELYVAX_API_ENDPOINT', 'https://api.delyva.app/');
-    define('DELYVAX_PLUGIN_VERSION', '1.1.8');
+    define('DELYVAX_PLUGIN_VERSION', '1.1.9');
 
     require_once plugin_dir_path(__FILE__) . 'functions.php';
     require_once plugin_dir_path(__FILE__) . 'includes/shipping-widget.php'; // TEMPORARILY DISABLED
