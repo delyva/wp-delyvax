@@ -18,7 +18,7 @@ function delyvax_webhook_duplicate_check() {
 
     for ($i=0; $i < sizeof($webhooks); $i++) {
       $wh = $webhooks[$i];
-      if (array_key_exists($wh['event'], $available)) {
+      if (array_key_exists($wh['event'], $available) && $wh['url'] === $valid_url) {
         DelyvaX_Shipping_API::deleteWebhook($wh['id']);
       } else if ($wh['url'] === $old_url) {
         DelyvaX_Shipping_API::updateWebhookUrl($wh['id']);

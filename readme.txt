@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.9
+Stable tag: 1.1.10
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -32,6 +32,11 @@ DelyvaX WooCommerce plugin
 4. Configure the settings as per your requirements.
 
 == Changelog ==
+
+= 1.1.10 =
+*Release Date - 15 June 2021*
+
+* Fix bug where plugin deletes unrelated webhook
 
 = 1.1.9 =
 *Release Date - 9 June 2021*
