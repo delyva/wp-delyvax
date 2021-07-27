@@ -36,7 +36,7 @@ DelyvaX WooCommerce plugin
 = 1.1.12 =
 *Release Date - 27 Jul 2021*
 
-* Bug fixes for for vendor address multi-vendor Dokan and WCFM.
+* Bug fixes for vendor address multi-vendor Dokan and WCFM. Currently only supports 1 order 1 vendor.
 
 = 1.1.11 =
 *Release Date - 18 June 2021*
