@@ -11,7 +11,7 @@ function delyvax_webhook_duplicate_check() {
 
   $old_url = get_site_url()."/";
   $valid_url = get_site_url()."/?delyvax=webhook";
-  
+
   try {
     $webhooks = DelyvaX_Shipping_API::getWebhook();
     $available = [];
@@ -127,8 +127,11 @@ function delyvax_webhook_get_tracking()
                       {
                           $order = wc_get_order($orders[$i]->get_id());
 
-                          $orders[$i]->get_id();
                           $order->get_status();
+
+                          // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                          $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
+                          $order->save();
 
                           if($statusCode == 200)
                           {
@@ -339,7 +342,7 @@ function delyvax_webhook_get_tracking()
 
 function delyvax_woocommerce_update_options( $array ) {
   $settings = get_option( 'woocommerce_delyvax_settings');
-  
+
   if ($settings['api_webhook_enable'] == 'yes') {
     delyvax_webhook_subscribe();
     delyvax_webhook_duplicate_check();
