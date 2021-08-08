@@ -133,7 +133,34 @@ function delyvax_webhook_get_tracking()
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
                           $order->save();
 
-                          if($statusCode == 200)
+                          if($statusCode == 100)
+                          {
+                              if (!empty($order))
+                              {
+                                  //on the way to pick up
+                                  if( !$order->has_status('wc-ready-to-collect') )
+                                  {
+                                      $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                      // $order->update_status('courier-accepted');
+
+                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+
+                                      //start update sub orders
+                                      $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+
+                                      if ( $sub_orders ) {
+                                          foreach ($sub_orders as $sub)
+                                          {
+                                              $sub_order = wc_get_order($sub->ID);
+                                              $sub_order->update_status('ready-to-collect');
+                                              wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
+                                          }
+                                      }
+
+                                      //end update sub orders
+                                  }
+                              }
+                          }else if($statusCode == 200)
                           {
                               if (!empty($order))
                               {

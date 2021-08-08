@@ -1,11 +1,11 @@
 <?php
     /*
-    Plugin Name: DelyvaX
-    Plugin URI: https://delyva.com/solutions
-    description: The official DelyvaX plugin helps store owners to integrate WooCommerce with [DelyvaX](https://delyva.com/solutions) for seamless service comparison and order processing.
-    Version: 1.1.11
-    Author: DelyvaX
-    Author URI: https://delyva.com/solutions
+    Plugin Name: Delyva
+    Plugin URI: https://delyva.com
+    description: The official DelyvaX plugin helps store owners to integrate WooCommerce with [Delyva](https://delyva.com) for seamless service comparison and order processing.
+    Version: 1.1.13
+    Author: Delyva
+    Author URI: https://delyva.com
     License: GPLv3
     */
 
