@@ -244,7 +244,7 @@ function delyvax_set_pickup_delivery_time($order)
                 $timeslot_from_min = fmod($timeslot_from, 1) * 60;
             }else {
                 //set current time add 1 hour
-                $delivery_time->add(new DateInterval("PT1H"));
+                $delivery_time->add(new DateInterval("PT5M"));
 
                 $timeslot_from_hour = $delivery_time->format('H');
                 $timeslot_from_min = $delivery_time->format('i');
@@ -260,7 +260,7 @@ function delyvax_set_pickup_delivery_time($order)
 
             $dx_delivery_time = $delivery_time->format('H:i');
         }else {
-            $delivery_time->add(new DateInterval("PT1H"));
+            $delivery_time->add(new DateInterval("PT5M"));
 
             $dx_delivery_time = $delivery_time->format('H:i');
         }
