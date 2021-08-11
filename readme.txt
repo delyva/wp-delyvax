@@ -33,6 +33,11 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.13 =
+*Release Date - 08 Aug 2021*
+
+* Bug fixes for webhook delivery order status updates with tracking no
+
 = 1.1.12 =
 *Release Date - 27 Jul 2021*
 
@@ -47,12 +52,5 @@ DelyvaX WooCommerce plugin
 *Release Date - 15 June 2021*
 
 * Fix bug where plugin deletes unrelated webhook
-
-= 1.1.9 =
-*Release Date - 9 June 2021*
-
-* Update to handle empty shipping address
-* Change list of required webhook event and, update webhook response
-* Moved older changelog entries to a separate file to keep the size of this readme reasonable
 
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.
