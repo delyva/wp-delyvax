@@ -12,7 +12,7 @@
     // Include functions.php, use require_once to stop the script if functions.php is not found
     defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
     define('DELYVAX_API_ENDPOINT', 'https://api.delyva.app/');
-    define('DELYVAX_PLUGIN_VERSION', '1.1.11');
+    define('DELYVAX_PLUGIN_VERSION', '1.1.13');
 
     require_once plugin_dir_path(__FILE__) . 'functions.php';
     require_once plugin_dir_path(__FILE__) . 'includes/shipping-widget.php'; // TEMPORARILY DISABLED
