@@ -33,6 +33,11 @@ DelyvaX WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.14 =
+*Release Date - 16 Aug 2021*
+
+* Bug fixes for order from WCFM vendor information.
+
 = 1.1.13 =
 *Release Date - 08 Aug 2021*
 
@@ -47,10 +52,5 @@ DelyvaX WooCommerce plugin
 *Release Date - 18 June 2021*
 
 * Source of referral to identify delivery orders comes from woocommerce or web design agency
-
-= 1.1.10 =
-*Release Date - 15 June 2021*
-
-* Fix bug where plugin deletes unrelated webhook
 
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.

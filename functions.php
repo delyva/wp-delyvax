@@ -478,6 +478,11 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
           $order_notes = 'Order No: #'.$main_order->get_id().':';
 
+    		  foreach ( $sub_order->get_items() as $item )
+    		  {
+    			     $product_id = $item->get_product_id();
+    		  }
+
           foreach ($sub_orders as $sub)
           {
               $sub_order = wc_get_order($sub->ID);
@@ -508,7 +513,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
               }else if(function_exists(wcfm_get_vendor_id_by_post))
               {
-                  $vendor_id = wcfm_get_vendor_id_by_post( $sub_order->get_id() );
+				          $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
 
                   $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
 
@@ -589,6 +594,11 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
           $product_store_name = get_bloginfo( 'name' );
 
+          foreach ( $main_order->get_items() as $item )
+          {
+              $product_id = $item->get_product_id();
+		      }
+
           if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
           {
               $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
@@ -609,7 +619,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
               $store_country = $store_info['address']['country'];
           }else if(function_exists(wcfm_get_vendor_id_by_post))
           {
-              $vendor_id = wcfm_get_vendor_id_by_post( $main_order->get_id() );
+              $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
 
               $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
 
