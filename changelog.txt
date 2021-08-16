@@ -8,9 +8,15 @@ For the latest changes, please see the "Changelog" section of the [readme.txt fi
 = 1.1.10 =
 *Release Date - 15 June 2021*
 
-* Fix bug where plugin deletes unrelated webhook.
+* Fix bug where plugin deletes unrelated webhook
 
-= 1.1.9 - May 30 2021 = Update to handle empty shipping address. Change list of required webhook event and, update webhook response. Moved older changelog entries to a separate file to keep the size of this readme reasonable
+= 1.1.9 =
+*Release Date - 9 June 2021*
+
+* Update to handle empty shipping address
+* Change list of required webhook event and, update webhook response
+* Moved older changelog entries to a separate file to keep the size of this readme reasonable
+
 = 1.1.8 - May 30 2021 = Important Update! Fix webhook failed to verify customerId.
 = 1.1.7 - May 28 2021 = Bug fixes. Refactor webhook function.
 = 1.1.6 - May 9 2021 = Adjustments for international delivery. Supports multi-vendor with Dokan and WCFM Marketplace.
