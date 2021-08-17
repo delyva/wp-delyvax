@@ -63,14 +63,14 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             'create_shipment_on_paid' => array(
                 'title'    	=> __( 'Auto Create Delivery Order on Payment Complete', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_paid',
-                'description'  	=> __( 'Create shipment on successful payment by customer', 'delyvax' ),
+                'description'  	=> __( 'Create paid delivery order on successful payment by customer. If you do not select this, system will create delivery order as draft upon payment complete.', 'delyvax' ),
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
             'create_shipment_on_confirm' => array(
                 'title'    	=> __( 'Manual Create Delivery Order on Preparing', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_confirm',
-                'description'  	=> __( 'Create shipment on order status = "preparing" by Store/Merchant/Vendor', 'delyvax' ),
+                'description'  	=> __( 'Create paid delivery on order status = "preparing" by Store/Merchant/Vendor. If you do not select this, system will create delivery order as draft upon changes to preparing status.', 'delyvax' ),
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
@@ -147,37 +147,54 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             'processing_days' => array(
                 'title'    	=> __( 'Processing days', 'delyvax' ),
                 'type' => 'text',
-                'default' => __('0', 'delyvax'),
+                'default' => __('1', 'delyvax'),
                 'id' => 'delyvax_processing_days',
                 'description' => __( 'Number of processing days. e.g. 0 - same day ship out; 1 - next day ship out.' ),
             ),
             'processing_hours' => array(
                 'title'    	=> __( 'Processing hours', 'delyvax' ),
                 'type' => 'text',
-                'default' => __('0', 'delyvax'),
+                'default' => __('1', 'delyvax'),
                 'id' => 'delyvax_processing_hours',
                 'description' => __( 'Number of processing hours. e.g. 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
             ),
             'item_type' => array(
                 'title'    	=> __( 'Default Order - Item type', 'delyvax' ),
-                'type' => 'text',
-                'default' => __('0', 'delyvax'),
+                'default' => __('PARCEL', 'delyvax'),
                 'id' => 'delyvax_item_type',
                 'description' => __( 'Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
+                'type'    => 'select',
+                'options' => array(
+                  'PARCEL' => __( 'PARCEL', 'woocommerce' ),
+                  'DOCUMENT' => __( 'DOCUMENT', 'woocommerce' ),
+                  'FOOD' => __( 'FOOD', 'woocommerce' ),
+                  'PACKAGE' => __( 'PACKAGE', 'woocommerce' ),
+                  'BULKY' => __( 'BULKY', 'woocommerce' )
+                )
             ),
             'weight_option' => array(
                 'title'    	=> __( 'Weight consideration', 'delyvax' ),
-                'type' => 'text',
                 'default' => __('BEST', 'delyvax'),
                 'id' => 'delyvax_weight_option',
                 'description' => __( 'e.g. BEST-Whichever is higher / ACTUAL-Actual weight / VOL-Volumetric Weight.' ),
+                'type'    => 'select',
+                'options' => array(
+                  'BEST' => __( 'BEST - Whichever is higher', 'woocommerce' ),
+                  'ACTUAL' => __( 'ACTUAL - Actual weight', 'woocommerce' ),
+                  'VOL' => __( 'VOL - Volumetric Weight', 'woocommerce' )
+                )
             ),
             'volumetric_constant' => array(
                 'title'    	=> __( 'Volumetric weight constant', 'delyvax' ),
-                'type' => 'text',
                 'default' => __('5000', 'delyvax'),
                 'id' => 'delyvax_volumetric_constant',
                 'description' => __( 'e.g. 1000 / 5000 / 6000.' ),
+                'type'    => 'select',
+                'options' => array(
+                  '5000' => __( '5000', 'woocommerce' ),
+                  '6000' => __( '6000', 'woocommerce' ),
+                  '1000' => __( '1000', 'woocommerce' )
+                )
             ),
             'source' => array(
                 'title'    	=> __( 'Source of', 'delyvax' ),
@@ -241,9 +258,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             ),
             'rate_adjustment_type' => array(
                 'title' => __('Rate Adjustment Type ("discount"/"markup")', 'delyvax'),
-                'type' => 'text',
                 'default' => __('discount', 'delyvax'),
-                'id' => 'delyvax_rate_rate_adjustment_type'
+                'id' => 'delyvax_rate_rate_adjustment_type',
+                'type'    => 'select',
+                'options' => array(
+                  'discount' => __( 'Discount', 'woocommerce' ),
+                  'markup' => __( 'Markup', 'woocommerce' )
+                )
             )
           );
       }
