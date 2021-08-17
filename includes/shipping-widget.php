@@ -34,7 +34,7 @@ function delyvax_show_box( $post ) {
 		$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
 		$TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
 
-		$trackUrl = 'https://'.$company_code.'.delyva.app/customer/track/&trackingNo='.$TrackingCode;
+		$trackUrl = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$TrackingCode;
 		$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$DelyvaXOrderID.'/label?companyId='.$company_id;
 
 

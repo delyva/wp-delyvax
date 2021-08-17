@@ -551,11 +551,29 @@ function delyvax_post_create_order($order, $user, $process=true) {
                   // $somemeta = $item->get_meta( '_whatever', true );
                   $type = $item->get_type();
 
-                  // print_r($allmeta);
+                  $product_weight = 0;
+                  $product_length = 0;
+                  $product_width = 0;
+                  $product_height = 0;
 
                   $_pf = new WC_Product_Factory();
 
                   $product = $_pf->get_product($product_id);
+
+                  if( $product->is_type( 'variable' ) ){
+                      $variation = $_pf->get_product( $product_variation_id );
+
+                      $product_name = $variation->get_name();
+                      $product_weight = $variation->get_weight();
+                      $product_length = $variation->get_length();
+                      $product_width = $variation->get_width();
+                      $product_height = $variation->get_height();
+                  }else{
+                      $product_weight = $product->get_weight();
+                      $product_length = $product->get_length();
+                      $product_width = $product->get_width();
+                      $product_height = $product->get_height();
+                  }
 
                   $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$sub->ID;
 
@@ -567,18 +585,18 @@ function delyvax_post_create_order($order, $user, $process=true) {
                           "currency" => $main_order->get_currency(),
                       ),
                       "weight" => array(
-                          "value" => ($product->get_weight()*$quantity),
+                          "value" => ($product_weight*$quantity),
                           "unit" => "kg"
                       ),
                       "quantity" => $quantity,
                       "description" => $product_description
                   );
 
-                  $total_weight = $total_weight + ($product->get_weight()*$quantity);
+                  $total_weight = $total_weight + ($product_weight*$quantity);
 
-                  $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()))
-                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()))
-                        * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height())));
+                  $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))
+                        * delyvax_default_dimension(delyvax_dimension_to_cm($product_length))
+                        * delyvax_default_dimension(delyvax_dimension_to_cm($product_height)));
 
                   $total_price = $total_price + $total;
 
@@ -657,12 +675,33 @@ function delyvax_post_create_order($order, $user, $process=true) {
               // $somemeta = $item->get_meta( '_whatever', true );
               $type = $item->get_type();
 
+              $product_weight = 0;
+              $product_length = 0;
+              $product_width = 0;
+              $product_height = 0;
+
               //get seller info
               $product_store_name = get_bloginfo( 'name' );
 
               $_pf = new WC_Product_Factory();
 
               $product = $_pf->get_product($product_id);
+
+              if( $product->is_type( 'variable' ) ){
+                  $variation = $_pf->get_product( $product_variation_id );
+
+                  $product_name = $variation->get_name();
+                  $product_weight = $variation->get_weight();
+                  $product_length = $variation->get_length();
+                  $product_width = $variation->get_width();
+                  $product_height = $variation->get_height();
+
+              }else{
+                  $product_weight = $product->get_weight();
+                  $product_length = $product->get_length();
+                  $product_width = $product->get_width();
+                  $product_height = $product->get_height();
+              }
 
               $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
 
@@ -674,18 +713,18 @@ function delyvax_post_create_order($order, $user, $process=true) {
                       "currency" => $main_order->get_currency(),
                   ),
                   "weight" => array(
-                      "value" => ($product->get_weight()*$quantity),
+                      "value" => ($product_weight*$quantity),
                       "unit" => "kg"
                   ),
                   "quantity" => $quantity,
                   "description" => $product_description
               );
 
-              $total_weight = $total_weight + ($product->get_weight()*$quantity);
+              $total_weight = $total_weight + ($product_weight*$quantity);
 
-              $total_dimension = $total_dimension + ( delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()))
-                    * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()))
-                    * delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height())) );
+              $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))
+                    * delyvax_default_dimension(delyvax_dimension_to_cm($product_length))
+                    * delyvax_default_dimension(delyvax_dimension_to_cm($product_height)));
 
               $total_price = $total_price + $total;
 
