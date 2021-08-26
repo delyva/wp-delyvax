@@ -146,17 +146,38 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             ),
             'processing_days' => array(
                 'title'    	=> __( 'Processing days', 'delyvax' ),
-                'type' => 'text',
                 'default' => __('1', 'delyvax'),
                 'id' => 'delyvax_processing_days',
                 'description' => __( 'Number of processing days. e.g. 0 - same day ship out; 1 - next day ship out.' ),
+                'type'    => 'select',
+                'options' => array(
+                  '0' => __( 'Same day', 'woocommerce' ),
+                  '1' => __( 'Next (1) day', 'woocommerce' ),
+                  '2' => __( 'Next (2) day', 'woocommerce' ),
+                  '3' => __( 'Next (3) day', 'woocommerce' ),
+                  '4' => __( 'Next (4) day', 'woocommerce' ),
+                  '5' => __( 'Next (5) day', 'woocommerce' ),
+                  '6' => __( 'Next (6) day', 'woocommerce' ),
+                  '7' => __( 'Next (7) day', 'woocommerce' ),
+                )
             ),
             'processing_hours' => array(
                 'title'    	=> __( 'Processing hours', 'delyvax' ),
-                'type' => 'text',
                 'default' => __('1', 'delyvax'),
                 'id' => 'delyvax_processing_hours',
                 'description' => __( 'Number of processing hours if processing day is 0. e.g. 0 - ship now; 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
+                'type'    => 'select',
+                'options' => array(
+                  '0' => __( 'Now', 'woocommerce' ),
+                  '1' => __( 'Next (1) hour', 'woocommerce' ),
+                  '2' => __( 'Next (2) hours', 'woocommerce' ),
+                  '3' => __( 'Next (3) hours', 'woocommerce' ),
+                  '4' => __( 'Next (4) hours', 'woocommerce' ),
+                  '5' => __( 'Next (5) hours', 'woocommerce' ),
+                  '6' => __( 'Next (6) hours', 'woocommerce' ),
+                  '7' => __( 'Next (7) hours', 'woocommerce' ),
+                  '8' => __( 'Next (8) hours', 'woocommerce' ),
+                )
             ),
             'processing_time' => array(
                 'title'    	=> __( 'Processing time', 'delyvax' ),
