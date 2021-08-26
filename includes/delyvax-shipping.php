@@ -156,7 +156,41 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type' => 'text',
                 'default' => __('1', 'delyvax'),
                 'id' => 'delyvax_processing_hours',
-                'description' => __( 'Number of processing hours. e.g. 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
+                'description' => __( 'Number of processing hours if processing day is 0. e.g. 0 - ship now; 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
+            ),
+            'processing_time' => array(
+                'title'    	=> __( 'Processing time', 'delyvax' ),
+                'default' => __('11:00', 'delyvax'),
+                'id' => 'delyvax_processing_time',
+                'description' => __( 'If processing day is 1 or more, system will use this time as processing time and ignore processing hour. e.g. processing day: 1 and processing time: 11:00, delivery order will be scheduled to tomorrow at 11:00.' ),
+                'type'    => 'select',
+                'options' => array(
+                  '08:00' => __( '08:00', 'woocommerce' ),
+                  // '08:30' => __( '08:30', 'woocommerce' ),
+                  '09:00' => __( '09:00', 'woocommerce' ),
+                  // '09:30' => __( '09:30', 'woocommerce' ),
+                  '10:00' => __( '10:00', 'woocommerce' ),
+                  // '10:30' => __( '10:30', 'woocommerce' ),
+                  '11:00' => __( '11:00', 'woocommerce' ),
+                  // '11:30' => __( '11:30', 'woocommerce' ),
+                  '12:00' => __( '12:00', 'woocommerce' ),
+                  // '12:30' => __( '12:30', 'woocommerce' ),
+                  '13:00' => __( '13:00', 'woocommerce' ),
+                  // '13:30' => __( '13:30', 'woocommerce' ),
+                  '14:00' => __( '14:00', 'woocommerce' ),
+                  // '14:30' => __( '14:30', 'woocommerce' ),
+                  '15:00' => __( '15:00', 'woocommerce' ),
+                  // '15:30' => __( '15:30', 'woocommerce' ),
+                  '16:00' => __( '16:00', 'woocommerce' ),
+                  // '16:30' => __( '16:30', 'woocommerce' ),
+                  '17:00' => __( '17:00', 'woocommerce' ),
+                  // '17:30' => __( '17:30', 'woocommerce' ),
+                  '18:00' => __( '18:00', 'woocommerce' ),
+                  // '18:30' => __( '18:30', 'woocommerce' ),
+                  '19:00' => __( '19:00', 'woocommerce' ),
+                  // '19:30' => __( '19:30', 'woocommerce' ),
+                  '20:00' => __( '20:00', 'woocommerce' ),
+                )
             ),
             'item_type' => array(
                 'title'    	=> __( 'Default Order - Item type', 'delyvax' ),
@@ -547,6 +581,12 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     }else {
                         $cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
                     }
+
+                    $service_label = $shipper['service']['name'];
+                    $service_label = str_replace('(DROP)', '', $service_label);
+                    $service_label = str_replace('(PICKUP)', '', $service_label);
+					          $service_label = str_replace('(PARCEL)', '', $service_label);
+					          //$service_label = str_replace('(COD)', '', $service_label);
 
                     $rate = array(
                         'id' => $shipper['service']['code'],

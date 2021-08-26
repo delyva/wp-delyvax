@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.11
+Stable tag: 1.1.16
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -30,6 +30,11 @@ Delyva WooCommerce plugin
 4. Configure the settings as per your requirements.
 
 == Changelog ==
+
+= 1.1.16 =
+*Release Date - 26 Aug 2021*
+
+* Added processing time for auto schedule delivery order creation next X day(s) at YY time.
 
 = 1.1.15 =
 *Release Date - 18 Aug 2021*

@@ -17,7 +17,7 @@ include_once 'includes/delyvax-webhook.php';
 
 function delyvax_check_cart_weight(){
     $weight = WC()->cart->get_cart_contents_weight();
-    $min_weight = 0.000; // kg
+    $min_weight = 0.001; // kg
     $max_weight = 100000; // kg
 
     if($weight > $max_weight){
@@ -27,7 +27,7 @@ function delyvax_check_cart_weight(){
 
 function  delyvax_check_checkout_weight() {
     $weight = WC()->cart->get_cart_contents_weight();
-    $min_weight = 0.000; // kg
+    $min_weight = 0.001; // kg
     $max_weight = 100000; // kg
 
     if($weight < $min_weight) {
@@ -67,6 +67,7 @@ function delyvaxPluginUninstalled() {
 
     delete_option('delyvax_processing_days');
     delete_option('delyvax_processing_hours');
+    delete_option('delyvax_processing_time');
     delete_option('delyvax_item_type');
     delete_option('delyvax_volumetric_constant');
     delete_option('delyvax_weight_option');
@@ -156,6 +157,7 @@ function delyvax_set_pickup_delivery_time($order)
 
     $processing_days = $settings['processing_days'];
     $processing_hours = $settings['processing_hours'];
+    $processing_time = $settings['processing_time'];
     $pickup_minutes = $settings['pickup_minutes'];
 
     $gmtoffset = get_option('gmt_offset');
@@ -254,7 +256,19 @@ function delyvax_set_pickup_delivery_time($order)
             $delivery_time->setTime($timeslot_from_hour,$timeslot_from_min,00);
 
             $dx_delivery_time = $delivery_time->format('H:i');
-        }else if($processing_hours > 0)
+        }else if($processing_days > 0 && $processing_time != '')
+        {
+            $delivery_time = $delivery_date;
+            $delivery_time->setTime($processing_time,00,00);
+
+            $dx_delivery_time = $delivery_time->format('H:i');
+        }else if($processing_days > 0 && $processing_time == '')
+        {
+            $delivery_time = $delivery_date;
+            $delivery_time->setTime('11',00,00);
+
+            $dx_delivery_time = $delivery_time->format('H:i');
+        }else if($processing_days == 0 && $processing_hours > 0)
         {
             $delivery_time->add(new DateInterval("PT".$processing_hours."H"));
 
