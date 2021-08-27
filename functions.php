@@ -871,6 +871,12 @@ function delyvax_post_create_order($order, $user, $process=true) {
       {
             $shipmentId = $resultCreate["id"];
 
+      		  if($order)
+      			{
+                $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+      				  $order->save();
+      			}
+
             if($process)
             {
                 // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
