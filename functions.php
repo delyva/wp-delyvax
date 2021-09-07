@@ -17,8 +17,8 @@ include_once 'includes/delyvax-webhook.php';
 
 function delyvax_check_cart_weight(){
     $weight = WC()->cart->get_cart_contents_weight();
-    $min_weight = 0.001; // kg
-    $max_weight = 100000; // kg
+    $min_weight = 0.000; // kg
+    $max_weight = 1000000; // kg
 
     if($weight > $max_weight){
         wc_add_notice( sprintf( __( 'You have %s kg weight and we allow maximum' . $max_weight . '  kg of weight per order. Reduce the cart weight by removing some items to proceed checkout.', 'default' ), $weight ), 'error');
@@ -27,8 +27,8 @@ function delyvax_check_cart_weight(){
 
 function  delyvax_check_checkout_weight() {
     $weight = WC()->cart->get_cart_contents_weight();
-    $min_weight = 0.001; // kg
-    $max_weight = 100000; // kg
+    $min_weight = 0.000; // kg
+    $max_weight = 1000000; // kg
 
     if($weight < $min_weight) {
         wp_safe_redirect( wc_get_cart_url() );
