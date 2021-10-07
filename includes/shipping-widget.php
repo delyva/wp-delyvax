@@ -66,7 +66,7 @@ function delyvax_show_box( $post ) {
 							</p></div>";
 
 				}
-	  } else if ( $order->has_status( array( 'preparing' ) ) ) {
+		} else if ( $order->has_status( array( 'preparing' )) || $order->has_status( array( 'ready-to-collect' )) ) {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
 				if($TrackingCode)
 				{
