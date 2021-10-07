@@ -611,7 +611,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
                     $rate = array(
                         'id' => $shipper['service']['code'],
-                        'label' => $shipper['service']['name'],
+                        'label' => $service_label,
                         'cost' => $cost,
                         'taxes' => 'false',
                         'calc_tax' => 'per_order',
