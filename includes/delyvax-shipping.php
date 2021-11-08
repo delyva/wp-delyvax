@@ -61,14 +61,14 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default'	=> 'yes'
             ),
             'create_shipment_on_paid' => array(
-                'title'    	=> __( 'Auto Create Delivery Order on Payment Complete', 'delyvax' ),
+                'title'    	=> __( 'Fulfil orders immediately', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_paid',
                 'description'  	=> __( 'Create paid delivery order on successful payment by customer. If you do not select this, system will create delivery order as draft upon payment complete.', 'delyvax' ),
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
             'create_shipment_on_confirm' => array(
-                'title'    	=> __( 'Manual Create Delivery Order on Preparing', 'delyvax' ),
+                'title'    	=> __( 'Fulfil orders on "Preparing" status', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_confirm',
                 'description'  	=> __( 'Create paid delivery on order status = "preparing" by Store/Merchant/Vendor. If you do not select this, system will create delivery order as draft upon changes to preparing status.', 'delyvax' ),
                 'type'     	=> 'checkbox',
@@ -143,6 +143,18 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default' => __('', 'delyvax'),
                 'id' => 'delyvax_shop_email',
                 'description' => __( 'e.g. your@email.com' ),
+            ),
+            'multivendor' => array(
+                'title'    	=> __( 'Multi-vendor system', 'delyvax' ),
+                'default' => __('SINGLE', 'delyvax'),
+                'id' => 'delyvax_multivendor',
+                'description' => __( '' ),
+                'type'    => 'select',
+                'options' => array(
+                  'SINGLE' => __( 'Single vendor', 'woocommerce' ),
+                  'DOKAN' => __( 'Dokan', 'woocommerce' ),
+                  'WCFM' => __( 'WCFM', 'woocommerce' ),
+                )
             ),
             'processing_days' => array(
                 'title'    	=> __( 'Processing days', 'delyvax' ),
@@ -258,41 +270,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'delyvax_source',
                 'description' => __( 'Leave empty or type `woocommerce` or your web design agency code.' ),
             ),
-            // 'task_item_type' => array(
-            //     'title'    	=> __( 'Default Task - Item type', 'delyvax' ),
-            //     'type' => 'text',
-            //     'default' => __('0', 'delyvax'),
-            //     'id' => 'delyvax_task_item_type',
-            //     'description' => __( 'Default task - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
-            // ),
-            // 'split_tasks' => array(
-            //     'title'    	=> __( 'Fulfilment by vendors', 'delyvax' ),
-            //     'id'       	=> 'delyvax_split_tasks',
-            //     'description'  	=> __( 'Create tasks and assign to vendors by ext id type and ext id', 'delyvax' ),
-            //     'type'     	=> 'checkbox',
-            //     'default'	=> ''
-            // ),
-            // 'ext_id_type' => array(
-            //     'title'    	=> __( 'Personnel External ID Type', 'delyvax' ),
-            //     'type' => 'text',
-            //     'default'	=> '',
-            //     'id'       	=> 'delyvax_ext_id_type',
-            //     'description'  	=> __( 'Personnel External ID Type. e.g. dokan', 'delyvax' ),
-            // ),
-            // 'pickup_minutes' => array(
-            //     'title'    	=> __( 'Fulfilment minutes before delivery', 'delyvax' ),
-            //     'type' => 'text',
-            //     'default' => __('0', 'delyvax'),
-            //     'id' => 'delyvax_processing_hours',
-            //     'description' => __( 'Number of minutes before delivery. e.g. 30 - 30 minutes befor delivery time; 60 - 60 minutes befor delivery time.' ),
-            // ),
-            // 'api_webhook_key' => array(
-            //     'title' => __('API API Webhook Key', 'delyvax'),
-            //     'type' => 'text',
-            //     'default' => __('', 'delyvax'),
-            //     'id' => 'delyvax_api_webhook_key',
-            //     'description' => __( 'Do not touch this. We will automatically update this field once the system subscribed to DelyvaX webhook.'),
-            // ),
             array(
                 'title' => __( 'Shipping Rate Adjustments', 'delyvax' ),
                 'type' => 'title',
@@ -333,6 +310,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
       public function calculate_shipping($package = array())
       {
             $status_allow_checkout = true;
+
+            $settings = get_option( 'woocommerce_delyvax_settings' );
+            $multivendor_option = $settings['multivendor'];
 
             $pdestination = $package["destination"];
             $items = array();
@@ -443,47 +423,53 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $weight_option = $settings['weight_option'] ?? 'BEST';
             $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
 
-            if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+            if($multivendor_option == 'DOKAN')
             {
-                $seller_id = $package['seller_id'];
-
-                if($seller_id)
+                if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
                 {
-                    $store_info = dokan_get_store_info( $seller_id );
+                    $seller_id = $package['seller_id'];
+
+                    if($seller_id)
+                    {
+                        $store_info = dokan_get_store_info( $seller_id );
+                        if($store_info)
+                        {
+                            $store_name = $store_info['store_name'];
+                            $store_first_name = $store_info['first_name'];
+                            $store_last_name = $store_info['last_name'];
+                            $store_phone = $store_info['phone'];
+                            $store_email = $store_info['email'];
+                            $store_address_1 = $store_info['address']['street_1'];
+                            $store_address_2 = $store_info['address']['street_2'];
+                            $store_city = $store_info['address']['city'];
+                            $store_state = $store_info['address']['state'];
+                            $store_postcode = $store_info['address']['zip'];
+                            $store_country = $store_info['address']['country'];
+                        }
+                    }
+                }
+            }else if($multivendor_option == 'DOKAN')
+            {
+                if(function_exists(wcfm_get_vendor_id_by_post))
+                {
+                    $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
+
+                    $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
+
                     if($store_info)
                     {
                         $store_name = $store_info['store_name'];
-                        $store_first_name = $store_info['first_name'];
-                        $store_last_name = $store_info['last_name'];
+                        $store_first_name = $store_info['store_name'];
+                        $store_last_name = $store_info['store_name'];
                         $store_phone = $store_info['phone'];
-                        $store_email = $store_info['email'];
-                        $store_address_1 = $store_info['address']['street_1'];
-                        $store_address_2 = $store_info['address']['street_2'];
-                        $store_city = $store_info['address']['city'];
-                        $store_state = $store_info['address']['state'];
-                        $store_postcode = $store_info['address']['zip'];
-                        $store_country = $store_info['address']['country'];
+                        $store_email = $store_info['store_email'];
+                        $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
+                        $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
+                        $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
+                        $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
+                        $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
+                        $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
                     }
-                }
-            }else if(function_exists(wcfm_get_vendor_id_by_post))
-            {
-                $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
-
-                $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
-
-                if($store_info)
-                {
-                    $store_name = $store_info['store_name'];
-                    $store_first_name = $store_info['store_name'];
-                    $store_last_name = $store_info['store_name'];
-                    $store_phone = $store_info['phone'];
-                    $store_email = $store_info['store_email'];
-                    $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
-                    $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
-                    $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
-                    $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
-                    $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
-                    $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
                 }
             }else {
                 // echo 'no multivendor';
@@ -587,7 +573,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             foreach ($services as $shipper) {
                 if (isset($shipper['service']['name'])) {
-                    $settings = get_option( 'woocommerce_delyvax_settings' );
 
                     $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
 

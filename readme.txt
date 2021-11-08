@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.20
+Stable tag: 1.1.21
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -30,6 +30,11 @@ Delyva WooCommerce plugin
 4. Configure the settings as per your requirements.
 
 == Changelog ==
+
+= 1.1.21 =
+*Release Date - 8 Nov 2021*
+
+* Option for Multi-vendor Dokan and WCFM.
 
 = 1.1.20 =
 *Release Date - 7 Oct 2021*

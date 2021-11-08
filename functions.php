@@ -76,6 +76,7 @@ function delyvaxPluginUninstalled() {
     delete_option('wc_settings_delyvax_shipping_rate_adjustment');
     delete_option('delyvax_rate_adjustment_percentage');
     delete_option('delyvax_rate_adjustment_flat');
+    delete_option('delyvax_multivendor');
 }
 
 function delyvaxRequest() {
@@ -158,7 +159,6 @@ function delyvax_set_pickup_delivery_time($order)
     $processing_days = $settings['processing_days'];
     $processing_hours = $settings['processing_hours'];
     $processing_time = $settings['processing_time'];
-    $pickup_minutes = $settings['pickup_minutes'];
 
     $gmtoffset = get_option('gmt_offset');
     $stimezone = get_option('timezone_string');
@@ -258,6 +258,8 @@ function delyvax_set_pickup_delivery_time($order)
             $dx_delivery_time = $delivery_time->format('H:i');
         }else if($processing_days > 0 && $processing_time != '')
         {
+            $processing_time = str_replace(":00","",$processing_time);
+
             $delivery_time = $delivery_date;
             $delivery_time->setTime($processing_time,00,00);
 
@@ -306,25 +308,6 @@ function delyvax_set_pickup_delivery_time($order)
 
             $dx_pickup_date_format = $dx_delivery_date_format;
         }
-
-        //set pickup time
-        if($order->get_meta( 'dx_pickup_time' ) != null)
-        {
-            $dx_pickup_time = $order->get_meta( 'dx_pickup_time' );
-        }else if($pickup_minutes > 0)
-        {
-            $pickup_time = $delivery_time;
-            $pickup_time->sub(new DateInterval('PT'.$pickup_minutes.'M'));
-
-            $dx_pickup_time = $pickup_time->format('H:i');
-        }else {
-            //minus 30 minutes
-            $pickup_time = $delivery_time;
-            $pickup_time->sub(new DateInterval('PT30M'));
-
-            $dx_pickup_time = $pickup_time->format('H:i');
-        }
-
     } catch(Exception $e) {
           echo 'Message: ' .$e->getMessage();
 
@@ -377,6 +360,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
       $processing_days = $settings['processing_days'];
       $processing_hours = $settings['processing_hours'];
       $item_type = ($settings['item_type']) ? $settings['item_type'] : "PARCEL" ;
+
+      $multivendor_option = $settings['multivendor'];
 
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
       $gmtoffset = get_option('gmt_offset');
@@ -506,44 +491,49 @@ function delyvax_post_create_order($order, $user, $process=true) {
               $product_store_name = get_bloginfo( 'name' );
 
               //store info
-              if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+              if($multivendor_option == 'DOKAN')
               {
-                  $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
-                  $store_info = dokan_get_store_info( $seller_id );
-
-                  $product_store_name = $store_info['store_name'];
-
-                  if($store_info['store_name']) $store_name = $store_info['store_name'];
-                  if($store_info['first_name']) $store_first_name = $store_info['first_name'];
-                  if($store_info['last_name']) $store_last_name = $store_info['last_name'];
-                  if($store_info['phone']) $store_phone = $store_info['phone'];
-                  if($store_info['email']) $store_email = $store_info['email'];
-                  $store_address_1 = $store_info['address']['street_1'];
-                  $store_address_2 = $store_info['address']['street_2'];
-                  $store_city = $store_info['address']['city'];
-                  $store_state = $store_info['address']['state'];
-                  $store_postcode = $store_info['address']['zip'];
-                  $store_country = $store_info['address']['country'];
-
-              }else if(function_exists(wcfm_get_vendor_id_by_post))
-              {
-				          $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
-
-                  $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
-
-                  if($store_info)
+                  if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
                   {
-                      $product_store_name = $store_name = $store_info['store_name'];
-                      $store_first_name = $store_info['store_name'];
-                      $store_last_name = $store_info['store_name'];
-                      $store_phone = $store_info['phone'];
-                      $store_email = $store_info['store_email'];
-                      $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
-                      $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
-                      $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
-                      $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
-                      $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
-                      $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+                      $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
+                      $store_info = dokan_get_store_info( $seller_id );
+
+                      $product_store_name = $store_info['store_name'];
+
+                      if($store_info['store_name']) $store_name = $store_info['store_name'];
+                      if($store_info['first_name']) $store_first_name = $store_info['first_name'];
+                      if($store_info['last_name']) $store_last_name = $store_info['last_name'];
+                      if($store_info['phone']) $store_phone = $store_info['phone'];
+                      if($store_info['email']) $store_email = $store_info['email'];
+                      $store_address_1 = $store_info['address']['street_1'];
+                      $store_address_2 = $store_info['address']['street_2'];
+                      $store_city = $store_info['address']['city'];
+                      $store_state = $store_info['address']['state'];
+                      $store_postcode = $store_info['address']['zip'];
+                      $store_country = $store_info['address']['country'];
+                  }
+              }else if($multivendor_option == 'WCFM')
+              {
+                  if(function_exists(wcfm_get_vendor_id_by_post))
+                  {
+  				          $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
+
+                    $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
+
+                    if($store_info)
+                    {
+                        $product_store_name = $store_name = $store_info['store_name'];
+                        $store_first_name = $store_info['store_name'];
+                        $store_last_name = $store_info['store_name'];
+                        $store_phone = $store_info['phone'];
+                        $store_email = $store_info['store_email'];
+                        $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
+                        $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
+                        $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
+                        $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
+                        $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
+                        $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+                    }
                   }
               }else {
                   // echo 'no multivendor';
@@ -577,11 +567,19 @@ function delyvax_post_create_order($order, $user, $process=true) {
                   if( $product->is_type( 'variable' ) ){
                       $variation = $_pf->get_product( $product_variation_id );
 
-                      $product_name = $variation->get_name();
-                      $product_weight = $variation->get_weight();
-                      $product_length = $variation->get_length();
-                      $product_width = $variation->get_width();
-                      $product_height = $variation->get_height();
+                      if($variation)
+                      {
+                          $product_name = $variation->get_name();
+                          $product_weight = $variation->get_weight();
+                          $product_length = $variation->get_length();
+                          $product_width = $variation->get_width();
+                          $product_height = $variation->get_height();
+                      }else {
+                          $product_weight = $product->get_weight();
+                          $product_length = $product->get_length();
+                          $product_width = $product->get_width();
+                          $product_height = $product->get_height();
+                      }
                   }else{
                       $product_weight = $product->get_weight();
                       $product_length = $product->get_length();
@@ -631,43 +629,49 @@ function delyvax_post_create_order($order, $user, $process=true) {
               $product_id = $item->get_product_id();
 		      }
 
-          if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+          if($multivendor_option == 'DOKAN')
           {
-              $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
-              $store_info = dokan_get_store_info( $seller_id );
-
-              $product_store_name = $store_info['store_name'];
-
-              if($store_info['store_name']) $store_name = $store_info['store_name'];
-              if($store_info['first_name']) $store_first_name = $store_info['first_name'];
-              if($store_info['last_name']) $store_last_name = $store_info['last_name'];
-              if($store_info['phone']) $store_phone = $store_info['phone'];
-              if($store_info['email']) $store_email = $store_info['email'];
-              $store_address_1 = $store_info['address']['street_1'];
-              $store_address_2 = $store_info['address']['street_2'];
-              $store_city = $store_info['address']['city'];
-              $store_state = $store_info['address']['state'];
-              $store_postcode = $store_info['address']['zip'];
-              $store_country = $store_info['address']['country'];
-          }else if(function_exists(wcfm_get_vendor_id_by_post))
-          {
-              $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
-
-              $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
-
-              if($store_info)
+              if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
               {
-                  $product_store_name = $store_name = $store_info['store_name'];
-                  $store_first_name = $store_info['store_name'];
-                  $store_last_name = $store_info['store_name'];
-                  $store_phone = $store_info['phone'];
-                  $store_email = $store_info['store_email'];
-                  $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
-                  $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
-                  $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
-                  $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
-                  $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
-                  $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+                  $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
+                  $store_info = dokan_get_store_info( $seller_id );
+
+                  $product_store_name = $store_info['store_name'];
+
+                  if($store_info['store_name']) $store_name = $store_info['store_name'];
+                  if($store_info['first_name']) $store_first_name = $store_info['first_name'];
+                  if($store_info['last_name']) $store_last_name = $store_info['last_name'];
+                  if($store_info['phone']) $store_phone = $store_info['phone'];
+                  if($store_info['email']) $store_email = $store_info['email'];
+                  $store_address_1 = $store_info['address']['street_1'];
+                  $store_address_2 = $store_info['address']['street_2'];
+                  $store_city = $store_info['address']['city'];
+                  $store_state = $store_info['address']['state'];
+                  $store_postcode = $store_info['address']['zip'];
+                  $store_country = $store_info['address']['country'];
+              }
+          }else if($multivendor_option == 'WCFM')
+          {
+              if(function_exists(wcfm_get_vendor_id_by_post))
+              {
+                  $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
+
+                  $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
+
+                  if($store_info)
+                  {
+                      $product_store_name = $store_name = $store_info['store_name'];
+                      $store_first_name = $store_info['store_name'];
+                      $store_last_name = $store_info['store_name'];
+                      $store_phone = $store_info['phone'];
+                      $store_email = $store_info['store_email'];
+                      $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
+                      $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
+                      $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
+                      $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
+                      $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
+                      $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+                  }
               }
           }else {
               // echo 'no multivendor';
@@ -704,12 +708,19 @@ function delyvax_post_create_order($order, $user, $process=true) {
               if( $product->is_type( 'variable' ) ){
                   $variation = $_pf->get_product( $product_variation_id );
 
-                  $product_name = $variation->get_name();
-                  $product_weight = $variation->get_weight();
-                  $product_length = $variation->get_length();
-                  $product_width = $variation->get_width();
-                  $product_height = $variation->get_height();
-
+                  if($variation)
+                  {
+                      $product_name = $variation->get_name();
+                      $product_weight = $variation->get_weight();
+                      $product_length = $variation->get_length();
+                      $product_width = $variation->get_width();
+                      $product_height = $variation->get_height();
+                  }else {
+                      $product_weight = $product->get_weight();
+                      $product_length = $product->get_length();
+                      $product_width = $product->get_width();
+                      $product_height = $product->get_height();
+                  }
               }else{
                   $product_weight = $product->get_weight();
                   $product_length = $product->get_length();
