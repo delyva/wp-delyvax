@@ -34,7 +34,7 @@ Delyva WooCommerce plugin
 = 1.1.21 =
 *Release Date - 8 Nov 2021*
 
-* Option for Multi-vendor Dokan and WCFM.
+* Option for Multi-vendor Dokan and WCFM. After updates, Dokan and WCFM users need to set 'Multi-vendor system' to Dokan or WCFM in the plugin setting.
 
 = 1.1.20 =
 *Release Date - 7 Oct 2021*
