@@ -497,6 +497,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
                   {
                       $seller_id = dokan_get_seller_id_by_order($sub_order->get_id());
                       $store_info = dokan_get_store_info( $seller_id );
+    				  	      $user_info = get_userdata($seller_id);
+    				          $store_info['email'] = $user_info->user_email;	
 
                       $product_store_name = $store_info['store_name'];
 
@@ -635,6 +637,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
               {
                   $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
                   $store_info = dokan_get_store_info( $seller_id );
+				  	      $user_info = get_userdata($seller_id);
+				          $store_info['email'] = $user_info->user_email;
 
                   $product_store_name = $store_info['store_name'];
 
