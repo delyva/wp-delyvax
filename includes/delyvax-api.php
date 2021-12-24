@@ -61,7 +61,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
-        public static function postCreateOrder($origin, $destination, $serviceCode, $order_notes, $cod)
+        public static function postCreateOrder($origin, $destination, $weight, $serviceCode, $order_notes, $cod)
         {
               $url = Self::$api_endpoint . "/order";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -85,6 +85,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       "serviceCode" => $serviceCode,
                       'origin' => $origin,
                       'destination' => $destination,
+                      'weight' => $weight,
                       'note' => $order_notes,
                       'cod'=>$cod,
                       'source'=> $source
@@ -97,6 +98,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       "process" => false,
                       'origin' => $origin,
                       'destination' => $destination,
+                      'weight' => $weight,
                       'note' => $order_notes,
                       'cod'=>$cod,
                       'source'=> $source

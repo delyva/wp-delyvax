@@ -880,7 +880,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
         "currency" => $codCurrency
       );
 
-      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($origin, $destination, $serviceCode, $order_notes, $cod);
+      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($origin, $destination, $weight, $serviceCode, $order_notes, $cod);
 
       if($resultCreate)
       {
