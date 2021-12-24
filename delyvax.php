@@ -3,7 +3,7 @@
     Plugin Name: Delyva
     Plugin URI: https://delyva.com
     description: The official Delyva plugin helps store owners to integrate WooCommerce with [Delyva](https://delyva.com) for seamless service comparison and order processing.
-    Version: 1.1.22
+    Version: 1.1.23
     Author: Delyva
     Author URI: https://delyva.com
     License: GPLv3
