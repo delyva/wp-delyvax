@@ -839,7 +839,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       //
 
       //calculate volumetric weight
-      $total_actual_weight = $this->delyvaX_weight_to_kg($total_weight);
+      $total_actual_weight = delyvaX_weight_to_kg($total_weight);
 
       if($total_dimension > 0)
       {
