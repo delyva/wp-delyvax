@@ -314,6 +314,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $settings = get_option( 'woocommerce_delyvax_settings' );
             $multivendor_option = $settings['multivendor'];
 
+            $weight_unit = get_option('woocommerce_weight_unit');
+
             $pdestination = $package["destination"];
             $items = array();
             $product_factory = new WC_Product_Factory();
@@ -537,7 +539,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             //
             $weight = array(
-              "unit" => "kg",
+              "unit" => $weight_unit,
               "value" => $total_weight
             );
 
@@ -616,7 +618,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             //end DelyvaX API
         }
 
-      protected function weightToKg($weight)
+        protected function weightToKg($weight)
         {
             $weight_unit = get_option('woocommerce_weight_unit');
             // convert other unit into kg

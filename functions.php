@@ -363,6 +363,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
       $multivendor_option = $settings['multivendor'];
 
+      $weight_unit = get_option('woocommerce_weight_unit');
+
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
       $gmtoffset = get_option('gmt_offset');
 
@@ -600,7 +602,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
                       ),
                       "weight" => array(
                           "value" => ($product_weight),
-                          "unit" => "kg"
+                          "unit" => $weight_unit
                       ),
                       "quantity" => $quantity,
                       "description" => $product_description
@@ -743,7 +745,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
                   ),
                   "weight" => array(
                       "value" => ($product_weight),
-                      "unit" => "kg"
+                      "unit" => $weight_unit
                   ),
                   "quantity" => $quantity,
                   "description" => $product_description
@@ -837,7 +839,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       //
 
       //calculate volumetric weight
-      $total_actual_weight = $total_weight;
+      $total_actual_weight = $this->delyvaX_weight_to_kg($total_weight);
 
       if($total_dimension > 0)
       {
@@ -871,7 +873,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       //
 
       $weight = array(
-        "unit" => "kg",
+        "unit" => $weight_unit,
         "value" => $total_weight
       );
 
@@ -1005,6 +1007,23 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
       }
 
       return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($shipmentId, $serviceCode);
+}
+
+function delyvaX_weight_to_kg($weight)
+{
+    $weight_unit = get_option('woocommerce_weight_unit');
+    // convert other unit into kg
+    if ($weight_unit != 'kg') {
+        if ($weight_unit == 'g') {
+            return $weight * 0.001;
+        } else if ($weight_unit == 'lbs') {
+            return $weight * 0.453592;
+        } else if ($weight_unit == 'oz') {
+            return $weight * 0.0283495;
+        }
+    }
+    // already kg
+    return $weight;
 }
 
 function delyvax_dimension_to_cm($length)
