@@ -363,8 +363,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
       $multivendor_option = $settings['multivendor'];
 
-      $weight_unit = get_option('woocommerce_weight_unit');
-
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
       $gmtoffset = get_option('gmt_offset');
 
@@ -601,8 +599,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
                           "currency" => $main_order->get_currency(),
                       ),
                       "weight" => array(
-                          "value" => ($product_weight),
-                          "unit" => $weight_unit
+                          "value" => (delyvaX_weight_to_kg($product_weight)),
+                          "unit" => 'kg'
                       ),
                       "quantity" => $quantity,
                       "description" => $product_description
@@ -744,8 +742,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
                       "currency" => $main_order->get_currency(),
                   ),
                   "weight" => array(
-                      "value" => ($product_weight),
-                      "unit" => $weight_unit
+                      "value" => (delyvaX_weight_to_kg($product_weight)),
+                      "unit" => 'kg'
                   ),
                   "quantity" => $quantity,
                   "description" => $product_description
@@ -873,8 +871,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
       //
 
       $weight = array(
-        "unit" => $weight_unit,
-        "value" => $total_weight
+        "value" => $total_weight,
+        "unit" => 'kg'
       );
 
       $cod = array(

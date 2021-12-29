@@ -384,7 +384,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         "identifier_id" => array_key_exists("variation_id", $item) ? ($item["variation_id"] == 0 ? $item["product_id"] : $item["variation_id"]) : $item["product_id"]
                     );
 
-                    $total_weight = $total_weight + $this->weightToKg($product->get_weight());
+                    $total_weight = $total_weight + $product->get_weight();
 
                     $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
                           * $this->defaultDimension($this->dimensionToCm($product->get_length()))
@@ -504,7 +504,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             );
 
             //calculate volumetric weight
-            $total_actual_weight = $total_weight;
+            $total_actual_weight = $this->weightToKg($total_weight);
 
             if($total_dimension > 0)
             {
@@ -539,8 +539,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             //
             $weight = array(
-              "unit" => $weight_unit,
-              "value" => $total_weight
+              "value" => $total_weight,
+              "unit" => 'kg'
             );
 
             //
