@@ -61,18 +61,26 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default'	=> 'yes'
             ),
             'create_shipment_on_paid' => array(
-                'title'    	=> __( 'Fulfil orders immediately', 'delyvax' ),
+                'title'    	=> __( 'After order has been paid', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_paid',
-                'description'  	=> __( 'Create paid delivery order on successful payment by customer. If you do not select this, system will create delivery order as draft upon payment complete.', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> ''
+                'description'  	=> __( 'After order has been paid, create and process the delivery order immediately OR only create delivery order and save as draft, then you can confirm the delivery order in the customer portal.', 'delyvax' ),
+                'default'	=> '',
+                'type'    => 'select',
+                'options' => array(
+                  '' => __( 'Save as draft', 'woocommerce' ),
+                  'yes' => __( 'Process immediately', 'woocommerce' )
+                )
             ),
             'create_shipment_on_confirm' => array(
-                'title'    	=> __( 'Fulfil orders on "Preparing" status', 'delyvax' ),
+                'title'    	=> __( 'After order marked as preparing', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_confirm',
-                'description'  	=> __( 'Create paid delivery on order status = "preparing" by Store/Merchant/Vendor. If you do not select this, system will create delivery order as draft upon changes to preparing status.', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> ''
+                'description'  	=> __( 'After order has been marked as preparing, create and process the delivery order immediately OR only create delivery order and save as draft then, you can confirm the delivery order in the customer portal.', 'delyvax' ),
+                'default'	=> '',
+                'type'    => 'select',
+                'options' => array(
+                  '' => __( 'Save as draft', 'woocommerce' ),
+                  'yes' => __( 'Process immediately', 'woocommerce' )
+                )
             ),
             'company_id' => array(
                 'title' => __('Company ID', 'delyvax'),
