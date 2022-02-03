@@ -414,8 +414,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
       {
           $serviceobject = $shipping_item_obj->get_meta_data();
 
-          // print_r($serviceobject);
-
           for($i=0; $i < sizeof($serviceobject); $i++)
           {
               if($serviceobject[$i]->key == "service_code")
@@ -991,8 +989,6 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
       foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
       {
           $serviceobject = $shipping_item_obj->get_meta_data();
-
-          // print_r($serviceobject);
 
           for($i=0; $i < sizeof($serviceobject); $i++)
           {

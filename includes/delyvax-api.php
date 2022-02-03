@@ -176,9 +176,6 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
-              print_r($response);
-              exit;
-
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
                   if ($error_message == 'fsocket timed out') {
