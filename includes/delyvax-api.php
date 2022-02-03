@@ -151,11 +151,19 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               $api_token = $settings['api_token'];
               $processing_days = $settings['processing_days'];
 
-              $postRequestArr = [
-                  'orderId' => $shipmentId,
-                  "serviceCode" => $serviceCode,
-                  "skipQueue" => true,
-              ];
+              if($serviceCode)
+              {
+                  $postRequestArr = [
+                      'orderId' => $shipmentId,
+                      "serviceCode" => $serviceCode,
+                      "skipQueue" => true,
+                  ];
+              }else {
+                  $postRequestArr = [
+                      'orderId' => $shipmentId,
+                      "skipQueue" => true,
+                  ];
+              }
 
               $response = wp_remote_post($url, array(
                   'headers' => array(
