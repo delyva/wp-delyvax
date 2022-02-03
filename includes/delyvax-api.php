@@ -137,7 +137,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               ///
         }
 
-        public static function postProcessOrder($shipmentId, $serviceCode)
+        public static function postProcessOrder($order, $shipmentId, $serviceCode)
         {
               $url = Self::$api_endpoint . "/order/:orderId/process";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -176,6 +176,9 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   'timeout' => 25
               ));
 
+              print_r($response);
+              exit;
+
               if (is_wp_error($response)) {
                   $error_message = $response->get_error_message();
                   if ($error_message == 'fsocket timed out') {
@@ -188,7 +191,10 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                     $body = json_decode($response['body'], true);
                     return $body['data'];
                   } else {
-                      throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                      $body = json_decode($response['body'], true);
+                      $order->update_meta_data( 'DelyvaXError', $body['error']['message'] );
+                      $order->save();
+                      throw new Exception("Error: ".$body['error']['message'].". Sorry, something went wrong with the API. If the problem persists, please contact us!");
                   }
               }
               ///

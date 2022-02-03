@@ -894,7 +894,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
             if($process)
             {
-                // $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $user, $shipmentId);
                 $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
 
                 if($resultProcess)
@@ -1004,7 +1003,7 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
           }
       }
 
-      return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($shipmentId, $serviceCode);
+      return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($order, $shipmentId, $serviceCode);
 }
 
 function delyvaX_weight_to_kg($weight)
