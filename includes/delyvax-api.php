@@ -61,7 +61,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
-        public static function postCreateOrder($origin, $destination, $weight, $serviceCode, $order_notes, $cod)
+        public static function postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $cod)
         {
               $url = Self::$api_endpoint . "/order";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -128,7 +128,10 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       $body = json_decode($response['body'], true);
                       return $body['data'];
                   } else {
-                      throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                      $body = json_decode($response['body'], true);
+                      $order->update_meta_data( 'DelyvaXError', $body['error']['message'] );
+                      $order->save();
+                      throw new Exception("Error: ".$body['error']['message'].". Sorry, something went wrong with the API. If the problem persists, please contact us!");
                   }
               }
               ///
