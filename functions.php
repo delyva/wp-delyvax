@@ -909,6 +909,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
                         $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
                         $main_order->save();
 
+                        $main_order->update_status('ready-to-collect');
+
                         $count = 0;
                         foreach ($sub_orders as $sub)
                         {
@@ -917,6 +919,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
                             $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                             $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
                             $sub_order->save();
+
+                            $sub_order->update_status('ready-to-collect');
 
                             $consignmentNo = $trackingNo."-".($count+1);
 
@@ -929,6 +933,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
                         $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                         $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
                         $main_order->save();
+
+                        $main_order->update_status('ready-to-collect');
 
                         $consignmentNo = $trackingNo."-1";
 
@@ -967,7 +973,6 @@ function delyvax_post_create_order($order, $user, $process=true) {
                       $main_order->save();
 
                       $consignmentNo = $trackingNo."-1";
-
                   }
             }
       }
@@ -1055,12 +1060,12 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Preparing (%s)', 'Preparing (%s)' )
     ) );
     register_post_status( 'wc-ready-to-collect', array(
-        'label'                     => _x('Ready to collect', 'Order status', 'default' ),
+        'label'                     => _x('Package is Ready', 'Order status', 'default' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
         'show_in_admin_status_list' => true,
-        'label_count'               => _n_noop( 'Ready to collect (%s)', 'Ready to collect (%s)' )
+        'label_count'               => _n_noop( 'Package is Ready (%s)', 'Package is Ready (%s)' )
     ) );
     register_post_status( 'wc-courier-accepted', array(
         'label'                     => _x('Courier accepted', 'Order status', 'default' ),
@@ -1144,7 +1149,7 @@ function delyvax_add_to_order_statuses( $order_statuses ) {
 
         if ( 'wc-processing' === $key ) {
             $new_order_statuses['wc-preparing'] = _x('Preparing', 'Order status', 'woocommerce');
-            $new_order_statuses['wc-ready-to-collect'] = _x('Ready to collect', 'Order status', 'woocommerce');
+            $new_order_statuses['wc-ready-to-collect'] = _x('Package is Ready', 'Order status', 'woocommerce');
             $new_order_statuses['wc-courier-accepted'] = _x('Courier accepted', 'Order status', 'woocommerce');
             $new_order_statuses['wc-start-collecting'] = _x('Pending pick up', 'Order status', 'woocommerce');
             $new_order_statuses['wc-collected'] = _x('Pick up complete', 'Order status', 'woocommerce');
@@ -1171,7 +1176,7 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
         if ('mark_processing' === $key)
         {
             $new_actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce');
-            $new_actions['mark_ready-to-collect'] = __( 'Mark as Ready to collect', 'woocommerce');
+            $new_actions['mark_ready-to-collect'] = __( 'Mark as Package is Ready', 'woocommerce');
             $new_actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce');
             $new_actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce');
             $new_actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce');

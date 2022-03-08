@@ -1,6 +1,7 @@
 <?php
 defined( 'ABSPATH' ) or die( 'No script kiddies please!');
 add_action( 'woocommerce_update_options', 'delyvax_woocommerce_update_options', 10, 1 );
+add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_order_created');
 add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking');
 
 // check for duplicate, fix old url
@@ -63,7 +64,7 @@ function delyvax_webhook_subscribe() {
   $settings = get_option( 'woocommerce_delyvax_settings');
 
   $valid_url = get_site_url()."/?delyvax=webhook";
-  $needed_event = ['order_tracking.update'];
+  $needed_event = ['order_tracking.update','order.created'];
 
   try {
     $webhooks = DelyvaX_Shipping_API::getWebhook();
@@ -83,6 +84,85 @@ function delyvax_webhook_subscribe() {
   } catch (Exception $e) {
 
   }
+}
+
+
+function delyvax_webhook_order_created()
+{
+    $raw = file_get_contents('php://input');
+    // var_dump($raw);
+    // throw new Exception();
+
+    if($raw)
+    {
+        $json = json_decode($raw, true);
+
+        if( isset($json) )
+        {
+            $data = $json;
+            $settings = get_option( 'woocommerce_delyvax_settings');
+
+            if( isset($data['id']) && isset($data['consignmentNo']) && isset($data['statusCode'])
+                  && intval($settings['customer_id']) === intval($data['customerId']) )
+            {
+                  if ($settings['api_webhook_enable'] == 'yes')
+                  {
+                      $shipmentId = $data['id'];
+                      $consignmentNo = $data['consignmentNo'];
+                      $statusCode = $data['statusCode'];
+
+                      global $woocommerce;
+
+                      ///find order_id by $shipmentId
+                      $orders = wc_get_orders( array(
+                          // 'limit'        => -1, // Query all orders
+                          // 'orderby'      => 'date',
+                          // 'order'        => 'DESC',
+                          'meta_key'     => 'DelyvaXOrderID', // The postmeta key field
+                          'meta_value' => $shipmentId, // The comparison argument
+                      ));
+
+                      for($i=0; $i < sizeof($orders); $i++)
+                      {
+                          $order = wc_get_order($orders[$i]->get_id());
+
+                          $order->get_status();
+
+                          // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                          $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
+                          $order->save();
+
+                          if (!empty($order))
+                          {
+                              //on the way to pick up
+                              if( !$order->has_status('wc-ready-to-collect') )
+                              {
+                                  $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                  // $order->update_status('courier-accepted');
+
+                                  wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+
+                                  //start update sub orders
+                                  $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+
+                                  if ( $sub_orders ) {
+                                      foreach ($sub_orders as $sub)
+                                      {
+                                          $sub_order = wc_get_order($sub->ID);
+                                          $sub_order->update_status('ready-to-collect');
+                                          wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
+                                      }
+                                  }
+                                  //end update sub orders
+                              }
+                          }
+                      }
+
+                  }
+            }
+
+        }
+    }
 }
 
 function delyvax_webhook_get_tracking()
@@ -133,7 +213,7 @@ function delyvax_webhook_get_tracking()
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
                           $order->save();
 
-                          if($statusCode == 100)
+                          if($statusCode == 100 || $statusCode == 110)
                           {
                               if (!empty($order))
                               {

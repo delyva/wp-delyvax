@@ -322,6 +322,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $settings = get_option( 'woocommerce_delyvax_settings' );
             $multivendor_option = $settings['multivendor'];
 
+            $checkout_pricing_enable = $settings['enable'];
+
+            if($checkout_pricing_enable != 'yes')
+            {
+                return;
+            }
+
             $weight_unit = get_option('woocommerce_weight_unit');
 
             $pdestination = $package["destination"];
@@ -604,14 +611,16 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 					          $service_label = str_replace('(PARCEL)', '', $service_label);
 					          //$service_label = str_replace('(COD)', '', $service_label);
 
+                    $service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
+
                     $rate = array(
-                        'id' => $shipper['service']['code'],
+                        'id' => $service_code,
                         'label' => $service_label,
                         'cost' => $cost,
                         'taxes' => 'false',
                         'calc_tax' => 'per_order',
                         'meta_data' => array(
-                            'service_code' => $shipper['service']['code'],
+                            'service_code' => $service_code,
                         ),
                     );
 
