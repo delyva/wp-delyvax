@@ -105,6 +105,9 @@ function delyvax_payment_complete( $order_id ){
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
         delyvax_create_order($order, $user, true);
+    }else if ($settings['create_shipment_on_paid'] == 'nothing')
+    {
+        //do nothing
     }else {
         delyvax_create_order($order, $user, false);
     }
@@ -122,6 +125,9 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
         $user = $order->get_user();
 
         delyvax_create_order($order, $user, true);
+    }else if ($settings['create_shipment_on_paid'] == 'nothing')
+    {
+        //do nothing
     }else {
         delyvax_create_order($order, $user, false);
     }
@@ -143,6 +149,9 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
         {
             delyvax_create_order($order, $user, true);
         }
+    }else if ($settings['create_shipment_on_confirm'] == 'nothing')
+    {
+        //do nothing
     }else {
         if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
         {
@@ -361,6 +370,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
       $processing_hours = $settings['processing_hours'];
       $item_type = ($settings['item_type']) ? $settings['item_type'] : "PARCEL" ;
 
+      $include_order_note = $settings['include_order_note'];
+
       $multivendor_option = $settings['multivendor'];
 
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
@@ -473,7 +484,8 @@ function delyvax_post_create_order($order, $user, $process=true) {
       {
           $main_order = $order;
 
-          $order_notes = 'Order No: #'.$main_order->get_id().':';
+          if($include_order_note != 'empty') $order_notes = 'Order No: #'.$main_order->get_id().':';
+
 
     		  foreach ( $sub_order->get_items() as $item )
     		  {
@@ -484,7 +496,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
           {
               $sub_order = wc_get_order($sub->ID);
 
-              $order_notes = 'Order No: #'.$sub_order->get_id().': ';
+              if($include_order_note != 'empty') $order_notes = 'Order No: #'.$sub_order->get_id().': ';
 
               $product_store_name = get_bloginfo( 'name' );
 
@@ -612,7 +624,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
                   $total_price = $total_price + $total;
 
-                  $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
+                  if($include_order_note == 'ordernproduct') $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
 
                   $count++;
               }
@@ -620,7 +632,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       }else {
           $main_order = $order;
 
-          $order_notes = 'Order No: #'.$main_order->get_id().': ';
+          if($include_order_note != 'empty') $order_notes = 'Order No: #'.$main_order->get_id().': ';
 
           $product_store_name = get_bloginfo( 'name' );
 
@@ -755,7 +767,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
 
               $total_price = $total_price + $total;
 
-              $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
+              if($include_order_note == 'ordernproduct') $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
 
               $count++;
           }

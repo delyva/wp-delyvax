@@ -68,7 +68,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'    => 'select',
                 'options' => array(
                   '' => __( 'Save as draft', 'woocommerce' ),
-                  'yes' => __( 'Process immediately', 'woocommerce' )
+                  'yes' => __( 'Process immediately', 'woocommerce' ),
+                  'nothing' => __( 'Do nothing', 'woocommerce' )
                 )
             ),
             'create_shipment_on_confirm' => array(
@@ -79,7 +80,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'    => 'select',
                 'options' => array(
                   '' => __( 'Save as draft', 'woocommerce' ),
-                  'yes' => __( 'Process immediately', 'woocommerce' )
+                  'yes' => __( 'Process immediately', 'woocommerce' ),
+                  'nothing' => __( 'Do nothing', 'woocommerce' )
                 )
             ),
             'company_id' => array(
@@ -277,6 +279,17 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'default' => __('woocommerce', 'delyvax'),
                 'id' => 'delyvax_source',
                 'description' => __( 'Leave empty or type `woocommerce` or your web design agency code.' ),
+            ),
+            'include_order_note' => array(
+                'title'    	=> __( 'Order note', 'delyvax' ),
+                'default' => __('orderno', 'delyvax'),
+                'id' => 'delyvax_include_order_note',
+                'type'    => 'select',
+                'options' => array(
+                  'orderno' => __( 'Include order no.', 'woocommerce' ),
+                  'ordernproduct' => __( 'Include order no. + product info', 'woocommerce' ),
+                  'empty' => __( 'Empty', 'woocommerce' )
+                )
             ),
             array(
                 'title' => __( 'Shipping Rate Adjustments', 'delyvax' ),
