@@ -586,16 +586,17 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $rates = array();
 
             try {
-                if(strlen($pdestination["address"]) >= 3 && strlen($pdestination["country"]) >= 2 && $total_weight > 0)
+                //if domestic delivery must have postcode, else
+                if( ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && strlen($pdestination["postcode"]) >= 3)
+                    || ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && ($store_country != $pdestination["country"]) )
+                  )
                 {
                     $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod);
+                }else {
+                    $status_allow_checkout = false;
                 }
             } catch (Exception $e) {
                 $rates = array();
-            }
-
-            if($pdestination["address"] == '' || $pdestination["country"] == '' || $total_weight <= 0 )
-            {
                 $status_allow_checkout = false;
             }
 
