@@ -87,7 +87,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       'destination' => $destination,
                       'weight' => $weight,
                       'note' => $order_notes,
-                      'cod'=>$cod,
+                      // 'cod'=>$cod,
                       'source'=> $source
                   ];
               }else {
@@ -100,7 +100,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       'destination' => $destination,
                       'weight' => $weight,
                       'note' => $order_notes,
-                      'cod'=>$cod,
+                      // 'cod'=>$cod,
                       'source'=> $source
                   ];
               }

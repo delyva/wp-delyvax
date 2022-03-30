@@ -111,6 +111,11 @@ function delyvax_webhook_order_created()
                       $consignmentNo = $data['consignmentNo'];
                       $statusCode = $data['statusCode'];
 
+                      if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
+                      {
+                        return;
+                      }
+
                       global $woocommerce;
 
                       ///find order_id by $shipmentId

@@ -119,11 +119,10 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
     //set pickup date, time and delivery date and time
     delyvax_set_pickup_delivery_time($order);
 
+    $user = $order->get_user();
+
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
-        // $order = wc_get_order( $order_id );
-        $user = $order->get_user();
-
         delyvax_create_order($order, $user, true);
     }else if ($settings['create_shipment_on_paid'] == 'nothing')
     {
@@ -143,20 +142,17 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
     //set pickup date, time and delivery date and time
     delyvax_set_pickup_delivery_time($order);
 
-    if ($settings['create_shipment_on_confirm'] == 'yes')
+    if($order->get_status() == 'preparing')
     {
-        if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
-        {
-            delyvax_create_order($order, $user, true);
-        }
-    }else if ($settings['create_shipment_on_confirm'] == 'nothing')
-    {
-        //do nothing
-    }else {
-        if($order->get_status() == 'preparing') //$order->get_status() == 'cancelled'
-        {
-            delyvax_create_order($order, $user, false);
-        }
+      if ($settings['create_shipment_on_confirm'] == 'yes')
+      {
+          delyvax_create_order($order, $user, true);
+      }else if ($settings['create_shipment_on_confirm'] == 'nothing')
+      {
+          //do nothing
+      }else {
+          delyvax_create_order($order, $user, false);
+      }
     }
 }
 
@@ -341,7 +337,7 @@ function delyvax_set_pickup_delivery_time($order)
 }
 
 
-function delyvax_create_order($order, $user, $process=true) {
+function delyvax_create_order($order, $user, $process=false) {
     try {
         //create order
         //start DelyvaX API
@@ -359,7 +355,7 @@ function delyvax_create_order($order, $user, $process=true) {
 }
 
 //rewire logic here, API is only for post
-function delyvax_post_create_order($order, $user, $process=true) {
+function delyvax_post_create_order($order, $user, $process=false) {
       $settings = get_option( 'woocommerce_delyvax_settings' );
 
       $company_id = $settings['company_id'];
@@ -896,7 +892,7 @@ function delyvax_post_create_order($order, $user, $process=true) {
       {
             $shipmentId = $resultCreate["id"];
 
-      		  if($order)
+      		  if($order && $shipmentId)
       			{
                 $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
       				  $order->save();
