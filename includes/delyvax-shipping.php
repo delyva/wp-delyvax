@@ -96,14 +96,14 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type' => 'text',
                 'default' => __('', 'delyvax'),
                 'id' => 'delyvax_company_code',
-                'description' => __( 'DelyvaX Company Code (e.g. matdespatch-my)' ),
+                'description' => __( 'DelyvaX Company Code (e.g. my)' ),
             ),
             'company_name' => array(
                 'title' => __('Company Name', 'delyvax'),
                 'type' => 'text',
                 'default' => __('', 'delyvax'),
                 'id' => 'delyvax_company_name',
-                'description' => __( 'DelyvaX Company Name (e.g. Matdespatch)' ),
+                'description' => __( 'DelyvaX Company Name (e.g. Delyva)' ),
             ),
             'user_id' => array(
                 'title' => __('User ID', 'delyvax'),
@@ -602,50 +602,54 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             $services = $rates['services'];
 
-            foreach ($services as $shipper) {
-                if (isset($shipper['service']['name'])) {
+            if(sizeof($services) > 0)
+            {
+          				foreach ($services as $shipper)
+                  {
+          					  if (isset($shipper['service']['name']))
+                      {
+              						$rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
 
-                    $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
+              						$ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
+              						$percentRate = $ra_percentage / 100 * $shipper['price']['amount'];
 
-                    $ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
-                    $percentRate = $ra_percentage / 100 * $shipper['price']['amount'];
+              						$flatRate = $settings['rate_adjustment_flat'] ?? 0;
 
-                    $flatRate = $settings['rate_adjustment_flat'] ?? 0;
+              						if($rate_adjustment_type == 'markup')
+              						{
+              							$cost = round($shipper['price']['amount'] + $percentRate + $flatRate, 2);
+              						}else {
+              							$cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
+              						}
 
-                    if($rate_adjustment_type == 'markup')
-                    {
-                        $cost = round($shipper['price']['amount'] + $percentRate + $flatRate, 2);
-                    }else {
-                        $cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
-                    }
+              						$service_label = $shipper['service']['name'];
+              						$service_label = str_replace('(DROP)', '', $service_label);
+              						$service_label = str_replace('(PICKUP)', '', $service_label);
+              								  $service_label = str_replace('(PARCEL)', '', $service_label);
+              								  //$service_label = str_replace('(COD)', '', $service_label);
 
-                    $service_label = $shipper['service']['name'];
-                    $service_label = str_replace('(DROP)', '', $service_label);
-                    $service_label = str_replace('(PICKUP)', '', $service_label);
-					          $service_label = str_replace('(PARCEL)', '', $service_label);
-					          //$service_label = str_replace('(COD)', '', $service_label);
+              						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
 
-                    $service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
+              						$rate = array(
+              							'id' => $service_code,
+              							'label' => $service_label,
+              							'cost' => $cost,
+              							'taxes' => 'false',
+              							'calc_tax' => 'per_order',
+              							'meta_data' => array(
+              								'service_code' => $service_code,
+              							),
+              						);
 
-                    $rate = array(
-                        'id' => $service_code,
-                        'label' => $service_label,
-                        'cost' => $cost,
-                        'taxes' => 'false',
-                        'calc_tax' => 'per_order',
-                        'meta_data' => array(
-                            'service_code' => $service_code,
-                        ),
-                    );
-
-                    if($status_allow_checkout)
-                    {
-                        // Register the rate
-                        wp_cache_add('delyvax' . $rate["id"], $rate);
-                        $this->add_rate($rate);
-                    }
-                }
-            }
+              						if($status_allow_checkout)
+              						{
+              							// Register the rate
+              							wp_cache_add('delyvax' . $rate["id"], $rate);
+              							$this->add_rate($rate);
+              						}
+                      }
+          				}
+          	}
             //end DelyvaX API
         }
 
