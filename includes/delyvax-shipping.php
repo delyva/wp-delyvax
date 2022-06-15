@@ -478,7 +478,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         }
                     }
                 }
-            }else if($multivendor_option == 'DOKAN')
+            }else if($multivendor_option == 'WCFM')
             {
                 if(function_exists(wcfm_get_vendor_id_by_post))
                 {
