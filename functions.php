@@ -482,11 +482,10 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
           if($include_order_note != 'empty') $order_notes = 'Order No: #'.$main_order->get_id().':';
 
-
-    		  foreach ( $sub_order->get_items() as $item )
-    		  {
-    			     $product_id = $item->get_product_id();
-    		  }
+          foreach ( $main_order->get_items() as $item )
+          {
+              $product_id = $item->get_product_id();
+          }
 
           foreach ($sub_orders as $sub)
           {
