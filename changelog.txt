@@ -5,6 +5,31 @@
 This file contains older changelog entries, so we can keep the size of the standard WordPress readme.txt file reasonable.
 For the latest changes, please see the "Changelog" section of the [readme.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/readme.txt).
 
+= 1.1.26 =
+*Release Date - 3rd February 2022*
+
+* Rename settings labels for After order has been paid and after order marked as preparing.
+
+= 1.1.25 =
+*Release Date - 29 Dec 2021*
+
+* Fixed weight and dimension unit. Default to kg.
+
+= 1.1.24 =
+*Release Date - 27 Dec 2021*
+
+* Fixed weight and dimension unit.
+
+= 1.1.23 =
+*Release Date - 24 Dec 2021*
+
+* Fixed checkout weight to include inventory quantity.
+
+= 1.1.22 =
+*Release Date - 24 Nov 2021*
+
+* Fixed Dokan vendor's email address for delivery order creation.
+
 = 1.1.21 =
 *Release Date - 8 Nov 2021*
 

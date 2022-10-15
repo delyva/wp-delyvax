@@ -474,7 +474,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
       }
 
       //loop inventory main n suborder
-      $sub_orders = get_children( array( 'post_parent' => $main_order->get_id(), 'post_type' => 'shop_order' ) );
+      /*$sub_orders = get_children( array( 'post_parent' => $main_order->get_id(), 'post_type' => 'shop_order' ) );
 
       if ( sizeof($sub_orders) > 0 )
       {
@@ -624,7 +624,8 @@ function delyvax_post_create_order($order, $user, $process=false) {
                   $count++;
               }
           }
-      }else {
+      }else {*/
+
           $main_order = $order;
 
           if($include_order_note != 'empty') $order_notes = 'Order No: #'.$main_order->get_id().': ';
@@ -766,7 +767,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
               $count++;
           }
-      }
+      // }
 
       /// check payment method and set codAmount
       $codAmount = 0;
@@ -905,7 +906,19 @@ function delyvax_post_create_order($order, $user, $process=false) {
                 {
                     $trackingNo = $resultProcess["consignmentNo"];
 
+                    $main_order = $order;
+
+                    $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                    $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                    $main_order->save();
+
+                    $main_order->update_status('ready-to-collect');
+
+                    $consignmentNo = $trackingNo;
+
+                    // no need - vendor to process sub order separately
                     //save tracking no into order to all parent order and suborders
+                    /*
                     $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
 
                     if( sizeof($sub_orders) > 0 )
@@ -944,43 +957,51 @@ function delyvax_post_create_order($order, $user, $process=false) {
                         $main_order->update_status('ready-to-collect');
 
                         $consignmentNo = $trackingNo."-1";
-
-                    }
+                    }*/
                 }
             }else {
+                  $main_order = $order;
+
+                  $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                  // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                  $main_order->save();
+
+                  $consignmentNo = $trackingNo;
+
+                  // no need vendor to process sub order separately
                   //save tracking no into order to all parent order and suborders
-                  $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-
-                  if( sizeof($sub_orders) > 0 )
-                  {
-                      $main_order = wc_get_order($order->get_id());
-
-                      $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                      // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                      $main_order->save();
-
-                      $count = 0;
-                      foreach ($sub_orders as $sub)
-                      {
-                          $sub_order = wc_get_order($sub->ID);
-
-                          $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                          // $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                          $sub_order->save();
-
-                          $consignmentNo = $trackingNo."-".($count+1);
-
-                          $count++;
-                      }
-                  }else {
-                      $main_order = $order;
-
-                      $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                      // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                      $main_order->save();
-
-                      $consignmentNo = $trackingNo."-1";
-                  }
+                  // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+                  //
+                  // if( sizeof($sub_orders) > 0 )
+                  // {
+                  //     $main_order = wc_get_order($order->get_id());
+                  //
+                  //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                  //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                  //     $main_order->save();
+                  //
+                  //     $count = 0;
+                  //     foreach ($sub_orders as $sub)
+                  //     {
+                  //         $sub_order = wc_get_order($sub->ID);
+                  //
+                  //         $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                  //         // $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                  //         $sub_order->save();
+                  //
+                  //         $consignmentNo = $trackingNo."-".($count+1);
+                  //
+                  //         $count++;
+                  //     }
+                  // }else {
+                  //     $main_order = $order;
+                  //
+                  //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                  //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                  //     $main_order->save();
+                  //
+                  //     $consignmentNo = $trackingNo."-1";
+                  // }
             }
       }
 }

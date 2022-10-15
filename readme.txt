@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.31
+Stable tag: 1.1.32
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -32,6 +32,11 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.32 =
+*Release Date - 16th October 2022*
+
+* Bug-fixes.
+
 = 1.1.31 =
 *Release Date - 14th October 2022*
 
@@ -56,30 +61,5 @@ Delyva WooCommerce plugin
 *Release Date - 8th March 2022*
 
 * Change order status to Package is Ready after delivery order has been created.
-
-= 1.1.26 =
-*Release Date - 3rd February 2022*
-
-* Rename settings labels for After order has been paid and after order marked as preparing.
-
-= 1.1.25 =
-*Release Date - 29 Dec 2021*
-
-* Fixed weight and dimension unit. Default to kg.
-
-= 1.1.24 =
-*Release Date - 27 Dec 2021*
-
-* Fixed weight and dimension unit.
-
-= 1.1.23 =
-*Release Date - 24 Dec 2021*
-
-* Fixed checkout weight to include inventory quantity.
-
-= 1.1.22 =
-*Release Date - 24 Nov 2021*
-
-* Fixed Dokan vendor's email address for delivery order creation.
 
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.
