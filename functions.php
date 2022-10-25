@@ -720,8 +720,6 @@ function delyvax_post_create_order($order, $user, $process=false) {
       		  if($order && $shipmentId)
       			{
                 $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                //!TODO! add discount or markup
-                //$order->update_meta_data( 'DelyvaXDiscount', $shipmentId );
       				  $order->save();
       			}
 
@@ -747,7 +745,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
                     if($resultProcess["price"])
                     {
                         $deliveryPrice = $resultProcess['price']['amount'];
-                        $deliveryDiscountMarkup = 0;
+                        $deliveryMarkup = 0;
                         $deliveryDiscount = 0;
 
                         $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
@@ -759,13 +757,14 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
                         if($rate_adjustment_type == 'markup')
                         {
-                            $deliveryDiscountMarkup = round(0 + $percentRate + $flatRate, 2);
+                            $deliveryMarkup = round($percentRate + $flatRate, 2);
                         }else {
-                            $deliveryDiscountMarkup = round(0 - $percentRate + $flatRate, 2);
+                            $deliveryDiscount = round($percentRate + $flatRate, 2);
                         }
 
                         $main_order->update_meta_data( 'DelyvaXDeliveryPrice', $deliveryPrice );
-                        $main_order->update_meta_data( 'DelyvaXMarkupDiscount', $deliveryDiscountMarkup );
+                        $main_order->update_meta_data( 'DelyvaXMarkup', $deliveryMarkup );
+                        $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
                         $main_order->save();
                     }
 
