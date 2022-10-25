@@ -249,6 +249,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   'BULKY' => __( 'BULKY', 'woocommerce' )
                 )
             ),
+            /*
             'weight_option' => array(
                 'title'    	=> __( 'Weight consideration', 'delyvax' ),
                 'default' => __('BEST', 'delyvax'),
@@ -272,7 +273,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   '6000' => __( '6000', 'woocommerce' ),
                   '1000' => __( '1000', 'woocommerce' )
                 )
-            ),
+            ),*/
             'source' => array(
                 'title'    	=> __( 'Source of', 'delyvax' ),
                 'type' => 'text',
@@ -344,6 +345,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             $weight_unit = get_option('woocommerce_weight_unit');
 
+            $weight_option = $settings['weight_option'] ?? 'BEST';
+            $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
+
             $pdestination = $package["destination"];
             $items = array();
             $product_factory = new WC_Product_Factory();
@@ -352,6 +356,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $total_weight = 0;
             $total_dimension = 0;
             $total_volumetric_weight = 0;
+
+            $inventories = array();
 
             $product_id = null;
 
@@ -375,6 +381,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 $this->setDiscountForItem($discount_for_item);
                 unset($discount_for_item);
             }
+
             foreach ($package["contents"] as $key => $item) {
                 $product_id = $item["product_id"];
 
@@ -417,8 +424,27 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
                           * $this->defaultDimension($this->dimensionToCm($product->get_length()))
                           * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+
+                    $total_volumetric_weight = $total_volumetric_weight + (($this->defaultDimension($this->dimensionToCm($product->get_width()))
+                          * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                          * $this->defaultDimension($this->dimensionToCm($product->get_height())))/$volumetric_constant);
+
+                    $inventories[] = array(
+                        "weight" => array(
+                            "value" => (delyvax_default_weight(delyvaX_weight_to_kg($product_weight))),
+                            "unit" => 'kg'
+                        ),
+                        "quantity" => 1,
+                        "dimension" => array(
+                            "unit" => 'cm',
+                            "width" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))),
+                            "length" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))),
+                            "height" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length)))
+                        )
+                    );
                 }
             }
+
             if (method_exists(WC()->cart, 'get_cart_contents_total')) {
                 $total_cart_with_discount = (float)WC()->cart->get_cart_contents_total();
             } else {
@@ -449,9 +475,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             // Country and state separated:
             $store_country = $split_country[0];
             $store_state   = $split_country[1];
-
-            $weight_option = $settings['weight_option'] ?? 'BEST';
-            $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
 
             if($multivendor_option == 'DOKAN')
             {
@@ -533,37 +556,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             //calculate volumetric weight
             $total_actual_weight = $this->weightToKg($total_weight);
-
-            if($total_dimension > 0)
-            {
-                if($volumetric_constant == 1000)
-                {
-                    $total_volumetric_weight = $total_dimension/1000;
-                }else if($volumetric_constant == 6000)
-                {
-                    $total_volumetric_weight = $total_dimension/6000;
-                }else {
-                    $total_volumetric_weight = $total_dimension/5000;
-                }
-            }else {
-                $total_volumetric_weight = $total_actual_weight;
-            }
-
-            if($weight_option == 'ACTUAL')
-            {
-                $total_weight = $total_actual_weight;
-            }else if($weight_option == 'VOL')
-            {
-                $total_weight = $total_volumetric_weight;
-            }else {
-                if($total_actual_weight > $total_volumetric_weight)
-                {
-                    $total_weight = $total_actual_weight;
-                }else {
-                    $total_weight = $total_volumetric_weight;
-                }
-            }
-            //
+            $total_weight = $total_actual_weight;
 
             //
             $weight = array(
@@ -591,7 +584,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     || ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && ($store_country != $pdestination["country"]) )
                   )
                 {
-                    $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod);
+                    $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod, $inventories);
                 }else {
                     $status_allow_checkout = false;
                 }
@@ -625,8 +618,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
               						$service_label = $shipper['service']['name'];
               						$service_label = str_replace('(DROP)', '', $service_label);
               						$service_label = str_replace('(PICKUP)', '', $service_label);
-              								  $service_label = str_replace('(PARCEL)', '', $service_label);
-              								  //$service_label = str_replace('(COD)', '', $service_label);
+                          $service_label = str_replace('(PARCEL)', '', $service_label);
+              						$service_label = str_replace('(COD)', '', $service_label);
 
               						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
 

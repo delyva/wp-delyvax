@@ -9,7 +9,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
         private static $api_endpoint = "https://api.delyva.app/v1.0";
 
         //instant quote
-        public static function getPriceQuote($origin, $destination, $weight, $cod)
+        public static function getPriceQuote($origin, $destination, $weight, $cod, $inventories)
         {
             $url = Self::$api_endpoint . "/service/instantQuote/";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -30,6 +30,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'destination' => $destination,
                 "weight" => $weight,
                 "itemType" => $item_type,
+                "inventory" => $inventories
                 // "cod" => $cod,
             ];
 
