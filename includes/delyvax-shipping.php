@@ -387,9 +387,11 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
                 $product = $product_factory->get_product($item["product_id"]);
                 $skip_shipping_class = $this->get_option('skip_shipping_class');
+
                 if (!empty($skip_shipping_class) && ($product->get_shipping_class() === $skip_shipping_class)) {
                     continue;
                 }
+
                 if (WC()->version < '2.7.0') {
                     // if this item is variation, get variation product instead
                     if ($item["data"]->product_type == "variation") {
@@ -428,21 +430,21 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     $total_volumetric_weight = $total_volumetric_weight + (($this->defaultDimension($this->dimensionToCm($product->get_width()))
                           * $this->defaultDimension($this->dimensionToCm($product->get_length()))
                           * $this->defaultDimension($this->dimensionToCm($product->get_height())))/$volumetric_constant);
-
-                    $inventories[] = array(
-                        "weight" => array(
-                            "value" => (delyvax_default_weight(delyvaX_weight_to_kg($product_weight))),
-                            "unit" => 'kg'
-                        ),
-                        "quantity" => 1,
-                        "dimension" => array(
-                            "unit" => 'cm',
-                            "width" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))),
-                            "length" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))),
-                            "height" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length)))
-                        )
-                    );
                 }
+
+                $inventories[] = array(
+                    "weight" => array(
+                        "value" => ($this->defaultWeight($this->weightToKg($product_weight))),
+                        "unit" => 'kg'
+                    ),
+                    "quantity" => $item["quantity"],
+                    "dimension" => array(
+                        "unit" => 'cm',
+                        "width" => ($this->defaultDimension($this->dimensionToCm($product->get_width()))),
+                        "length" => ($this->defaultDimension($this->dimensionToCm($product->get_length()))),
+                        "height" => ($this->defaultDimension($this->dimensionToCm($product->get_height())))
+                    )
+                );
             }
 
             if (method_exists(WC()->cart, 'get_cart_contents_total')) {
@@ -682,10 +684,16 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             return $length;
         }
 
+        function defaultWeight($weight)
+        {
+            // default dimension to 1 if it is 0
+            return $weight > 0 ? $weight : 1;
+        }
+
         protected function defaultDimension($length)
         {
             // default dimension to 1 if it is 0
-            return $length > 0 ? $length : 1;
+            return $length > 0 ? $length : 0;
         }
 
         protected function setDiscountForItem($count)
