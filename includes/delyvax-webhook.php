@@ -102,6 +102,9 @@ function delyvax_webhook_order_created()
             $data = $json;
             $settings = get_option( 'woocommerce_delyvax_settings');
 
+            $company_id = $settings['company_id'];
+            $company_code = $settings['company_code'];
+
             if( isset($data['id']) && isset($data['consignmentNo']) && isset($data['statusCode'])
                   && intval($settings['customer_id']) === intval($data['customerId']) )
             {
@@ -109,6 +112,7 @@ function delyvax_webhook_order_created()
                   {
                       $shipmentId = $data['id'];
                       $consignmentNo = $data['consignmentNo'];
+                      $statusCode = $data['statusCode'];
                       $statusCode = $data['statusCode'];
 
                       if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
@@ -142,7 +146,8 @@ function delyvax_webhook_order_created()
                               //on the way to pick up
                               if( !$order->has_status('wc-ready-to-collect') )
                               {
-                                  $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                  $order->update_status('ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+                                  // $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
                                   // $order->update_status('courier-accepted');
 
                                   wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
