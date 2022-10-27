@@ -366,6 +366,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
       $settings = get_option( 'woocommerce_delyvax_settings' );
 
       $company_id = $settings['company_id'];
+      $company_code = $settings['company_code'];
       $user_id = $settings['user_id'];
       $customer_id = $settings['customer_id'];
       $api_token = $settings['api_token'];
@@ -741,7 +742,11 @@ function delyvax_post_create_order($order, $user, $process=false) {
                     $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
                     $main_order->save();
 
-                    $main_order->update_status('ready-to-collect');
+                    // $main_order->update_status('ready-to-collect');
+                    // $main_order->update_status('ready-to-collect', '<a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a>.', false);
+                    // $main_order->update_status('ready-to-collect', '<a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
+
+                    $main_order->update_status('ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
 
                     $consignmentNo = $trackingNo;
 
@@ -771,6 +776,11 @@ function delyvax_post_create_order($order, $user, $process=false) {
                         $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
                         $main_order->save();
                     }
+
+                    //TODO! handle free shipping
+
+
+                    ////
 
                     // no need - vendor to process sub order separately
                     //save tracking no into order to all parent order and suborders
