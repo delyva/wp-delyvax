@@ -77,6 +77,10 @@ function delyvaxPluginUninstalled() {
     delete_option('delyvax_rate_adjustment_percentage');
     delete_option('delyvax_rate_adjustment_flat');
     delete_option('delyvax_multivendor');
+
+    delete_option('delyvax_free_shipping_type');
+    delete_option('delyvax_free_shipping_condition');
+    delete_option('delyvax_free_shipping_value');
 }
 
 function delyvaxRequest() {
