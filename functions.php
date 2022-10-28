@@ -445,6 +445,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
       $total_dimension = 0;
       $total_price = 0;
       $order_notes = '';
+      $total_quantity = 0;
 
       $store_name = get_bloginfo( 'name' );
       $store_phone = null;
@@ -622,7 +623,9 @@ function delyvax_post_create_order($order, $user, $process=false) {
                 * delyvax_default_dimension(delyvax_dimension_to_cm($product_length))
                 * delyvax_default_dimension(delyvax_dimension_to_cm($product_height)));
 
-          $total_price = $total_price + $total;
+          $total_price = $total_price + $subtotal;
+
+          $total_quantity = $total_quantity + $quantity;
 
           if($include_order_note == 'ordernproduct') $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
 
@@ -637,23 +640,6 @@ function delyvax_post_create_order($order, $user, $process=false) {
       {
           $codAmount = $main_order->get_total();
       }
-
-      //origin
-      //Origin! -- hanlde multivendor, pickup address from vendor address or woocommerce address
-
-      // The main address pieces:
-      // if($store_name == null) $store_name = $order->get_shipping_first_name().' '.$order->get_shipping_last_name();
-      // if($store_email == null) $store_email = $order->get_billing_email();
-      // if($store_phone == null) $store_phone = $order->get_billing_phone();
-
-//       if($store_name == null) $store_name = $settings['shop_name'];
-//       if($store_email == null) $store_email = $settings['shop_email'];
-//       if($store_phone == null) $store_phone = $settings['shop_mobile'];
-
-//       if($store_address_1 == null) $store_address_1     = get_option( 'woocommerce_store_address');
-//       if($store_address_2 == null) $store_address_2   = get_option( 'woocommerce_store_address_2');
-//       if($store_city == null) $store_city        = get_option( 'woocommerce_store_city');
-//       if($store_postcode == null) $store_postcode    = get_option( 'woocommerce_store_postcode');
 
       $origin = array(
           "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
@@ -777,10 +763,82 @@ function delyvax_post_create_order($order, $user, $process=false) {
                         $main_order->save();
                     }
 
-                    //TODO! handle free shipping
+                    //handle free shipping
+                    $free_shipping_type = $settings['free_shipping_type'] ?? '';
+                    $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
+                    $free_shipping_value = $settings['free_shipping_value'] ?? '0';
 
+                    if($free_shipping_type == 'total_quantity')
+                    {
+                        if($free_shipping_condition == '>')
+                        {
+                            if($total_quantity > $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '>=')
+                        {
+                            if($total_quantity >= $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '==')
+                        {
+                            if($total_quantity == $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '<=')
+                        {
+                            if($total_quantity <= $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '<')
+                        {
+                            if($total_quantity < $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }
+                    }else if($free_shipping_type == 'total_amount')
+                    {
+                        if($free_shipping_condition == '>')
+                        {
+                            if($total_price > $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '>=')
+                        {
+                            if($total_price >= $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '==')
+                        {
+                            if($total_price == $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '<=')
+                        {
+                            if($total_price <= $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }else if($free_shipping_condition == '<')
+                        {
+                            if($total_price < $free_shipping_value)
+                            {
+                               $deliveryDiscount = $deliveryPrice;
+                            }
+                        }
+                    }
 
-                    ////
+                    $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
+                    $main_order->save();
+                    ////end free shipping
 
                     // no need - vendor to process sub order separately
                     //save tracking no into order to all parent order and suborders
