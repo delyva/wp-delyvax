@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.34
+Stable tag: 1.1.35
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -32,8 +32,13 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
-= 1.1.34 =
+= 1.1.35 =
 *Release Date - 31st October 2022*
+
+* Better support for COD & Insurance Cover.
+
+= 1.1.34 =
+*Release Date - 29th October 2022*
 
 * Free shipping feature.
 

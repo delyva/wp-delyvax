@@ -378,6 +378,8 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
       $multivendor_option = $settings['multivendor'];
 
+      $insurance_premium = $settings['insurance_premium'] ?? '';
+
       //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
       $gmtoffset = get_option('gmt_offset');
 
@@ -632,15 +634,6 @@ function delyvax_post_create_order($order, $user, $process=false) {
           $count++;
       }
 
-      /// check payment method and set codAmount
-      $codAmount = 0;
-      $codCurrency = $order->get_currency();
-
-      if($order->get_payment_method() == 'cod')
-      {
-          $codAmount = $main_order->get_total();
-      }
-
       $origin = array(
           "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
           "inventory" => $inventories,
@@ -697,12 +690,33 @@ function delyvax_post_create_order($order, $user, $process=false) {
         "unit" => 'kg'
       );
 
+      //
       $cod = array(
-        "amount" => $codAmount,
-        "currency" => $codCurrency
+        "id"=> -1,
+        "qty"=> 1,
+        "value"=> $total_price
       );
 
-      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $cod);
+      $insurance = array(
+        "id"=> -3,
+        "qty"=> 1,
+        "value"=> $total_price
+      );
+
+      $addons = array();
+
+      if($order->get_payment_method() == 'cod')
+      {
+          array_push($addons, $cod);
+      }
+
+      if($insurance_premium == 'yes')
+      {
+          array_push($addons, $insurance);
+      }
+      //
+
+      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons);
 
       if($resultCreate)
       {

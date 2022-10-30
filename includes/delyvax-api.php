@@ -9,7 +9,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
         private static $api_endpoint = "https://api.delyva.app/v1.0";
 
         //instant quote
-        public static function getPriceQuote($origin, $destination, $weight, $cod, $inventories)
+        public static function getPriceQuote($origin, $destination, $weight, $addons, $inventories)
         {
             $url = Self::$api_endpoint . "/service/instantQuote/";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -30,8 +30,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                 'destination' => $destination,
                 "weight" => $weight,
                 "itemType" => $item_type,
-                "inventory" => $inventories
-                // "cod" => $cod,
+                "inventory" => $inventories,
+              	"serviceAddon" => $addons
             ];
 
             $response = wp_remote_post($url, array(
@@ -62,7 +62,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
-        public static function postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $cod)
+        public static function postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons)
         {
               $url = Self::$api_endpoint . "/order";// . trim(esc_attr($settings['integration_id']), " ");
 
@@ -88,7 +88,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       'destination' => $destination,
                       'weight' => $weight,
                       'note' => $order_notes,
-                      // 'cod'=>$cod,
+                      "serviceAddon" => $addons,
                       'source'=> $source
                   ];
               }else {
@@ -101,7 +101,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       'destination' => $destination,
                       'weight' => $weight,
                       'note' => $order_notes,
-                      // 'cod'=>$cod,
+                      "serviceAddon" => $addons,
                       'source'=> $source
                   ];
               }

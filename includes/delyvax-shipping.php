@@ -249,6 +249,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   'BULKY' => __( 'BULKY', 'woocommerce' )
                 )
             ),
+            'insurance_premium' => array(
+                'title'    	=> __( 'Insurance Premium', 'delyvax' ),
+                'id'       	=> 'delyvax_insurance_premium',
+                'description'  	=> __( 'Enable Insurance Premium - subject to additional charge', 'delyvax' ),
+                'type'     	=> 'checkbox',
+                'default'	=> 'no'
+            ),
             /*
             'weight_option' => array(
                 'title'    	=> __( 'Weight consideration', 'delyvax' ),
@@ -383,6 +390,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             $weight_option = $settings['weight_option'] ?? 'BEST';
             $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
+            $insurance_premium = $settings['insurance_premium'] ?? '';
 
             $pdestination = $package["destination"];
             $items = array();
@@ -610,11 +618,25 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             );
 
             //
-            $codAmount = 0;
             $cod = array(
-              "amount" => $codAmount,
-              "currency" => $currency,
+              "id"=> -1,
+              "qty"=> 1,
+          		"value"=> $total_amount
             );
+
+            $insurance = array(
+              "id"=> -3,
+              "qty"=> 1,
+          		"value"=> $total_amount
+            );
+
+            $addons = array();
+            array_push($addons, $cod);
+
+            if($insurance_premium == 'yes')
+            {
+                array_push($addons, $insurance);
+            }
 
             //start DelyvaX API
             if (!class_exists('DelyvaX_Shipping_API')) {
@@ -629,7 +651,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     || ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && ($store_country != $pdestination["country"]) )
                   )
                 {
-                    $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $cod, $inventories);
+                    $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $addons, $inventories);
                 }else {
                     $status_allow_checkout = false;
                 }
@@ -737,7 +759,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
               						$service_label = str_replace('(DROP)', '', $service_label);
               						$service_label = str_replace('(PICKUP)', '', $service_label);
                           $service_label = str_replace('(PARCEL)', '', $service_label);
-              						$service_label = str_replace('(COD)', '', $service_label);
+              						// $service_label = str_replace('(COD)', '', $service_label);
 
                           if($cost == 0)
                           {
