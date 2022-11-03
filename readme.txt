@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: 1.1.35
+Stable tag: 1.1.36
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -31,6 +31,11 @@ Delyva WooCommerce plugin
 5. Check Settings > General > Timezone. Make sure your timezone is set to city name instead of UTC+X.  e.g. Kuala Lumpur, instead of UTC+8.
 
 == Changelog ==
+
+= 1.1.36 =
+*Release Date - 3rd November 2022*
+
+* Limit number of delivery service options at the checkout page.
 
 = 1.1.35 =
 *Release Date - 31st October 2022*

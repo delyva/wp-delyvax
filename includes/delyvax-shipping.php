@@ -60,6 +60,13 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'     	=> 'checkbox',
                 'default'	=> 'yes'
             ),
+            'limit_service_options' => array(
+                'title' => __('Number of delivery service options', 'delyvax'),
+                'type' => 'text',
+                'default' => __('0', 'delyvax'),
+                'id' => 'delyvax_limit_service_options',
+                'description' => __( 'Limit delivery service options at the checkout page. 0 - no limit.' ),
+            ),
             'create_shipment_on_paid' => array(
                 'title'    	=> __( 'After order has been paid', 'delyvax' ),
                 'id'       	=> 'delyvax_create_shipment_on_paid',
@@ -233,6 +240,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   '19:00' => __( '19:00', 'woocommerce' ),
                   // '19:30' => __( '19:30', 'woocommerce' ),
                   '20:00' => __( '20:00', 'woocommerce' ),
+                  '21:00' => __( '21:00', 'woocommerce' ),
+                  '22:00' => __( '22:00', 'woocommerce' )
                 )
             ),
             'item_type' => array(
@@ -362,7 +371,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type' => 'text',
                 'default' => __('0', 'delyvax'),
                 'id' => 'delyvax_free_shipping_value'
-            ),
+            )
           );
       }
 
@@ -391,6 +400,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $weight_option = $settings['weight_option'] ?? 'BEST';
             $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
             $insurance_premium = $settings['insurance_premium'] ?? '';
+
+            $limit_service_options = $settings['limit_service_options'] ?? '0';
 
             $pdestination = $package["destination"];
             $items = array();
@@ -664,6 +675,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             if(sizeof($services) > 0)
             {
+                  $serviceCount = 0;
           				foreach ($services as $shipper)
                   {
           					  if (isset($shipper['service']['name']))
@@ -768,24 +780,30 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
               						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
 
-              						$rate = array(
-              							'id' => $service_code,
-              							'label' => $service_label,
-              							'cost' => $cost,
-              							'taxes' => 'false',
-              							'calc_tax' => 'per_order',
-              							'meta_data' => array(
-              								'service_code' => $service_code,
-              							),
-              						);
 
-              						if($status_allow_checkout)
-              						{
-              							// Register the rate
-              							wp_cache_add('delyvax' . $rate["id"], $rate);
-              							$this->add_rate($rate);
-              						}
+                          $rate = array(
+                            'id' => $service_code,
+                            'label' => $service_label,
+                            'cost' => $cost,
+                            'taxes' => 'false',
+                            'calc_tax' => 'per_order',
+                            'meta_data' => array(
+                              'service_code' => $service_code,
+                            ),
+                          );
+
+                          if($limit_service_options == 0 || $serviceCount < $limit_service_options)
+                          {
+                              if($status_allow_checkout)
+                  						{
+                  							// Register the rate
+                  							wp_cache_add('delyvax' . $rate["id"], $rate);
+                  							$this->add_rate($rate);
+                  						}
+                          }
                       }
+
+                      $serviceCount++;
           				}
           	}
             //end DelyvaX API
