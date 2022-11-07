@@ -540,6 +540,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $store_country = $split_country[0];
             $store_state   = $split_country[1];
 
+            $origin_lat = null;
+            $origin_lon = null;
+
             if($multivendor_option == 'DOKAN')
             {
                 if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
@@ -562,6 +565,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                             $store_state = $store_info['address']['state'];
                             $store_postcode = $store_info['address']['zip'];
                             $store_country = $store_info['address']['country'];
+
+                            $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+                            $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
                         }
                     }
                 }
@@ -586,25 +592,37 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
                         $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
                         $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+
+                        $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+                        $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
                     }
                 }
             }else {
                 // echo 'no multivendor';
             }
 
+            //
             $origin = array(
                 "address1" => $store_address_1,
                 "address2" => $store_address_2,
                 "city" => $store_city,
                 "state" => $store_state,
                 "postcode" => $store_postcode,
-                "country" => $store_country,
+                "country" => $store_country
                 // "coord" => array(
                 //     "lat" => "",
                 //     "lon" => ""
                 // )
             );
 
+            if($origin_lat && $origin_lon)
+            {
+                $origin['coord']['lat'] = $origin_lat;
+                $origin['coord']['lon'] = $origin_lon;
+            }
+            //
+
+            //destination
             $destination = array(
                 "address1" => $pdestination["address"],
                 "address2" => $pdestination["address_2"],
@@ -617,6 +635,16 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 //     "lon" => ""
                 // )
             );
+
+            $destination_lat = isset($pdestination['lat']) ? $pdestination['lat'] : null;
+            $destination_lon = isset($pdestination['lon']) ? $pdestination['lon'] : null;
+
+            if($destination_lat && $destination_lon)
+            {
+                $destination['coord']['lat'] = $destination_lat;
+                $destination['coord']['lon'] = $destination_lon;
+            }
+            //
 
             //calculate volumetric weight
             $total_actual_weight = $this->weightToKg($total_weight);

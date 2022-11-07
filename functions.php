@@ -471,6 +471,9 @@ function delyvax_post_create_order($order, $user, $process=false) {
       $store_city = get_option( 'woocommerce_store_city');
       $store_postcode = get_option( 'woocommerce_store_postcode');
 
+      $origin_lat = null;
+      $origin_lon = null;
+
       // The country/state
       if($store_country == null)
       {
@@ -517,6 +520,9 @@ function delyvax_post_create_order($order, $user, $process=false) {
               $store_state = $store_info['address']['state'];
               $store_postcode = $store_info['address']['zip'];
               $store_country = $store_info['address']['country'];
+
+              $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+              $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
           }
       }else if($multivendor_option == 'WCFM')
       {
@@ -539,6 +545,9 @@ function delyvax_post_create_order($order, $user, $process=false) {
                   $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
                   $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
                   $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+
+                  $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+                  $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
               }
           }
       }else {
@@ -647,7 +656,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
               "city" => $store_city,
               "state" => $store_state,
               "postcode" => $store_postcode,
-              "country" => $store_country,
+              "country" => $store_country
               // "coord" => array(
               //     "lat" => "",
               //     "lon" => ""
@@ -656,15 +665,27 @@ function delyvax_post_create_order($order, $user, $process=false) {
           "note"=> $order_notes
       );
 
+      if($origin_lat && $origin_lon)
+      {
+          $origin['contact']['coord']['lat'] = $origin_lat;
+          $origin['contact']['coord']['lon'] = $origin_lon;
+      }
+      //
+
       //destination
+      $r_shipping_phone = $order->get_meta( 'shipping_phone' ) ? $order->get_meta( 'shipping_phone' ) : $order->get_meta( '_shipping_phone' );
+
+      $destination_lat = $order->get_meta( 'shipping_lat' ) ? $order->get_meta( 'shipping_lat' ) : null;
+      $destination_lon = $order->get_meta( 'shipping_lon' ) ? $order->get_meta( 'shipping_lon' ) : null;
+
       $destination = array(
           "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
           "inventory" => $inventories,
           "contact" => array(
               "name" => $order->get_shipping_first_name() ? $order->get_shipping_first_name().' '.$order->get_shipping_last_name() : $order->get_billing_first_name().' '.$order->get_billing_last_name(),
               "email" => $order->get_billing_email(),
-              "phone" => $order->get_billing_phone(),
-              "mobile" => $order->get_billing_phone(),
+              "phone" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
+              "mobile" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
               "address1" => $order->get_shipping_address_1() ? $order->get_shipping_address_1() : $order->get_billing_address_1(),
               "address2" => $order->get_shipping_address_2() ? $order->get_shipping_address_2() : $order->get_billing_address_2(),
               "city" => $order->get_shipping_city() ? $order->get_shipping_city() : $order->get_billing_city(),
@@ -679,6 +700,11 @@ function delyvax_post_create_order($order, $user, $process=false) {
           // "note"=> $order_notes
       );
 
+      if($destination_lat && $destination_lon)
+      {
+          $destination['contact']['coord']['lat'] = $destination_lat;
+          $destination['contact']['coord']['lon'] = $destination_lon;
+      }
       //
 
       //calculate volumetric weight

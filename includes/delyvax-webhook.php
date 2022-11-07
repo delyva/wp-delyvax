@@ -113,7 +113,6 @@ function delyvax_webhook_order_created()
                       $shipmentId = $data['id'];
                       $consignmentNo = $data['consignmentNo'];
                       $statusCode = $data['statusCode'];
-                      $statusCode = $data['statusCode'];
 
                       if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
                       {
@@ -137,8 +136,11 @@ function delyvax_webhook_order_created()
 
                           $order->get_status();
 
+                          $labelUrl = 'https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id;
+
                           // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
+                          $order->update_meta_data( 'DelyvaXLabelUrl', $labelUrl );
                           $order->save();
 
                           if (!empty($order))
