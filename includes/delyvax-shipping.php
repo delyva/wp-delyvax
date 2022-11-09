@@ -496,7 +496,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
                 $inventories[] = array(
                     "weight" => array(
-                        "value" => ($this->defaultWeight($this->weightToKg($product_weight))),
+                        "value" => ($this->defaultWeight($this->weightToKg($product->get_weight()))),
                         "unit" => 'kg'
                     ),
                     "quantity" => $item["quantity"],
