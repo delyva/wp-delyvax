@@ -2,7 +2,7 @@
 Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
-Tested up to: 5.7
+Tested up to: 6.1
 Stable tag: 1.1.38
 Requires PHP: 7.2
 License: GPLv3
