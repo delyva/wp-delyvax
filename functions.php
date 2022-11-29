@@ -500,7 +500,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
       if($multivendor_option == 'DOKAN')
       {
-          if(function_exists(dokan_get_seller_id_by_order) && function_exists(dokan_get_store_info))
+          if(function_exists('dokan_get_seller_id_by_order') && function_exists('dokan_get_store_info'))
           {
               $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
               $store_info = dokan_get_store_info( $seller_id );
@@ -526,7 +526,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
           }
       }else if($multivendor_option == 'WCFM')
       {
-          if(function_exists(wcfm_get_vendor_id_by_post))
+          if(function_exists('wcfm_get_vendor_id_by_post'))
           {
               $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
 
