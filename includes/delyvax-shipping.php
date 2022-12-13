@@ -701,139 +701,142 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             $services = $rates['services'];
 
-            if(sizeof($services) > 0)
+            if(isset($services))
             {
-                  $serviceCount = 0;
-          				foreach ($services as $shipper)
-                  {
-          					  if (isset($shipper['service']['name']))
+                if(sizeof($services) > 0)
+                {
+                      $serviceCount = 0;
+              				foreach ($services as $shipper)
                       {
-              						$rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
-
-              						$ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
-              						$percentRate = $ra_percentage / 100 * $shipper['price']['amount'];
-
-              						$flatRate = $settings['rate_adjustment_flat'] ?? 0;
-
-              						if($rate_adjustment_type == 'markup')
-              						{
-              							$cost = round($shipper['price']['amount'] + $percentRate + $flatRate, 2);
-              						}else {
-              							$cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
-              						}
-
-                          //free shipping
-                          $free_shipping_type = $settings['free_shipping_type'] ?? '';
-                          $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
-                          $free_shipping_value = $settings['free_shipping_value'] ?? '0';
-
-                          if($free_shipping_type == 'total_quantity')
+              					  if (isset($shipper['service']['name']))
                           {
-                              if($free_shipping_condition == '>')
-                              {
-                                  if($total_quantity > $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '>=')
-                              {
-                                  if($total_quantity >= $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '==')
-                              {
-                                  if($total_quantity == $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '<=')
-                              {
-                                  if($total_quantity <= $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '<')
-                              {
-                                  if($total_quantity < $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }
-                          }else if($free_shipping_type == 'total_amount')
-                          {
-                              if($free_shipping_condition == '>')
-                              {
-                                  if($total_amount > $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '>=')
-                              {
-                                  if($total_amount >= $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '==')
-                              {
-                                  if($total_amount == $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '<=')
-                              {
-                                  if($total_amount <= $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }else if($free_shipping_condition == '<')
-                              {
-                                  if($total_amount < $free_shipping_value)
-                                  {
-                                     $cost = 0;
-                                  }
-                              }
-                          }
+                  						$rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
 
-              						$service_label = $shipper['service']['name'];
-              						$service_label = str_replace('(DROP)', '', $service_label);
-              						$service_label = str_replace('(PICKUP)', '', $service_label);
-                          $service_label = str_replace('(PARCEL)', '', $service_label);
-              						// $service_label = str_replace('(COD)', '', $service_label);
+                  						$ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
+                  						$percentRate = $ra_percentage / 100 * $shipper['price']['amount'];
 
-                          if($cost == 0)
-                          {
-                              $service_label = $service_label.': Free';
-                          }
+                  						$flatRate = $settings['rate_adjustment_flat'] ?? 0;
 
-              						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
-
-
-                          $rate = array(
-                            'id' => $service_code,
-                            'label' => $service_label,
-                            'cost' => $cost,
-                            'taxes' => 'false',
-                            'calc_tax' => 'per_order',
-                            'meta_data' => array(
-                              'service_code' => $service_code,
-                            ),
-                          );
-
-                          if($limit_service_options == 0 || $serviceCount < $limit_service_options)
-                          {
-                              if($status_allow_checkout)
+                  						if($rate_adjustment_type == 'markup')
                   						{
-                  							// Register the rate
-                  							wp_cache_add('delyvax' . $rate["id"], $rate);
-                  							$this->add_rate($rate);
+                  							$cost = round($shipper['price']['amount'] + $percentRate + $flatRate, 2);
+                  						}else {
+                  							$cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
                   						}
-                          }
-                      }
 
-                      $serviceCount++;
-          				}
-          	}
+                              //free shipping
+                              $free_shipping_type = $settings['free_shipping_type'] ?? '';
+                              $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
+                              $free_shipping_value = $settings['free_shipping_value'] ?? '0';
+
+                              if($free_shipping_type == 'total_quantity')
+                              {
+                                  if($free_shipping_condition == '>')
+                                  {
+                                      if($total_quantity > $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '>=')
+                                  {
+                                      if($total_quantity >= $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '==')
+                                  {
+                                      if($total_quantity == $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '<=')
+                                  {
+                                      if($total_quantity <= $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '<')
+                                  {
+                                      if($total_quantity < $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }
+                              }else if($free_shipping_type == 'total_amount')
+                              {
+                                  if($free_shipping_condition == '>')
+                                  {
+                                      if($total_amount > $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '>=')
+                                  {
+                                      if($total_amount >= $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '==')
+                                  {
+                                      if($total_amount == $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '<=')
+                                  {
+                                      if($total_amount <= $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }else if($free_shipping_condition == '<')
+                                  {
+                                      if($total_amount < $free_shipping_value)
+                                      {
+                                         $cost = 0;
+                                      }
+                                  }
+                              }
+
+                  						$service_label = $shipper['service']['name'];
+                  						$service_label = str_replace('(DROP)', '', $service_label);
+                  						$service_label = str_replace('(PICKUP)', '', $service_label);
+                              $service_label = str_replace('(PARCEL)', '', $service_label);
+                  						// $service_label = str_replace('(COD)', '', $service_label);
+
+                              if($cost == 0)
+                              {
+                                  $service_label = $service_label.': Free';
+                              }
+
+                  						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
+
+
+                              $rate = array(
+                                'id' => $service_code,
+                                'label' => $service_label,
+                                'cost' => $cost,
+                                'taxes' => 'false',
+                                'calc_tax' => 'per_order',
+                                'meta_data' => array(
+                                  'service_code' => $service_code,
+                                ),
+                              );
+
+                              if($limit_service_options == 0 || $serviceCount < $limit_service_options)
+                              {
+                                  if($status_allow_checkout)
+                      						{
+                      							// Register the rate
+                      							wp_cache_add('delyvax' . $rate["id"], $rate);
+                      							$this->add_rate($rate);
+                      						}
+                              }
+                          }
+
+                          $serviceCount++;
+              				}
+              	}
+            }
             //end DelyvaX API
         }
 
