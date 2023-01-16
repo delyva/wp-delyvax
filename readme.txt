@@ -32,6 +32,11 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.40 =
+*Release Date - 16th January 2023*
+
+* Bug-fixes for shipping and billing address.
+
 = 1.1.39 =
 *Release Date - 14th December 2022*
 

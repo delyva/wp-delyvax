@@ -678,27 +678,52 @@ function delyvax_post_create_order($order, $user, $process=false) {
       $destination_lat = $order->get_meta( 'shipping_lat' ) ? $order->get_meta( 'shipping_lat' ) : null;
       $destination_lon = $order->get_meta( 'shipping_lon' ) ? $order->get_meta( 'shipping_lon' ) : null;
 
-      $destination = array(
-          "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
-          "inventory" => $inventories,
-          "contact" => array(
-              "name" => $order->get_shipping_first_name() ? $order->get_shipping_first_name().' '.$order->get_shipping_last_name() : $order->get_billing_first_name().' '.$order->get_billing_last_name(),
-              "email" => $order->get_billing_email(),
-              "phone" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
-              "mobile" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
-              "address1" => $order->get_shipping_address_1() ? $order->get_shipping_address_1() : $order->get_billing_address_1(),
-              "address2" => $order->get_shipping_address_2() ? $order->get_shipping_address_2() : $order->get_billing_address_2(),
-              "city" => $order->get_shipping_city() ? $order->get_shipping_city() : $order->get_billing_city(),
-              "state" => $order->get_shipping_state() ? $order->get_shipping_state() : $order->get_billing_state(),
-              "postcode" => $order->get_shipping_postcode() ? $order->get_shipping_postcode() : $order->get_billing_postcode(),
-              "country" => $order->get_shipping_country() ? $order->get_shipping_country() : $order->get_billing_country(),
-              // "coord" => array(
-              //     "lat" => "",
-              //     "lon" => ""
-              // )
-          ),
-          // "note"=> $order_notes
-      );
+      if($order->get_shipping_address_1() || $order->get_shipping_address_2())
+      {
+          $destination = array(
+              "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
+              "inventory" => $inventories,
+              "contact" => array(
+                  "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
+                  "email" => $order->get_billing_email(),
+                  "phone" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
+                  "mobile" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
+                  "address1" => $order->get_shipping_address_1(),
+                  "address2" => $order->get_shipping_address_2(),
+                  "city" => $order->get_shipping_city(),
+                  "state" => $order->get_shipping_state(),
+                  "postcode" => $order->get_shipping_postcode(),
+                  "country" => $order->get_shipping_country(),
+                  // "coord" => array(
+                  //     "lat" => "",
+                  //     "lon" => ""
+                  // )
+              ),
+              // "note"=> $order_notes
+          );
+      }else {
+          $destination = array(
+              "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
+              "inventory" => $inventories,
+              "contact" => array(
+                  "name" => $order->get_billing_first_name().' '.$order->get_billing_last_name(),
+                  "email" => $order->get_billing_email(),
+                  "phone" => $order->get_billing_phone(),
+                  "mobile" => $order->get_billing_phone(),
+                  "address1" => $order->get_billing_address_1(),
+                  "address2" => $order->get_billing_address_2(),
+                  "city" => $order->get_billing_city(),
+                  "state" => $order->get_billing_state(),
+                  "postcode" => $order->get_billing_postcode(),
+                  "country" => $order->get_billing_country(),
+                  // "coord" => array(
+                  //     "lat" => "",
+                  //     "lon" => ""
+                  // )
+              ),
+              // "note"=> $order_notes
+          );
+      }
 
       if($destination_lat && $destination_lon)
       {
