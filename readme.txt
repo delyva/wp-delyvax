@@ -32,6 +32,11 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.41 =
+*Release Date - 18th January 2023*
+
+* Bug-fixes for non-numeric or empty dimension or weight.
+
 = 1.1.40 =
 *Release Date - 16th January 2023*
 
@@ -61,45 +66,5 @@ Delyva WooCommerce plugin
 *Release Date - 31st October 2022*
 
 * Better support for COD & Insurance Cover.
-
-= 1.1.34 =
-*Release Date - 29th October 2022*
-
-* Free shipping feature.
-
-= 1.1.33 =
-*Release Date - 25th October 2022*
-
-* Bug-fixes for volumetric weight calculation.
-
-= 1.1.32 =
-*Release Date - 16th October 2022*
-
-* Bug-fixes.
-
-= 1.1.31 =
-*Release Date - 14th October 2022*
-
-* Fixed create delivery order issue for sub-order.
-
-= 1.1.30 =
-*Release Date - 2nd June 2022*
-
-* Fix warning message.
-
-= 1.1.29 =
-*Release Date - 29th March 2022*
-
-* Enable display rates on the Cart page.
-
-= 1.1.28 =
-*Release Date - 28th March 2022*
-
-* Can exclude description in the note.
-
-= 1.1.27 =
-*Release Date - 8th March 2022*
-
-* Change order status to Package is Ready after delivery order has been created.
 
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.
