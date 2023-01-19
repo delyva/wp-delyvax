@@ -5,6 +5,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
   class DelyvaX_Shipping_Method extends WC_Shipping_Method {
 
+
       /**
        * Constructor for your shipping class.
        */
@@ -25,6 +26,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
           $this->init();
           $this->enabled = isset($this->settings['enabled']) ? $this->settings['enabled'] : 'yes';
           $this->title = isset($this->settings['title']) ? $this->settings['title'] : __('DelyvaX', 'delyvax');
+		      $this->control_discount = 0;
           add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
       }
 
@@ -705,10 +707,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 $status_allow_checkout = false;
             }
 
-            $services = $rates['services'];
-
-            if(isset($services))
+            if(isset($rates['services']))
             {
+				$services = $rates['services'];
                 if(sizeof($services) > 0)
                 {
                       $serviceCount = 0;
