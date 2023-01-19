@@ -314,6 +314,12 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'wc_settings_delyvax_shipping_rate_adjustment',
                 'description' => __( 'Formula, shipping cost = shipping price + % rate + flat rate' ),
             ),
+            'rate_currency_conversion' => array(
+                'title' => __('Currency Conversion Rate', 'delyvax'),
+                'type' => 'text',
+                'default' => __('1', 'delyvax'),
+                'id' => 'delyvax_rate_rate_currency_conversion'
+            ),
             'rate_adjustment_type' => array(
                 'title' => __('Rate Adjustment Type ("discount"/"markup")', 'delyvax'),
                 'default' => __('discount', 'delyvax'),
@@ -797,6 +803,12 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                                   }
                               }
 
+                              //convert currency
+                              if($cost > 0)
+                              {
+                                    $cost = $cost * $settings['rate_currency_conversion'] ?? 1;
+                              }
+
                   						$service_label = $shipper['service']['name'];
                   						$service_label = str_replace('(DROP)', '', $service_label);
                   						$service_label = str_replace('(PICKUP)', '', $service_label);
@@ -809,7 +821,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                               }
 
                   						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
-
 
                               $rate = array(
                                 'id' => $service_code,
@@ -890,17 +901,28 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
         protected function setDiscountForItem($count)
         {
-            $this->discount_for_item = $count;
+            if($this->control_discount && $count > 0)
+            {
+                $this->discount_for_item = $count;
+            }
         }
 
         protected function getDiscountForItem()
         {
-            return $this->discount_for_item;
+            if($this->control_discount)
+            {
+                return $this->discount_for_item;
+            }
         }
 
         protected function addControlDiscount($val)
         {
-            $this->control_discount += $val;
+            if($this->control_discount && $val > 0)
+            {
+                $this->control_discount += $val;
+            }else {
+                return 0;
+            }
         }
 
         protected function declaredCustomsValue($subtotal, $count)
@@ -910,5 +932,5 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $this->addControlDiscount($price);
             return $price;
         }
-  }
+    }
 }
