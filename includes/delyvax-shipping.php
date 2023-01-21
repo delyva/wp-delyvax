@@ -855,14 +855,17 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
         protected function weightToKg($weight)
         {
             $weight_unit = get_option('woocommerce_weight_unit');
-            // convert other unit into kg
-            if ($weight_unit != 'kg') {
-                if ($weight_unit == 'g') {
-                    return $weight * 0.001;
-                } else if ($weight_unit == 'lbs') {
-                    return $weight * 0.453592;
-                } else if ($weight_unit == 'oz') {
-                    return $weight * 0.0283495;
+            if($weight > 0)
+            {
+                // convert other unit into kg
+                if ($weight_unit != 'kg') {
+                    if ($weight_unit == 'g') {
+                        return $weight * 0.001;
+                    } else if ($weight_unit == 'lbs') {
+                        return $weight * 0.453592;
+                    } else if ($weight_unit == 'oz') {
+                        return $weight * 0.0283495;
+                    }
                 }
             }
             // already kg
@@ -872,16 +875,19 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
         protected function dimensionToCm($length)
         {
             $dimension_unit = get_option('woocommerce_dimension_unit');
-            // convert other units into cm
-            if ($dimension_unit != 'cm') {
-                if ($dimension_unit == 'm') {
-                    return $length * 100;
-                } else if ($dimension_unit == 'mm') {
-                    return $length * 0.1;
-                } else if ($dimension_unit == 'in') {
-                    return $length * 2.54;
-                } else if ($dimension_unit == 'yd') {
-                    return $length * 91.44;
+            if($length > 0)
+            {
+                // convert other units into cm
+                if ($dimension_unit != 'cm') {
+                    if ($dimension_unit == 'm') {
+                        return $length * 100;
+                    } else if ($dimension_unit == 'mm') {
+                        return $length * 0.1;
+                    } else if ($dimension_unit == 'in') {
+                        return $length * 2.54;
+                    } else if ($dimension_unit == 'yd') {
+                        return $length * 91.44;
+                    }
                 }
             }
             // already in cm
