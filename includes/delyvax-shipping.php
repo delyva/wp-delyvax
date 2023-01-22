@@ -480,7 +480,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
                 for ($i = 0; $i < $item["quantity"]; $i++) {
                     $items[] = array(
-                        "actual_weight" => $this->weightToKg($product->get_weight()),
+                        "actual_weight" => $this->defaultWeight($this->weightToKg($product->get_weight())),
                         "height" => $this->defaultDimension($this->dimensionToCm($product->get_height())),
                         "width" => $this->defaultDimension($this->dimensionToCm($product->get_width())),
                         "length" => $this->defaultDimension($this->dimensionToCm($product->get_length())),
@@ -489,7 +489,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         "identifier_id" => array_key_exists("variation_id", $item) ? ($item["variation_id"] == 0 ? $item["product_id"] : $item["variation_id"]) : $item["product_id"]
                     );
 
-                    $total_weight = $total_weight + $product->get_weight();
+                    $total_weight = $total_weight + $this->defaultWeight($this->weightToKg($product->get_weight()));
 
                     $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
                           * $this->defaultDimension($this->dimensionToCm($product->get_length()))
@@ -655,7 +655,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             //
 
             //calculate volumetric weight
-            $total_actual_weight = $this->weightToKg($total_weight);
+            $total_actual_weight = $this->defaultWeight($this->weightToKg($total_weight));
             $total_weight = $total_actual_weight;
 
             //
