@@ -765,9 +765,11 @@ function delyvax_post_create_order($order, $user, $process=false) {
       {
           array_push($addons, $insurance);
       }
+
+      $referenceNo = $main_order->get_id();
       //
 
-      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons);
+      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons, $referenceNo);
 
       if($resultCreate)
       {

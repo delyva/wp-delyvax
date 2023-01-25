@@ -62,7 +62,7 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
-        public static function postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons)
+        public static function postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons, $referenceNo)
         {
               $url = Self::$api_endpoint . "/order";// . trim(esc_attr($settings['integration_id']), " ");
 
