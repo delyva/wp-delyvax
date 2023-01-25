@@ -821,7 +821,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                                   $service_label = $service_label.': Free';
                               }
 
-                  						$service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
+                  						// $service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
+
+                              $service_code = $shipper['service']['code'];
 
                               $rate = array(
                                 'id' => $service_code,
