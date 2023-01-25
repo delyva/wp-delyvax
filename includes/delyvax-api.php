@@ -89,7 +89,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       'weight' => $weight,
                       'note' => $order_notes,
                       "serviceAddon" => $addons,
-                      'source'=> $source
+                      'source'=> $source,
+                      'referenceNo'=> $referenceNo.""
                   ];
               }else {
                   $postRequestArr = [
@@ -102,7 +103,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                       'weight' => $weight,
                       'note' => $order_notes,
                       "serviceAddon" => $addons,
-                      'source'=> $source
+                      'source'=> $source,
+                      'referenceNo'=> $referenceNo.""
                   ];
               }
 
