@@ -709,7 +709,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             if(isset($rates['services']))
             {
-				$services = $rates['services'];
+				        $services = $rates['services'];
+
                 if(sizeof($services) > 0)
                 {
                       $serviceCount = 0;
@@ -717,6 +718,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                       {
               					  if (isset($shipper['service']['name']))
                           {
+                              $cost = round($shipper['price']['amount'], 2);
+
                   						$rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
 
                   						$ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
@@ -734,7 +737,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                               //free shipping
                               $free_shipping_type = $settings['free_shipping_type'] ?? '';
                               $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
-                              $free_shipping_value = $settings['free_shipping_value'] ?? '0';
+                              $free_shipping_value = $settings['free_shipping_value'] ?? '';
 
                               if($free_shipping_type == 'total_quantity')
                               {
