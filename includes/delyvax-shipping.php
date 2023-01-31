@@ -320,12 +320,12 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'title' => __('Currency Conversion Rate', 'delyvax'),
                 'type' => 'text',
                 'default' => __('1', 'delyvax'),
-                'id' => 'delyvax_rate_rate_currency_conversion'
+                'id' => 'delyvax_rate_currency_conversion'
             ),
             'rate_adjustment_type' => array(
                 'title' => __('Rate Adjustment Type ("discount"/"markup")', 'delyvax'),
                 'default' => __('discount', 'delyvax'),
-                'id' => 'delyvax_rate_rate_adjustment_type',
+                'id' => 'delyvax_rate_adjustment_type',
                 'type'    => 'select',
                 'options' => array(
                   'discount' => __( 'Discount', 'woocommerce' ),
