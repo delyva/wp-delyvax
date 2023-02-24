@@ -207,6 +207,7 @@ function delyvax_webhook_get_tracking()
                       $consignmentNo = $data['consignmentNo'];
                       $statusCode = $data['statusCode'];
                       $nanoId = $data['nanoId'];
+                      $personnel = $data['personnel'];
 
                       global $woocommerce;
 
@@ -230,6 +231,10 @@ function delyvax_webhook_get_tracking()
                           if($nanoId) 
                           {
                             $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
+                          }
+                          if($personnel) 
+                          {
+                            $order->update_meta_data( 'DelyvaXPersonnel', json_encode($personnel) );
                           }
                           $order->save();
 
@@ -448,6 +453,20 @@ function delyvax_webhook_get_tracking()
                                       //     }
                                       // }
                                       //end update sub orders
+                                  }
+                              }
+                          }else if($statusCode == 900)
+                          {                            
+                              if ($settings['cancel_order'] == 'yes') 
+                              {
+                                  if (!empty($order))
+                                  {
+                                      if( !$order->has_status('wc-cancelled') )
+                                      {
+                                          $order->update_status('cancelled', 'Order status changed to Cancelled', false); 
+                                          
+                                          wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-cancelled']);
+                                      }
                                   }
                               }
                           }else

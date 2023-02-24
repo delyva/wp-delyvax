@@ -157,6 +157,13 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
       }else {
           delyvax_create_order($order, $user, false);
       }
+    }else if($order->get_status() == 'cancelled')
+    {
+        //cancel
+        if ($settings['cancel_delivery'] == 'yes')
+        {
+            delyvax_post_cancel_order($order);
+        }        
     }
 }
 
@@ -1028,6 +1035,20 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
       return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($order, $shipmentId, $serviceCode);
 }
 
+//rewire logic here, API is only for post
+function delyvax_post_cancel_order($order) {
+    if (!class_exists('DelyvaX_Shipping_API')) {
+        include_once 'includes/delyvax-api.php';
+    }
+    
+    $shipmentId = $order->get_meta( 'DelyvaXOrderID');
+
+    if($shipmentId)
+    {
+        return $resultCancel = DelyvaX_Shipping_API::postCancelOrder($order, $shipmentId);
+    }
+}
+
 function delyvaX_weight_to_kg($weight)
 {
     $weight_unit = get_option('woocommerce_weight_unit');
@@ -1249,6 +1270,7 @@ function filter_woocommerce_my_account_my_orders_column_order_track( $order ) {
 
     $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
     $DelyvaXTrackingShort = $order->get_meta( 'DelyvaXTrackingShort');
+    $DelyvaXPersonnel = $order->get_meta( 'DelyvaXPersonnel');
     
     $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$DelyvaXTrackingCode;
     $shorturl = 'https://'.$company_code.'.delyva.app/customer/etrack/'.$DelyvaXTrackingShort;
@@ -1261,6 +1283,19 @@ function filter_woocommerce_my_account_my_orders_column_order_track( $order ) {
     }
 
     echo '<a href="'.$theurl.'" target="_blank" >'.$DelyvaXTrackingCode.'</a>';
+
+    if($DelyvaXPersonnel && !is_array($DelyvaXPersonnel))
+    {
+        $personnelInfo = json_decode($DelyvaXPersonnel);
+
+        // var_dump($personnelInfo);
+
+        $personnelName = $personnelInfo->name;
+        $personnelPhone = $personnelInfo->phone;
+
+        echo '<br/><a href="tel:+'.$personnelPhone.'" target="_blank" >'.$personnelName.'</a>';
+    }
+
 }
 add_action( 'woocommerce_my_account_my_orders_column_order_track', 'filter_woocommerce_my_account_my_orders_column_order_track', 10, 1 );
 
@@ -1305,7 +1340,7 @@ function sv_wc_cogs_add_order_profit_column_order_track( $column ) {
         $DelyvaXTrackingCode = !empty(get_post_meta($post->ID,'DelyvaXTrackingCode',true)) ? get_post_meta($post->ID,'DelyvaXTrackingCode',true) : '';
         $DelyvaXTrackingShort = !empty(get_post_meta($post->ID,'DelyvaXTrackingShort',true)) ? get_post_meta($post->ID,'DelyvaXTrackingShort',true) : '';
         $DelyvaXLabelUrl = !empty(get_post_meta($post->ID,'DelyvaXLabelUrl',true)) ? get_post_meta($post->ID,'DelyvaXLabelUrl',true) : '';
-
+        $DelyvaXPersonnel = $order->get_meta( 'DelyvaXPersonnel');
         // $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
         // $DelyvaXTrackingShort = $order->get_meta( 'DelyvaXTrackingShort');
         
@@ -1324,7 +1359,19 @@ function sv_wc_cogs_add_order_profit_column_order_track( $column ) {
         {
             echo '<br/>';
             echo '<a href="'.$DelyvaXLabelUrl.'" target="_blank" >Print Label</a>';
-        }        
+        }
+
+        if($DelyvaXPersonnel && !is_array($DelyvaXPersonnel))
+        {
+            $personnelInfo = json_decode($DelyvaXPersonnel);
+    
+            // var_dump($personnelInfo);
+    
+            $personnelName = $personnelInfo->name;
+            $personnelPhone = $personnelInfo->phone;
+    
+            echo '<br/><a href="tel:+'.$personnelPhone.'" target="_blank" >'.$personnelName.'</a>';
+        }
     }
     
 }

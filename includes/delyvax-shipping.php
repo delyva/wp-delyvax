@@ -142,6 +142,18 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'     	=> 'checkbox',
                 'default'	=> ''
             ),
+            'multivendor' => array(
+                'title'    	=> __( 'Multi-vendor system', 'delyvax' ),
+                'default' => __('SINGLE', 'delyvax'),
+                'id' => 'delyvax_multivendor',
+                'description' => __( '' ),
+                'type'    => 'select',
+                'options' => array(
+                  'SINGLE' => __( 'Single vendor', 'woocommerce' ),
+                  'DOKAN' => __( 'Dokan', 'woocommerce' ),
+                  'WCFM' => __( 'WCFM', 'woocommerce' ),
+                )
+            ),
             'shop_name' => array(
                 'title'    	=> __( 'Store - Contact Name', 'delyvax' ),
                 'type' => 'text',
@@ -174,16 +186,18 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   'yes' => __( 'Yes', 'woocommerce' )
                 )
             ),
-            'multivendor' => array(
-                'title'    	=> __( 'Multi-vendor system', 'delyvax' ),
-                'default' => __('SINGLE', 'delyvax'),
-                'id' => 'delyvax_multivendor',
-                'description' => __( '' ),
+            'item_type' => array(
+                'title'    	=> __( 'Default Order - Item type', 'delyvax' ),
+                'default' => __('PARCEL', 'delyvax'),
+                'id' => 'delyvax_item_type',
+                'description' => __( 'Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
                 'type'    => 'select',
                 'options' => array(
-                  'SINGLE' => __( 'Single vendor', 'woocommerce' ),
-                  'DOKAN' => __( 'Dokan', 'woocommerce' ),
-                  'WCFM' => __( 'WCFM', 'woocommerce' ),
+                  'PARCEL' => __( 'PARCEL', 'woocommerce' ),
+                  'DOCUMENT' => __( 'DOCUMENT', 'woocommerce' ),
+                  'FOOD' => __( 'FOOD', 'woocommerce' ),
+                  'PACKAGE' => __( 'PACKAGE', 'woocommerce' ),
+                  'BULKY' => __( 'BULKY', 'woocommerce' )
                 )
             ),
             'processing_days' => array(
@@ -257,20 +271,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   '22:00' => __( '22:00', 'woocommerce' )
                 )
             ),
-            'item_type' => array(
-                'title'    	=> __( 'Default Order - Item type', 'delyvax' ),
-                'default' => __('PARCEL', 'delyvax'),
-                'id' => 'delyvax_item_type',
-                'description' => __( 'Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
-                'type'    => 'select',
-                'options' => array(
-                  'PARCEL' => __( 'PARCEL', 'woocommerce' ),
-                  'DOCUMENT' => __( 'DOCUMENT', 'woocommerce' ),
-                  'FOOD' => __( 'FOOD', 'woocommerce' ),
-                  'PACKAGE' => __( 'PACKAGE', 'woocommerce' ),
-                  'BULKY' => __( 'BULKY', 'woocommerce' )
-                )
-            ),
             'insurance_premium' => array(
                 'title'    	=> __( 'Insurance Premium', 'delyvax' ),
                 'id'       	=> 'delyvax_insurance_premium',
@@ -278,31 +278,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'     	=> 'checkbox',
                 'default'	=> 'no'
             ),
-            /*
-            'weight_option' => array(
-                'title'    	=> __( 'Weight consideration', 'delyvax' ),
-                'default' => __('BEST', 'delyvax'),
-                'id' => 'delyvax_weight_option',
-                'description' => __( 'e.g. BEST-Whichever is higher / ACTUAL-Actual weight / VOL-Volumetric Weight.' ),
-                'type'    => 'select',
-                'options' => array(
-                  'BEST' => __( 'BEST - Whichever is higher', 'woocommerce' ),
-                  'ACTUAL' => __( 'ACTUAL - Actual weight', 'woocommerce' ),
-                  'VOL' => __( 'VOL - Volumetric Weight', 'woocommerce' )
-                )
-            ),
-            'volumetric_constant' => array(
-                'title'    	=> __( 'Volumetric weight constant', 'delyvax' ),
-                'default' => __('5000', 'delyvax'),
-                'id' => 'delyvax_volumetric_constant',
-                'description' => __( 'e.g. 1000 / 5000 / 6000.' ),
-                'type'    => 'select',
-                'options' => array(
-                  '5000' => __( '5000', 'woocommerce' ),
-                  '6000' => __( '6000', 'woocommerce' ),
-                  '1000' => __( '1000', 'woocommerce' )
-                )
-            ),*/
             'source' => array(
                 'title'    	=> __( 'Source of', 'delyvax' ),
                 'type' => 'text',
@@ -319,6 +294,28 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   'orderno' => __( 'Include order no.', 'woocommerce' ),
                   'ordernproduct' => __( 'Include order no. + product info', 'woocommerce' ),
                   'empty' => __( 'Empty', 'woocommerce' )
+                )
+            ),
+            'cancel_delivery' => array(
+                'title'    	=> __( 'Cancel delivery', 'delyvax' ),
+                'default' => __('no', 'delyvax'),
+                'id' => 'delyvax_shipping_phone',
+                'description' => __( 'Cancel the delivery if the order is cancelled. Subject to cancellation rules by the courier.' ),
+                'type'    => 'select',
+                'options' => array(
+                  'no' => __( 'No', 'woocommerce' ),
+                  'yes' => __( 'Yes', 'woocommerce' )
+                )
+            ),
+            'cancel_order' => array(
+                'title'    	=> __( 'Cancel order', 'delyvax' ),
+                'default' => __('no', 'delyvax'),
+                'id' => 'delyvax_shipping_phone',
+                'description' => __( 'Cancel the order if the delivery is cancelled.' ),
+                'type'    => 'select',
+                'options' => array(
+                  'no' => __( 'No', 'woocommerce' ),
+                  'yes' => __( 'Yes', 'woocommerce' )
                 )
             ),
             array(
