@@ -188,8 +188,8 @@ if (!class_exists('DelyvaX_Shipping_API')) {
                   }
               } else {
                   if ($response['response']['code'] == 200) {
-                    $body = json_decode($response['body'], true);
-                    return $body['data'];
+                      $body = json_decode($response['body'], true);
+                      return $body['data'];
                   } else {
                       $body = json_decode($response['body'], true);
                       $order->update_meta_data( 'DelyvaXError', $body['error']['message'] );

@@ -163,6 +163,17 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'delyvax_shop_email',
                 'description' => __( 'e.g. your@email.com' ),
             ),
+            'shipping_phone' => array(
+                'title'    	=> __( 'Shipping phone', 'delyvax' ),
+                'default' => __('no', 'delyvax'),
+                'id' => 'delyvax_shipping_phone',
+                'description' => __( 'Enable shipping phone no field at the checkout page' ),
+                'type'    => 'select',
+                'options' => array(
+                  'no' => __( 'No', 'woocommerce' ),
+                  'yes' => __( 'Yes', 'woocommerce' )
+                )
+            ),
             'multivendor' => array(
                 'title'    	=> __( 'Multi-vendor system', 'delyvax' ),
                 'default' => __('SINGLE', 'delyvax'),
