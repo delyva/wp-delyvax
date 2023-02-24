@@ -788,11 +788,13 @@ function delyvax_post_create_order($order, $user, $process=false) {
                 if($resultProcess)
                 {
                     $trackingNo = $resultProcess["consignmentNo"];
+                    $nanoId = $resultProcess["nanoId"];
 
                     $main_order = $order;
 
                     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                     $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                    $main_order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
                     $main_order->save();
 
                     // $main_order->update_status('ready-to-collect');
@@ -1223,3 +1225,109 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
     return $new_actions;
 }
 add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 20, 1 );
+
+// Add new column(s) to the "My Orders" table in the account.
+function filter_woocommerce_account_orders_columns( $columns ) {
+    $new_columns = array();
+
+    foreach ( $columns as $column_name => $column_info ) {
+        $new_columns[ $column_name ] = $column_info;
+        if ( 'order-total' === $column_name ) {            
+            $new_columns['order_track'] = __( 'Track', 'woocommerce' );
+        }
+    }
+
+    return $new_columns;
+}
+
+add_filter( 'woocommerce_account_orders_columns', 'filter_woocommerce_account_orders_columns', 10, 1 );
+
+// Adds data to the custom column in "My Account > Orders"
+function filter_woocommerce_my_account_my_orders_column_order_track( $order ) {
+    $settings = get_option( 'woocommerce_delyvax_settings' );
+    $company_code = $settings['company_code'];
+
+    $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
+    $DelyvaXTrackingShort = $order->get_meta( 'DelyvaXTrackingShort');
+    
+    $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$DelyvaXTrackingCode;
+    $shorturl = 'https://'.$company_code.'.delyva.app/customer/etrack/'.$DelyvaXTrackingShort;
+
+    if($DelyvaXTrackingShort)
+    {
+        $theurl = $shorturl;
+    }else {
+        $theurl = $url;
+    }
+
+    echo '<a href="'.$theurl.'" target="_blank" >'.$DelyvaXTrackingCode.'</a>';
+}
+add_action( 'woocommerce_my_account_my_orders_column_order_track', 'filter_woocommerce_my_account_my_orders_column_order_track', 10, 1 );
+
+/* add custom column under order listing page */
+/**
+ * Add 'track' column header to 'Orders' page immediately after 'status' column.
+ *
+ * @param string[] $columns
+ * @return string[] $new_columns
+ */
+function sv_wc_cogs_add_order_profit_column_header( $columns ) {
+
+    $new_columns = array();
+
+    foreach ( $columns as $column_name => $column_info ) {
+        $new_columns[ $column_name ] = $column_info;
+        if ( 'order_total' === $column_name ) {            
+            $new_columns['order_track'] = __( 'Track', 'woocommerce' );
+        }
+    }
+
+    return $new_columns;
+}
+add_filter( 'manage_edit-shop_order_columns', 'sv_wc_cogs_add_order_profit_column_header', 20 );
+
+/**
+ * Add 'track' column content to 'Orders' page immediately after 'Total' column.
+ *
+ * @param string[] $column name of column being displayed
+ */
+function sv_wc_cogs_add_order_profit_column_order_track( $column ) {
+    global $post;
+
+    if ( 'order_track' === $column ) {    
+        // $company_name = !empty(get_post_meta($post->ID,'track',true)) ? get_post_meta($post->ID,'track',true) : 'N/A';
+        
+        // echo $company_name;
+        
+        $settings = get_option( 'woocommerce_delyvax_settings' );
+        $company_code = $settings['company_code'];
+
+        $DelyvaXTrackingCode = !empty(get_post_meta($post->ID,'DelyvaXTrackingCode',true)) ? get_post_meta($post->ID,'DelyvaXTrackingCode',true) : '';
+        $DelyvaXTrackingShort = !empty(get_post_meta($post->ID,'DelyvaXTrackingShort',true)) ? get_post_meta($post->ID,'DelyvaXTrackingShort',true) : '';
+        $DelyvaXLabelUrl = !empty(get_post_meta($post->ID,'DelyvaXLabelUrl',true)) ? get_post_meta($post->ID,'DelyvaXLabelUrl',true) : '';
+
+        // $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
+        // $DelyvaXTrackingShort = $order->get_meta( 'DelyvaXTrackingShort');
+        
+        $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$DelyvaXTrackingCode;
+        $shorturl = 'https://'.$company_code.'.delyva.app/customer/etrack/'.$DelyvaXTrackingShort;
+
+        if($DelyvaXTrackingShort)
+        {
+            $theurl = $shorturl;
+        }else {
+            $theurl = $url;
+        }
+        
+        echo '<a href="'.$theurl.'" target="_blank" >'.$DelyvaXTrackingCode.'</a>';
+        if($DelyvaXLabelUrl)
+        {
+            echo '<br/>';
+            echo '<a href="'.$DelyvaXLabelUrl.'" target="_blank" >Print Label</a>';
+        }        
+    }
+    
+}
+add_action( 'manage_shop_order_posts_custom_column', 'sv_wc_cogs_add_order_profit_column_order_track' );
+
+//

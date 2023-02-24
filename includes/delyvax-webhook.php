@@ -113,6 +113,7 @@ function delyvax_webhook_order_created()
                       $shipmentId = $data['id'];
                       $consignmentNo = $data['consignmentNo'];
                       $statusCode = $data['statusCode'];
+                      $nanoId = $data['nanoId'];
 
                       if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
                       {
@@ -140,6 +141,7 @@ function delyvax_webhook_order_created()
 
                           // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
+                          $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
                           $order->update_meta_data( 'DelyvaXLabelUrl', $labelUrl );
                           $order->save();
 
@@ -204,6 +206,7 @@ function delyvax_webhook_get_tracking()
                       $shipmentId = $data['orderId'];
                       $consignmentNo = $data['consignmentNo'];
                       $statusCode = $data['statusCode'];
+                      $nanoId = $data['nanoId'];
 
                       global $woocommerce;
 
@@ -224,6 +227,10 @@ function delyvax_webhook_get_tracking()
 
                           // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
+                          if($nanoId) 
+                          {
+                            $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
+                          }
                           $order->save();
 
                           if($statusCode == 100 || $statusCode == 110)
