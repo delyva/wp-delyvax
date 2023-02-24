@@ -35,7 +35,11 @@ Delyva WooCommerce plugin
 = 1.1.44 =
 *Release Date - 27th January 2023*
 
-* Display tracking number at my orders page, orders page. Option to enable shipping phone number at the checkout page.
+* Display tracking number at my orders page, orders page. 
+* Option to enable shipping phone number at the checkout page.
+* Option to cancel the order if the delivery is cancelled.
+* Option to cancel the delivery if the order is cancelled.
+* Free shipping take into account total after discount amount.
 
 = 1.1.43 =
 *Release Date - 25th January 2023*

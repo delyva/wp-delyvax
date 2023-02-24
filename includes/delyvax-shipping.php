@@ -376,9 +376,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'    => 'select',
                 'options' => array(
                   '>' => __( 'Greater than', 'woocommerce' ),
-                  '>=' => __( 'Greater or equal than', 'woocommerce' ),
+                  '>=' => __( 'Greater or equal to', 'woocommerce' ),
                   '==' => __( 'Equal to', 'woocommerce' ),
-                  '<=' => __( 'Less than or equal', 'woocommerce' ),
+                  '<=' => __( 'Less than or to', 'woocommerce' ),
                   '<' => __( 'Less than', 'woocommerce' ),
                 )
             ),
@@ -456,6 +456,11 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 $discount_for_item = ($total_discount / $total_cart_without_discount) * 100;
                 $this->setDiscountForItem($discount_for_item);
                 unset($discount_for_item);
+            }
+
+            if($total_discount > 0)
+            {
+                $total_amount = $total_amount - $total_discount;
             }
 
             foreach ($package["contents"] as $key => $item) {
