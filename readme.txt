@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 6.1
-Stable tag: 1.1.43
+Stable tag: 1.1.44
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -31,6 +31,11 @@ Delyva WooCommerce plugin
 5. Check Settings > General > Timezone. Make sure your timezone is set to city name instead of UTC+X.  e.g. Kuala Lumpur, instead of UTC+8.
 
 == Changelog ==
+
+= 1.1.44 =
+*Release Date - 27th January 2023*
+
+* Display tracking number at my orders page, orders page. Option to enable shipping phone number at the checkout page.
 
 = 1.1.43 =
 *Release Date - 25th January 2023*
