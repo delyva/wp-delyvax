@@ -376,9 +376,9 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'type'    => 'select',
                 'options' => array(
                   '>' => __( 'Greater than', 'woocommerce' ),
-                  '>=' => __( 'Greater or equal to', 'woocommerce' ),
+                  '>=' => __( 'Greater or equal', 'woocommerce' ),
                   '==' => __( 'Equal to', 'woocommerce' ),
-                  '<=' => __( 'Less than or to', 'woocommerce' ),
+                  '<=' => __( 'Less than or equal', 'woocommerce' ),
                   '<' => __( 'Less than', 'woocommerce' ),
                 )
             ),
