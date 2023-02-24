@@ -1340,9 +1340,7 @@ function sv_wc_cogs_add_order_profit_column_order_track( $column ) {
         $DelyvaXTrackingCode = !empty(get_post_meta($post->ID,'DelyvaXTrackingCode',true)) ? get_post_meta($post->ID,'DelyvaXTrackingCode',true) : '';
         $DelyvaXTrackingShort = !empty(get_post_meta($post->ID,'DelyvaXTrackingShort',true)) ? get_post_meta($post->ID,'DelyvaXTrackingShort',true) : '';
         $DelyvaXLabelUrl = !empty(get_post_meta($post->ID,'DelyvaXLabelUrl',true)) ? get_post_meta($post->ID,'DelyvaXLabelUrl',true) : '';
-        $DelyvaXPersonnel = $order->get_meta( 'DelyvaXPersonnel');
-        // $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
-        // $DelyvaXTrackingShort = $order->get_meta( 'DelyvaXTrackingShort');
+        $DelyvaXPersonnel = !empty(get_post_meta($post->ID,'DelyvaXPersonnel',true)) ? get_post_meta($post->ID,'DelyvaXPersonnel',true) : '';
         
         $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$DelyvaXTrackingCode;
         $shorturl = 'https://'.$company_code.'.delyva.app/customer/etrack/'.$DelyvaXTrackingShort;
