@@ -606,7 +606,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         $store_first_name = $store_info['store_name'];
                         $store_last_name = $store_info['store_name'];
                         $store_phone = $store_info['phone'];
-                        $store_email = $store_info['store_email'];
+                        $store_email = $store_info['store_email'] ? $store_info['store_email'] : $store_info['customer_support']['email'];
                         $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
                         $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
                         $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
