@@ -1376,7 +1376,7 @@ function sv_wc_cogs_add_order_profit_column_order_track( $column ) {
 add_action( 'manage_shop_order_posts_custom_column', 'sv_wc_cogs_add_order_profit_column_order_track' );
 
 // Shipping field on my account edit-addresses and checkout
-function filter_woocommerce_shipping_fields( $fields ) {   
+function delyvax_filter_woocommerce_shipping_fields( $fields ) {   
     $settings = get_option( 'woocommerce_delyvax_settings');
     $is_shipping_phone = $settings['shipping_phone'];
 
@@ -1392,10 +1392,10 @@ function filter_woocommerce_shipping_fields( $fields ) {
     
     return $fields;
 }
-add_filter( 'woocommerce_shipping_fields' , 'filter_woocommerce_shipping_fields', 10, 1 ); 
+add_filter( 'woocommerce_shipping_fields' , 'delyvax_filter_woocommerce_shipping_fields', 10, 1 ); 
 
 // Display on the order edit page (backend)
-function action_woocommerce_admin_order_data_after_shipping_address( $order ) {
+function delyvax_action_woocommerce_admin_order_data_after_shipping_address( $order ) {
     $settings = get_option( 'woocommerce_delyvax_settings');
     $is_shipping_phone = $settings['shipping_phone'];
 
@@ -1406,18 +1406,18 @@ function action_woocommerce_admin_order_data_after_shipping_address( $order ) {
         }
     }
 }
-add_action( 'woocommerce_admin_order_data_after_shipping_address', 'action_woocommerce_admin_order_data_after_shipping_address', 10, 1 );
+add_action( 'woocommerce_admin_order_data_after_shipping_address', 'delyvax_action_woocommerce_admin_order_data_after_shipping_address', 10, 1 );
 
 // Display on email notifications
-function filter_woocommerce_email_order_meta_fields( $fields, $sent_to_admin, $order ) {
-    $settings = get_option( 'woocommerce_delyvax_settings');
-    $is_shipping_phone = $settings['shipping_phone'];
+// function filter_woocommerce_email_order_meta_fields( $fields, $sent_to_admin, $order ) {
+//     $settings = get_option( 'woocommerce_delyvax_settings');
+//     $is_shipping_phone = $settings['shipping_phone'];
     
-    if($is_shipping_phone == 'yes')
-    {
-        // Get meta
-        $shipping_phone = $order->get_meta( '_shipping_phone' );
-    }
-}
+//     if($is_shipping_phone == 'yes')
+//     {
+//         // Get meta
+//         $shipping_phone = $order->get_meta( '_shipping_phone' );
+//     }
+// }
 
 //
