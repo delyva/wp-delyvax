@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 6.1
-Stable tag: 1.1.44
+Stable tag: 1.1.45
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -32,8 +32,13 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.45 =
+*Release Date - 2nd March 2023*
+
+* Hot fix shipping phone functions.
+
 = 1.1.44 =
-*Release Date - 27th January 2023*
+*Release Date - 27th February 2023*
 
 * Display tracking number at my orders page, orders page. 
 * Option to enable shipping phone number at the checkout page.
@@ -60,30 +65,5 @@ Delyva WooCommerce plugin
 *Release Date - 16th January 2023*
 
 * Bug-fixes for shipping and billing address.
-
-= 1.1.39 =
-*Release Date - 14th December 2022*
-
-* Bug-fixes for checkout rates.
-
-= 1.1.38 =
-*Release Date - 29th November 2022*
-
-* Supports PHP 8.0, 8.1
-
-= 1.1.37 =
-*Release Date - 3rd November 2022*
-
-* Bug-fixes.
-
-= 1.1.36 =
-*Release Date - 3rd November 2022*
-
-* Limit number of delivery service options at the checkout page.
-
-= 1.1.35 =
-*Release Date - 31st October 2022*
-
-* Better support for COD & Insurance Cover.
 
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.
