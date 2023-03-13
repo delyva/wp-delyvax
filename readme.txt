@@ -16,8 +16,8 @@ The official Delyva plugin helps store owners to integrate WooCommerce store wit
 
 Delyva WooCommerce plugin
 - Create delivery order automatically after order has been paid or manually fulfil order by changing the status to Preparing.
-- Order list > Fulfil order with change order status to 'Preparing'.
-- Edit order > Fulfil order or change status to Preparing.
+- Order list > Fulfil order with change order status to 'Preparing' and tracking number will be displayed.
+- Edit order > Select service and fulfil order or change status to Preparing.
 - Edit order > Print label,
 - Edit order > Track shipment.
 - Auto-status updates with Web-hook for preparing, start-collecting, collected, failed-collection, start-delivery, delivered, and failed-delivery.
@@ -31,6 +31,11 @@ Delyva WooCommerce plugin
 5. Check Settings > General > Timezone. Make sure your timezone is set to city name instead of UTC+X.  e.g. Kuala Lumpur, instead of UTC+8.
 
 == Changelog ==
+
+= 1.1.46 =
+*Release Date - 13th March 2023*
+
+* Select courier on view order page. Ignore create order for payment method 'pos_cash'.
 
 = 1.1.45 =
 *Release Date - 2nd March 2023*

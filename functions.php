@@ -108,12 +108,16 @@ function delyvax_payment_complete( $order_id ){
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
-        delyvax_create_order($order, $user, true);
+        if($order->get_payment_method() != 'pos_cash') {
+            delyvax_create_order($order, $user, true);
+        }
     }else if ($settings['create_shipment_on_paid'] == 'nothing')
     {
         //do nothing
     }else {
-        delyvax_create_order($order, $user, false);
+        if($order->get_payment_method() != 'pos_cash') {
+            delyvax_create_order($order, $user, false);
+        }
     }
 }
 
@@ -127,12 +131,16 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
 
     if ($settings['create_shipment_on_paid'] == 'yes')
     {
-        delyvax_create_order($order, $user, true);
+        if($order->get_payment_method() != 'pos_cash') {
+            delyvax_create_order($order, $user, true);
+        }
     }else if ($settings['create_shipment_on_paid'] == 'nothing')
     {
         //do nothing
     }else {
-        delyvax_create_order($order, $user, false);
+        if($order->get_payment_method() != 'pos_cash') {
+            delyvax_create_order($order, $user, false);
+        }
     }
     return 'processing';
 }
@@ -150,12 +158,16 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
     {
       if ($settings['create_shipment_on_confirm'] == 'yes')
       {
-          delyvax_create_order($order, $user, true);
+        if($order->get_payment_method() != 'pos_cash') {        
+            delyvax_create_order($order, $user, true);
+        }
       }else if ($settings['create_shipment_on_confirm'] == 'nothing')
       {
           //do nothing
       }else {
-          delyvax_create_order($order, $user, false);
+        if($order->get_payment_method() != 'pos_cash') {
+            delyvax_create_order($order, $user, false);
+        }
       }
     }else if($order->get_status() == 'cancelled')
     {
@@ -423,7 +435,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
       $scheduledAt = $delivery_date;
       $scheduledAt->setTime($timeslot_hour,$timeslot_min,00);
 
-      //service
+      //service      
       $serviceCode = "";
 
       $main_order = $order;
@@ -434,18 +446,28 @@ function delyvax_post_create_order($order, $user, $process=false) {
       }
 
       // Iterating through order shipping items
-      foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
-      {
-          $serviceobject = $shipping_item_obj->get_meta_data();
+      $DelyvaXServiceCode = $main_order->get_meta( 'DelyvaXServiceCode');
 
-          for($i=0; $i < sizeof($serviceobject); $i++)
-          {
-              if($serviceobject[$i]->key == "service_code")
-              {
-                  $serviceCode = $serviceobject[0]->value;
-              }
-          }
-      }
+      if($DelyvaXServiceCode)
+      {
+            $serviceCode = $DelyvaXServiceCode;
+      }else {
+            foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
+            {
+                $serviceobject = $shipping_item_obj->get_meta_data();
+    
+                for($i=0; $i < sizeof($serviceobject); $i++)
+                {
+                    if($serviceobject[$i]->key == "service_code")
+                    {
+                        $serviceCode = $serviceobject[0]->value;
+                        
+                        $main_order->update_meta_data( 'DelyvaXServiceCode', $serviceCode );
+                        $main_order->save();
+                    }
+                }
+            }
+      }          
 
       //inventory / items
       $count = 0;
@@ -469,7 +491,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
       $product_id = null;
 
       //store info
-		  $store_name = $settings['shop_name'];
+	  $store_name = $settings['shop_name'];
       $store_email = $settings['shop_email'];
       $store_phone = $settings['shop_mobile'];
 
@@ -775,235 +797,239 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
       $referenceNo = $main_order->get_id();
       //
+      
+      $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
 
-      $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons, $referenceNo);
-
-      if($resultCreate)
+      if($DelyvaXOrderID)
       {
-            $shipmentId = $resultCreate["id"];
+            $shipmentId = $DelyvaXOrderID;
+      }else {
+            $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons, $referenceNo);
 
-      		  if($order && $shipmentId)
-      			{
-                $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-      				  $order->save();
-      			}
-
-            if($process)
+            if($resultCreate)
             {
-                $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
+                $shipmentId = $resultCreate["id"];
 
-                if($resultProcess)
-                {
-                    $trackingNo = $resultProcess["consignmentNo"];
-                    $nanoId = $resultProcess["nanoId"];
-
-                    $main_order = $order;
-
-                    $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                    $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                    $main_order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
-                    $main_order->save();
-
-                    // $main_order->update_status('ready-to-collect');
-                    // $main_order->update_status('ready-to-collect', '<a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a>.', false);
-                    // $main_order->update_status('ready-to-collect', '<a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
-
-                    $main_order->update_status('ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
-
-                    $consignmentNo = $trackingNo;
-
-                    //store price discount or markup
-                    if($resultProcess["price"])
-                    {
-                        $deliveryPrice = $resultProcess['price']['amount'];
-                        $deliveryMarkup = 0;
-                        $deliveryDiscount = 0;
-
-                        $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
-
-                        $ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
-                        $percentRate = $ra_percentage / 100 * $deliveryPrice;
-
-                        $flatRate = $settings['rate_adjustment_flat'] ?? 0;
-
-                        if($rate_adjustment_type == 'markup')
-                        {
-                            $deliveryMarkup = round($percentRate + $flatRate, 2);
-                        }else {
-                            $deliveryDiscount = round($percentRate + $flatRate, 2);
-                        }
-
-                        $main_order->update_meta_data( 'DelyvaXDeliveryPrice', $deliveryPrice );
-                        $main_order->update_meta_data( 'DelyvaXMarkup', $deliveryMarkup );
-                        $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
-                        $main_order->save();
-                    }
-
-                    //handle free shipping
-                    $free_shipping_type = $settings['free_shipping_type'] ?? '';
-                    $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
-                    $free_shipping_value = $settings['free_shipping_value'] ?? '0';
-
-                    if($free_shipping_type == 'total_quantity')
-                    {
-                        if($free_shipping_condition == '>')
-                        {
-                            if($total_quantity > $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '>=')
-                        {
-                            if($total_quantity >= $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '==')
-                        {
-                            if($total_quantity == $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '<=')
-                        {
-                            if($total_quantity <= $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '<')
-                        {
-                            if($total_quantity < $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }
-                    }else if($free_shipping_type == 'total_amount')
-                    {
-                        if($free_shipping_condition == '>')
-                        {
-                            if($total_price > $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '>=')
-                        {
-                            if($total_price >= $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '==')
-                        {
-                            if($total_price == $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '<=')
-                        {
-                            if($total_price <= $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }else if($free_shipping_condition == '<')
-                        {
-                            if($total_price < $free_shipping_value)
-                            {
-                               $deliveryDiscount = $deliveryPrice;
-                            }
-                        }
-                    }
-
-                    $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
-                    $main_order->save();
-                    ////end free shipping
-
-                    // no need - vendor to process sub order separately
-                    //save tracking no into order to all parent order and suborders
-                    /*
-                    $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-
-                    if( sizeof($sub_orders) > 0 )
-                    {
-                        $main_order = wc_get_order($order->get_id());
-
-                        $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                        $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                        $main_order->save();
-
-                        $main_order->update_status('ready-to-collect');
-
-                        $count = 0;
-                        foreach ($sub_orders as $sub)
-                        {
-                            $sub_order = wc_get_order($sub->ID);
-
-                            $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                            $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                            $sub_order->save();
-
-                            $sub_order->update_status('ready-to-collect');
-
-                            $consignmentNo = $trackingNo."-".($count+1);
-
-
-                            $count++;
-                        }
-                    }else {
-                        $main_order = $order;
-
-                        $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                        $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                        $main_order->save();
-
-                        $main_order->update_status('ready-to-collect');
-
-                        $consignmentNo = $trackingNo."-1";
-                    }*/
-                }
-            }else {
-                  $main_order = $order;
-
-                  $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                  // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                  $main_order->save();
-
-                  $consignmentNo = $trackingNo;
-
-                  // no need vendor to process sub order separately
-                  //save tracking no into order to all parent order and suborders
-                  // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                  //
-                  // if( sizeof($sub_orders) > 0 )
-                  // {
-                  //     $main_order = wc_get_order($order->get_id());
-                  //
-                  //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                  //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                  //     $main_order->save();
-                  //
-                  //     $count = 0;
-                  //     foreach ($sub_orders as $sub)
-                  //     {
-                  //         $sub_order = wc_get_order($sub->ID);
-                  //
-                  //         $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                  //         // $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                  //         $sub_order->save();
-                  //
-                  //         $consignmentNo = $trackingNo."-".($count+1);
-                  //
-                  //         $count++;
-                  //     }
-                  // }else {
-                  //     $main_order = $order;
-                  //
-                  //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                  //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                  //     $main_order->save();
-                  //
-                  //     $consignmentNo = $trackingNo."-1";
-                  // }
+                $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                $order->save();
             }
       }
+
+    if($process)
+    {
+        $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
+
+        if($resultProcess)
+        {
+            $trackingNo = $resultProcess["consignmentNo"];
+            $nanoId = $resultProcess["nanoId"];
+
+            $main_order = $order;
+
+            $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+            $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+            $main_order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
+            $main_order->save();
+
+            // $main_order->update_status('ready-to-collect');
+            // $main_order->update_status('ready-to-collect', '<a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a>.', false);
+            // $main_order->update_status('ready-to-collect', '<a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
+
+            $main_order->update_status('ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
+
+            $consignmentNo = $trackingNo;
+
+            //store price discount or markup
+            if($resultProcess["price"])
+            {
+                $deliveryPrice = $resultProcess['price']['amount'];
+                $deliveryMarkup = 0;
+                $deliveryDiscount = 0;
+
+                $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
+
+                $ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
+                $percentRate = $ra_percentage / 100 * $deliveryPrice;
+
+                $flatRate = $settings['rate_adjustment_flat'] ?? 0;
+
+                if($rate_adjustment_type == 'markup')
+                {
+                    $deliveryMarkup = round($percentRate + $flatRate, 2);
+                }else {
+                    $deliveryDiscount = round($percentRate + $flatRate, 2);
+                }
+
+                $main_order->update_meta_data( 'DelyvaXDeliveryPrice', $deliveryPrice );
+                $main_order->update_meta_data( 'DelyvaXMarkup', $deliveryMarkup );
+                $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
+                $main_order->save();
+            }
+
+            //handle free shipping
+            $free_shipping_type = $settings['free_shipping_type'] ?? '';
+            $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
+            $free_shipping_value = $settings['free_shipping_value'] ?? '0';
+
+            if($free_shipping_type == 'total_quantity')
+            {
+                if($free_shipping_condition == '>')
+                {
+                    if($total_quantity > $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '>=')
+                {
+                    if($total_quantity >= $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '==')
+                {
+                    if($total_quantity == $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '<=')
+                {
+                    if($total_quantity <= $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '<')
+                {
+                    if($total_quantity < $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }
+            }else if($free_shipping_type == 'total_amount')
+            {
+                if($free_shipping_condition == '>')
+                {
+                    if($total_price > $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '>=')
+                {
+                    if($total_price >= $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '==')
+                {
+                    if($total_price == $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '<=')
+                {
+                    if($total_price <= $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }else if($free_shipping_condition == '<')
+                {
+                    if($total_price < $free_shipping_value)
+                    {
+                        $deliveryDiscount = $deliveryPrice;
+                    }
+                }
+            }
+
+            $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
+            $main_order->save();
+            ////end free shipping
+
+            // no need - vendor to process sub order separately
+            //save tracking no into order to all parent order and suborders
+            /*
+            $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+
+            if( sizeof($sub_orders) > 0 )
+            {
+                $main_order = wc_get_order($order->get_id());
+
+                $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                $main_order->save();
+
+                $main_order->update_status('ready-to-collect');
+
+                $count = 0;
+                foreach ($sub_orders as $sub)
+                {
+                    $sub_order = wc_get_order($sub->ID);
+
+                    $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                    $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                    $sub_order->save();
+
+                    $sub_order->update_status('ready-to-collect');
+
+                    $consignmentNo = $trackingNo."-".($count+1);
+
+
+                    $count++;
+                }
+            }else {
+                $main_order = $order;
+
+                $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+                $main_order->save();
+
+                $main_order->update_status('ready-to-collect');
+
+                $consignmentNo = $trackingNo."-1";
+            }*/
+        }
+    }else {
+            $main_order = $order;
+
+            $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+            // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+            $main_order->save();
+
+            $consignmentNo = $trackingNo;
+
+            // no need vendor to process sub order separately
+            //save tracking no into order to all parent order and suborders
+            // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
+            //
+            // if( sizeof($sub_orders) > 0 )
+            // {
+            //     $main_order = wc_get_order($order->get_id());
+            //
+            //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+            //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+            //     $main_order->save();
+            //
+            //     $count = 0;
+            //     foreach ($sub_orders as $sub)
+            //     {
+            //         $sub_order = wc_get_order($sub->ID);
+            //
+            //         $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+            //         // $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+            //         $sub_order->save();
+            //
+            //         $consignmentNo = $trackingNo."-".($count+1);
+            //
+            //         $count++;
+            //     }
+            // }else {
+            //     $main_order = $order;
+            //
+            //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+            //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+            //     $main_order->save();
+            //
+            //     $consignmentNo = $trackingNo."-1";
+            // }
+    }
 }
 
 //rewire logic here, API is only for post
@@ -1019,20 +1045,27 @@ function delyvax_post_process_order($order, $user, $shipmentId) {
       }
 
       // Iterating through order shipping items
-      foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
-      {
-          $serviceobject = $shipping_item_obj->get_meta_data();
+      $DelyvaXServiceCode = $main_order->get_meta( 'DelyvaXServiceCode');
 
-          for($i=0; $i < sizeof($serviceobject); $i++)
-          {
-              if($serviceobject[$i]->key == "service_code")
-              {
-                  $serviceCode = $serviceobject[0]->value;
-              }
-          }
+      if($DelyvaXServiceCode)
+      {
+            $serviceCode = $DelyvaXServiceCode;
+      }else {
+            foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
+            {
+                $serviceobject = $shipping_item_obj->get_meta_data();
+    
+                for($i=0; $i < sizeof($serviceobject); $i++)
+                {
+                    if($serviceobject[$i]->key == "service_code")
+                    {
+                        $serviceCode = $serviceobject[0]->value;
+                    }
+                }
+            }
       }
 
-      return $resultCreate = DelyvaX_Shipping_API::postProcessOrder($order, $shipmentId, $serviceCode);
+      return $resultProcess = DelyvaX_Shipping_API::postProcessOrder($order, $shipmentId, $serviceCode);
 }
 
 //rewire logic here, API is only for post
