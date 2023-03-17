@@ -299,7 +299,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             'cancel_delivery' => array(
                 'title'    	=> __( 'Cancel delivery', 'delyvax' ),
                 'default' => __('no', 'delyvax'),
-                'id' => 'delyvax_shipping_phone',
+                'id' => 'delyvax_cancel_delivery',
                 'description' => __( 'Cancel the delivery if the order is cancelled. Subject to cancellation rules by the courier.' ),
                 'type'    => 'select',
                 'options' => array(
@@ -310,7 +310,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             'cancel_order' => array(
                 'title'    	=> __( 'Cancel order', 'delyvax' ),
                 'default' => __('no', 'delyvax'),
-                'id' => 'delyvax_shipping_phone',
+                'id' => 'delyvax_cancel_order',
                 'description' => __( 'Cancel the order if the delivery is cancelled.' ),
                 'type'    => 'select',
                 'options' => array(

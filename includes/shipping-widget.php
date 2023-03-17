@@ -24,6 +24,7 @@ function delyvax_show_box( $post ) {
 	$company_id = $settings['company_id'];
 	$company_code = $settings['company_code'];
 	$company_name = $settings['company_name'];
+	$create_shipment_on_paid = $settings['create_shipment_on_paid'];
 	$create_shipment_on_confirm = $settings['create_shipment_on_confirm'];
 
 	if($company_name == null)
@@ -39,8 +40,83 @@ function delyvax_show_box( $post ) {
 	$DelyvaXError = $order->get_meta( 'DelyvaXError' );	
 
 	$trackUrl = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$TrackingCode;
-	$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$DelyvaXOrderID.'/label?companyId='.$company_id;				
+	$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$DelyvaXOrderID.'/label?companyId='.$company_id;
+	
+	//processing
+	if ( $order->has_status(array('processing'))) {
+		if($create_shipment_on_paid == 'yes' || $create_shipment_on_paid == ''
+			 || $create_shipment_on_confirm == 'yes' )
+		{
+			//create order and display list of services
+			$DelyvaXServices = $order->get_meta( 'DelyvaXServices' );
 
+			$adxservices = array();
+
+			if($DelyvaXOrderID != null && !$DelyvaXServices)
+			{
+				$order = delyvax_get_order_services($order);
+				$DelyvaXServices = $order->get_meta( 'DelyvaXServices' );
+			}
+
+			if($DelyvaXServices)
+			{
+				$adxservices = json_decode($DelyvaXServices);
+			}
+
+			if($DelyvaXError) {
+				echo "Error: ".$DelyvaXError;
+			}
+
+			if($DelyvaXOrderID != null && sizeof($adxservices) > 0) {
+				delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
+
+				echo '<p><button class="button button-primary" type="submit">Fulfill with '.$company_name.'</button></p>';
+			}
+		}
+	//preparing
+	} else if ( $order->has_status( array( 'preparing' )) ) {
+		if($DelyvaXOrderID != null && $TrackingCode != null){
+			echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
+			echo "<div><p>
+				<a href=\"".$printLabelUrl."\" class=\"button button-primary\" target=\"_blank\">Print label</a>
+				</p></div>";
+			echo "<div><p>
+				<a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
+				</p></div>";
+		}else {
+			echo "<div>
+        			<p>
+            		Set your order to <b>Processing</b> to fulfill with ".$company_name.", it also works with <i>bulk actions</i> too!
+        			</p>
+    				</div>";
+		}
+	}else if ( $order->has_status( array( 'completed' ) ) ) {
+		if($DelyvaXOrderID != null && $TrackingCode != null){
+			echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
+			echo "<div><p>
+				<a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
+				</p></div>";
+		}
+	//others
+	}else {
+		if($DelyvaXOrderID != null && $TrackingCode != null){
+			echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
+			echo "<div><p>
+				<a href=\"".$printLabelUrl."\" class=\"button button-primary\" target=\"_blank\">Print label</a>
+				</p></div>";
+			echo "<div><p>
+				<a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
+				</p></div>";
+		}else {
+			echo "<div>
+        			<p>
+            		Set your order to <b>Processing</b> to fulfill with ".$company_name.", it also works with <i>bulk actions</i> too!
+        			</p>
+    				</div>";
+		}
+	}
+
+	/**
     if ($TrackingCode == 'Service Unavailable') {
 				echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
         		echo "<div><p>Failed to create shipment in ".$company_name.", you can try again by changing order status to <b>Preparing</b></p></div>";
@@ -49,7 +125,7 @@ function delyvax_show_box( $post ) {
 
 				$adxservices = array();
 
-				if(!$DelyvaXServices)
+				if($DelyvaXOrderID && !$DelyvaXServices)
 				{
 					$order = delyvax_get_order_services($order);
 					$DelyvaXServices = $order->get_meta( 'DelyvaXServices' );
@@ -77,9 +153,11 @@ function delyvax_show_box( $post ) {
 		            </p></div>";
 				}
 
-				delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
+				if(sizeof($adxservices) > 0) {
+					delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
 
-				echo '<p><button class="button button-primary" type="submit">Fulfill with '.$company_name.'</button></p>';
+					echo '<p><button class="button button-primary" type="submit">Fulfill with '.$company_name.'</button></p>';
+				}
 
 				// if($create_shipment_on_confirm == 'yes')
 				// {
@@ -146,6 +224,7 @@ function delyvax_show_box( $post ) {
         </p>
     		</div>";
 	}
+	**/
 }
 
 /**

@@ -51,10 +51,12 @@ function delyvaxPluginDeActivated() {
 
 function delyvaxPluginUninstalled() {
     delete_option('delyvax_pricing_enable');
+    delete_option('delyvax_limit_service_options');    
     delete_option('delyvax_create_shipment_on_paid');
     delete_option('delyvax_create_shipment_on_confirm');
     delete_option('delyvax_change_order_status');
     delete_option('delyvax_company_id');
+    delete_option('delyvax_company_name');    
     delete_option('delyvax_user_id');
     delete_option('delyvax_customer_id');
     delete_option('delyvax_api_token');
@@ -64,6 +66,7 @@ function delyvaxPluginUninstalled() {
     delete_option('delyvax_shop_name');
     delete_option('delyvax_shop_mobile');
     delete_option('delyvax_shop_email');
+    delete_option('delyvax_shipping_phone');    
 
     delete_option('delyvax_processing_days');
     delete_option('delyvax_processing_hours');
@@ -72,6 +75,12 @@ function delyvaxPluginUninstalled() {
     delete_option('delyvax_volumetric_constant');
     delete_option('delyvax_weight_option');
     delete_option('delyvax_rate_adjustment_type');
+
+    delete_option('delyvax_insurance_premium');
+    delete_option('delyvax_source');
+    delete_option('delyvax_include_order_note');
+    delete_option('delyvax_cancel_delivery');
+    delete_option('delyvax_cancel_order');
 
     delete_option('wc_settings_delyvax_shipping_rate_adjustment');
     delete_option('delyvax_rate_adjustment_percentage');
@@ -154,7 +163,22 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
     //set pickup date, time and delivery date and time
     delyvax_set_pickup_delivery_time($order);
 
-    if($order->get_status() == 'preparing')
+    if($order->get_status() == 'processing')
+    {
+        if ($settings['create_shipment_on_paid'] == 'yes')
+        {
+            if($order->get_payment_method() != 'pos_cash') {
+                delyvax_create_order($order, $user, true);
+            }
+        }else if ($settings['create_shipment_on_paid'] == 'nothing')
+        {
+            //do nothing
+        }else {
+            if($order->get_payment_method() != 'pos_cash') {
+                delyvax_create_order($order, $user, false);
+            }
+        }
+    }else if($order->get_status() == 'preparing')
     {
       if ($settings['create_shipment_on_confirm'] == 'yes')
       {
