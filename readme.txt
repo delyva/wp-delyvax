@@ -32,6 +32,11 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.48 =
+*Release Date - 21st March 2023*
+
+* Bug fixes for some use case.
+
 = 1.1.47 =
 *Release Date - 17th March 2023*
 

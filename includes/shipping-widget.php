@@ -71,6 +71,10 @@ function delyvax_show_box( $post ) {
 				delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
 
 				echo '<p><button class="button button-primary" type="submit">Fulfill with '.$company_name.'</button></p>';
+			}else {
+				echo "<div><p>
+					<a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=preparing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Fulfill with ".$company_name."</a>
+				</p></div>";				
 			}
 		}else {
 			echo "<div><p>
