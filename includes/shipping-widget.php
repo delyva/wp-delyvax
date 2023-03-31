@@ -333,9 +333,9 @@ function delyvax_get_services_select($adxservices, $DelyvaXServiceCode)
 			if($DelyvaXServiceCode 
 				&& ( $DelyvaXServiceCode == $service->code || $DelyvaXServiceCode == $service->serviceCompanyCode ) )
 			{
-				echo '<option value="'.$service->code.'" selected>'.$serviceName.'</option>';
+				echo '<option value="'.$service->serviceCompanyCode.'" selected>'.$serviceName.'</option>';
 			}else {
-				echo '<option value="'.$service->code.'">'.$serviceName.'</option>';
+				echo '<option value="'.$service->serviceCompanyCode.'">'.$serviceName.'</option>';
 			}
 		}
 		echo '</select>';
