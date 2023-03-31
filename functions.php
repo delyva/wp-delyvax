@@ -641,21 +641,21 @@ function delyvax_post_create_order($order, $user, $process=false) {
               if($variation)
               {
                   $product_name = $variation->get_name();
-                  $product_weight = $variation->get_weight();
-                  $product_length = $variation->get_length();
-                  $product_width = $variation->get_width();
-                  $product_height = $variation->get_height();
+                  $product_weight = delyvax_default_weight(delyvaX_weight_to_kg($variation->get_weight()));
+                  $product_length = delyvax_default_dimension(delyvax_dimension_to_cm($variation->get_length()));
+                  $product_width = delyvax_default_dimension(delyvax_dimension_to_cm($variation->get_width()));
+                  $product_height = delyvax_default_dimension(delyvax_dimension_to_cm($variation->get_height()));
               }else {
-                  $product_weight = $product->get_weight();
-                  $product_length = $product->get_length();
-                  $product_width = $product->get_width();
-                  $product_height = $product->get_height();
+                  $product_weight = delyvax_default_weight(delyvaX_weight_to_kg($product->get_weight()));
+                  $product_length = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()));
+                  $product_width = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()));
+                  $product_height = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height()));
               }
           }else{
-              $product_weight = $product->get_weight();
-              $product_length = $product->get_length();
-              $product_width = $product->get_width();
-              $product_height = $product->get_height();
+                $product_weight = delyvax_default_weight(delyvaX_weight_to_kg($product->get_weight()));
+                $product_length = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()));
+                $product_width = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()));
+                $product_height = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height()));
           }
 
           $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
