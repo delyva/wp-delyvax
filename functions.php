@@ -105,6 +105,17 @@ function delyvaxRequest() {
     }
 }
 
+function delyvax_get_order_shipping_method( $order_id ){
+    $shipping_method = null;
+
+    $order = wc_get_order( $order_id );
+	foreach( $order->get_items( 'shipping' ) as $item_id => $item )
+    {
+        $shipping_method = $item->get_method_id();
+	}
+    return $shipping_method;
+}
+
 
 function delyvax_payment_complete( $order_id ){
     $settings = get_option( 'woocommerce_delyvax_settings');
@@ -135,7 +146,7 @@ function delyvax_change_cod_payment_order_status( $order_status, $order ) {
 
     //set pickup date, time and delivery date and time
     delyvax_set_pickup_delivery_time($order);
-
+    
     $user = $order->get_user();
 
     if ($settings['create_shipment_on_paid'] == 'yes')
@@ -392,6 +403,11 @@ function delyvax_create_order($order, $user, $process=false) {
             include_once 'includes/delyvax-api.php';
         }
 
+        //ignore local_pickup
+        $shipping_method = delyvax_get_order_shipping_method($order->id);
+        if($shipping_method == 'local_pickup') return;
+        //
+
         $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
         $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
 
@@ -603,6 +619,28 @@ function delyvax_post_create_order($order, $user, $process=false) {
                   $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
               }
           }
+        }else if($multivendor_option == 'MKING')
+        {
+            $vendor_id = marketking()->get_product_vendor( $product_id );
+
+            // $company = get_user_meta($vendor_id, 'billing_company', true);      
+            $store_name = marketking()->get_store_name_display($vendor_id);              
+            // $store_name = get_user_meta($vendor_id, 'marketking_store_name', true);
+            $store_first_name = get_user_meta($vendor_id, 'billing_first_name', true);
+            $store_last_name = get_user_meta($vendor_id, 'billing_last_name', true);
+            $store_phone = get_user_meta($vendor_id, 'billing_phone', true);
+            $store_email = marketking()->get_vendor_email($vendor_id);
+            // $store_email = get_user_meta($vendor_id, 'billing_email', true);
+
+            $store_address_1 = get_user_meta($vendor_id, 'billing_address_1', true);
+            $store_address_2 = get_user_meta($vendor_id, 'billing_address_2', true);
+            $store_city = get_user_meta($vendor_id, 'billing_city', true);
+            $store_state = get_user_meta($vendor_id, 'billing_postcode', true);
+            $store_postcode = get_user_meta($vendor_id, 'billing_state', true);
+            $store_country = get_user_meta($vendor_id, 'billing_country', true);
+            
+            // $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+            // $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
       }else {
           // echo 'no multivendor';
       }

@@ -151,7 +151,8 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'options' => array(
                   'SINGLE' => __( 'Single vendor', 'woocommerce' ),
                   'DOKAN' => __( 'Dokan', 'woocommerce' ),
-                  'WCFM' => __( 'WCFM', 'woocommerce' ),
+                  'WCFM' => __( 'WCFM', 'woocommerce' )
+                //   'MKING' => __( 'MarketKing', 'woocommerce' ),
                 )
             ),
             'shop_name' => array(
@@ -375,11 +376,11 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 'id' => 'delyvax_free_shipping_condition',
                 'type'    => 'select',
                 'options' => array(
-                  '>' => __( 'Greater than', 'woocommerce' ),
-                  '>=' => __( 'Greater or equal', 'woocommerce' ),
-                  '==' => __( 'Equal to', 'woocommerce' ),
-                  '<=' => __( 'Less than or equal', 'woocommerce' ),
-                  '<' => __( 'Less than', 'woocommerce' ),
+                  'gt' => __( 'Greater than', 'woocommerce' ),
+                  'gte' => __( 'Greater or equal', 'woocommerce' ),
+                  'eq' => __( 'Equal to', 'woocommerce' ),
+                  'lte' => __( 'Less than or equal', 'woocommerce' ),
+                  'lt' => __( 'Less than', 'woocommerce' ),
                 )
             ),
             'free_shipping_value' => array(
@@ -618,6 +619,29 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
                     }
                 }
+            }else if($multivendor_option == 'MKING')
+            {                
+                $vendor_id = marketking()->get_product_vendor( $product_id );
+
+                // $company = get_user_meta($vendor_id, 'billing_company', true);      
+                $store_name = marketking()->get_store_name_display($vendor_id);              
+                // $store_name = get_user_meta($vendor_id, 'marketking_store_name', true);
+                $store_first_name = get_user_meta($vendor_id, 'billing_first_name', true);
+                $store_last_name = get_user_meta($vendor_id, 'billing_last_name', true);
+                $store_phone = get_user_meta($vendor_id, 'billing_phone', true);
+                // $store_email = get_user_meta($vendor_id, 'billing_email', true);
+                $store_email = marketking()->get_vendor_email($vendor_id);
+                // $store_email = get_user_meta($vendor_id, 'billing_email', true);
+
+                $store_address_1 = get_user_meta($vendor_id, 'billing_address_1', true);
+                $store_address_2 = get_user_meta($vendor_id, 'billing_address_2', true);
+                $store_city = get_user_meta($vendor_id, 'billing_city', true);
+                $store_state = get_user_meta($vendor_id, 'billing_postcode', true);
+                $store_postcode = get_user_meta($vendor_id, 'billing_state', true);
+                $store_country = get_user_meta($vendor_id, 'billing_country', true);
+                
+                // $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+                // $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
             }else {
                 // echo 'no multivendor';
             }
@@ -754,31 +778,31 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
                               if($free_shipping_type == 'total_quantity')
                               {
-                                  if($free_shipping_condition == '>')
+                                  if($free_shipping_condition == '>' || $free_shipping_condition == 'gt')
                                   {
                                       if($total_quantity > $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '>=')
+                                  }else if($free_shipping_condition == '>=' || $free_shipping_condition == 'gte')
                                   {
                                       if($total_quantity >= $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '==')
+                                  }else if($free_shipping_condition == '==' || $free_shipping_condition == 'eq')
                                   {
                                       if($total_quantity == $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '<=')
+                                  }else if($free_shipping_condition == '<=' || $free_shipping_condition == 'lte')
                                   {
                                       if($total_quantity <= $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '<')
+                                  }else if($free_shipping_condition == '<' || $free_shipping_condition == 'lt')
                                   {
                                       if($total_quantity < $free_shipping_value)
                                       {
@@ -787,31 +811,31 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                                   }
                               }else if($free_shipping_type == 'total_amount')
                               {
-                                  if($free_shipping_condition == '>')
+                                  if($free_shipping_condition == '>' || $free_shipping_condition == 'gt')
                                   {
                                       if($total_amount > $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '>=')
+                                  }else if($free_shipping_condition == '>=' || $free_shipping_condition == 'gte')
                                   {
                                       if($total_amount >= $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '==')
+                                  }else if($free_shipping_condition == '==' || $free_shipping_condition == 'eq')
                                   {
                                       if($total_amount == $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '<=')
+                                  }else if($free_shipping_condition == '<=' || $free_shipping_condition == 'lte')
                                   {
                                       if($total_amount <= $free_shipping_value)
                                       {
                                          $cost = 0;
                                       }
-                                  }else if($free_shipping_condition == '<')
+                                  }else if($free_shipping_condition == '<' || $free_shipping_condition == 'lt')
                                   {
                                       if($total_amount < $free_shipping_value)
                                       {
