@@ -706,14 +706,14 @@ function delyvax_post_create_order($order, $user, $process=false) {
                   "currency" => $main_order->get_currency(),
               ),
               "weight" => array(
-                  "value" => (delyvax_default_weight(delyvaX_weight_to_kg($product_weight))),
+                  "value" => $product_weight,
                   "unit" => 'kg'
               ),
               "dimension" => array(
                   "unit" => 'cm',
-                  "width" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_width))),
-                  "length" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_length))),
-                  "height" => (delyvax_default_dimension(delyvax_dimension_to_cm($product_height)))
+                  "width" => $product_width,
+                  "length" => $product_length,
+                  "height" => $product_height
               ),
               "quantity" => $quantity,
               "description" => $product_description
@@ -721,9 +721,9 @@ function delyvax_post_create_order($order, $user, $process=false) {
 
           $total_weight = $total_weight + ($product_weight*$quantity);
 
-          $total_dimension = $total_dimension + (delyvax_default_dimension(delyvax_dimension_to_cm($product_width))
-                * delyvax_default_dimension(delyvax_dimension_to_cm($product_length))
-                * delyvax_default_dimension(delyvax_dimension_to_cm($product_height)));
+          $total_dimension = $total_dimension + $product_width
+                * $product_length
+                * $product_height;
 
           $total_price = $total_price + $subtotal;
 
