@@ -150,8 +150,8 @@ function delyvax_webhook_order_created()
                               //on the way to pick up
                               if( !$order->has_status('wc-ready-to-collect') )
                               {
-                                  $order->update_status('ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
-                                  // $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                  $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+                                  // $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
                                   // $order->update_status('courier-accepted');
 
                                   wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
@@ -164,7 +164,7 @@ function delyvax_webhook_order_created()
                                   //     foreach ($sub_orders as $sub)
                                   //     {
                                   //         $sub_order = wc_get_order($sub->ID);
-                                  //         $sub_order->update_status('ready-to-collect');
+                                  //         $sub_order->update_status('wc-ready-to-collect');
                                   //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
                                   //     }
                                   // }
@@ -245,7 +245,7 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-ready-to-collect') )
                                   {
-                                      $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                      $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('courier-accepted');
 
                                       wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
@@ -258,7 +258,7 @@ function delyvax_webhook_get_tracking()
                                       //     foreach ($sub_orders as $sub)
                                       //     {
                                       //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('ready-to-collect');
+                                      //         $sub_order->update_status('wc-ready-to-collect');
                                       //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
                                       //     }
                                       // }
