@@ -154,7 +154,7 @@ function delyvax_webhook_order_created()
                                   // $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
                                   // $order->update_status('courier-accepted');
 
-                                  wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+                                  // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
 
                                   //no need - vendor will be fulfilling sub order instead of main order
                                   //start update sub orders
@@ -248,7 +248,7 @@ function delyvax_webhook_get_tracking()
                                       $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
                                       // $order->update_status('courier-accepted');
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
 
                                       //no need - vendor will be fulfilling sub order instead of main order
                                       //start update sub orders
