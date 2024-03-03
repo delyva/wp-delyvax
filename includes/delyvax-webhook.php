@@ -1,8 +1,9 @@
 <?php
 defined( 'ABSPATH' ) or die( 'No script kiddies please!');
+
+add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_order_created',10,0);
+add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking',10,0);
 add_action( 'woocommerce_update_options', 'delyvax_woocommerce_update_options', 10, 1 );
-add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_order_created');
-add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking');
 
 // check for duplicate, fix old url
 function delyvax_webhook_duplicate_check() {

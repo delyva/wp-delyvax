@@ -1272,7 +1272,7 @@ function delyvax_register_order_statuses() {
         'label_count'               => _n_noop( 'Request refund (%s)', 'Request refund (%s)' )
     ) );
 }
-add_action( 'init', 'delyvax_register_order_statuses');
+add_action( 'init', 'delyvax_register_order_statuses',20,0);
 
 
 add_filter( 'woocommerce_reports_order_statuses', 'include_custom_order_status_to_reports', 20, 1 );
@@ -1309,7 +1309,7 @@ function delyvax_add_to_order_statuses( $order_statuses ) {
 
     return $new_order_statuses;
 }
-add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses');
+add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses',20,1);
 //
 
 // Adding custom status  to admin order list bulk actions dropdown
@@ -1336,7 +1336,7 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
 
     return $new_actions;
 }
-add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 20, 1 );
+add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 100, 1 );
 
 // Add new column(s) to the "My Orders" table in the account.
 function filter_woocommerce_account_orders_columns( $columns ) {
