@@ -133,7 +133,7 @@ function delyvax_webhook_order_created()
 
                       for($i=0; $i < sizeof($orders); $i++)
                       {
-                          $order = wc_get_order($orders[$i]->get_id());
+                          $order = new WC_Order($orders[$i]->get_id());
 
                           $order->get_status();
 
@@ -150,11 +150,14 @@ function delyvax_webhook_order_created()
                               //on the way to pick up
                               if( !$order->has_status('wc-ready-to-collect') )
                               {
-                                  $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+                                  //temporarily disable to due to unreliability of woocommerce update status function
+                                  //$order->update_status('ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+
                                   // $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
                                   // $order->update_status('courier-accepted');
 
-                                  // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+                                  //temporarily disable to due to unreliability of woocommerce update status function
+                                  // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'ready-to-collect']);
 
                                   //no need - vendor will be fulfilling sub order instead of main order
                                   //start update sub orders
@@ -163,7 +166,7 @@ function delyvax_webhook_order_created()
                                   // if ( $sub_orders ) {
                                   //     foreach ($sub_orders as $sub)
                                   //     {
-                                  //         $sub_order = wc_get_order($sub->ID);
+                                  //         $sub_order = new WC_Order($sub->ID);
                                   //         $sub_order->update_status('wc-ready-to-collect');
                                   //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
                                   //     }
@@ -212,7 +215,7 @@ function delyvax_webhook_get_tracking()
                       global $woocommerce;
 
                       ///find order_id by $shipmentId
-                      $orders = wc_get_orders( array(
+                      $orders = new WC_Orders( array(
                           // 'limit'        => -1, // Query all orders
                           // 'orderby'      => 'date',
                           // 'order'        => 'DESC',
@@ -222,7 +225,7 @@ function delyvax_webhook_get_tracking()
 
                       for($i=0; $i < sizeof($orders); $i++)
                       {
-                          $order = wc_get_order($orders[$i]->get_id());
+                          $order = new WC_Order($orders[$i]->get_id());
 
                           $order->get_status();
 
@@ -245,10 +248,11 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-ready-to-collect') )
                                   {
-                                      $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('courier-accepted');
-
-                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+                                      //temporarily disable to due to unreliability of woocommerce update status function
+                                      // $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      //temporarily disable to due to unreliability of woocommerce update status function
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'ready-to-collect']);
 
                                       //no need - vendor will be fulfilling sub order instead of main order
                                       //start update sub orders

@@ -897,7 +897,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
             // $main_order->update_status('wc-ready-to-collect', '<a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a>.', false);
             // $main_order->update_status('wc-ready-to-collect', '<a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
 
-            $main_order->update_status('wc-ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
+            $main_order->update_status('ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
 
             $consignmentNo = $trackingNo;
 
