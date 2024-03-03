@@ -133,9 +133,9 @@ function delyvax_webhook_order_created()
 
                       for($i=0; $i < sizeof($orders); $i++)
                       {
-                          $order = new WC_Order($orders[$i]->get_id());
+                          $order = wc_get_order($orders[$i]->get_id());
 
-                          $order->get_status();
+                          // $order->get_status();
 
                           $labelUrl = 'https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id;
 
@@ -150,35 +150,22 @@ function delyvax_webhook_order_created()
                               //on the way to pick up
                               if( !$order->has_status('wc-ready-to-collect') )
                               {
-                                  //temporarily disable to due to unreliability of woocommerce update status function
-                                  //$order->update_status('ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
-
-                                  // $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
-                                  // $order->update_status('courier-accepted');
-
-                                  //temporarily disable to due to unreliability of woocommerce update status function
-                                  // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'ready-to-collect']);
-
-                                  //no need - vendor will be fulfilling sub order instead of main order
-                                  //start update sub orders
-                                  // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                  //
-                                  // if ( $sub_orders ) {
-                                  //     foreach ($sub_orders as $sub)
-                                  //     {
-                                  //         $sub_order = new WC_Order($sub->ID);
-                                  //         $sub_order->update_status('wc-ready-to-collect');
-                                  //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
-                                  //     }
-                                  // }
+                                  $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+                                  
+                                  // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
                                   //end update sub orders
                               }
                           }
                       }
 
                   }
-            }
 
+                  header('Content-Type: application/json');
+                  die(json_encode([
+                        'status' => 'OK',
+                        'version' => DELYVAX_PLUGIN_VERSION,
+                  ], JSON_UNESCAPED_SLASHES));
+            }
         }
     }
 }
@@ -215,7 +202,7 @@ function delyvax_webhook_get_tracking()
                       global $woocommerce;
 
                       ///find order_id by $shipmentId
-                      $orders = new WC_Orders( array(
+                      $orders = wc_get_orders( array(
                           // 'limit'        => -1, // Query all orders
                           // 'orderby'      => 'date',
                           // 'order'        => 'DESC',
@@ -225,13 +212,13 @@ function delyvax_webhook_get_tracking()
 
                       for($i=0; $i < sizeof($orders); $i++)
                       {
-                          $order = new WC_Order($orders[$i]->get_id());
+                          $order = wc_get_order($orders[$i]->get_id());
 
-                          $order->get_status();
+                          // $order->get_status();
 
                           // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
-                          if($nanoId) 
+                          if($nanoId)
                           {
                             $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
                           }
@@ -248,24 +235,9 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-ready-to-collect') )
                                   {
-                                      //temporarily disable to due to unreliability of woocommerce update status function
-                                      // $order->update_status('ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
-                                      
-                                      //temporarily disable to due to unreliability of woocommerce update status function
-                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'ready-to-collect']);
-
-                                      //no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('wc-ready-to-collect');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-ready-to-collect']);
-                                      //     }
-                                      // }
+                                      $order->update_status('wc-ready-to-collect', 'Order status changed to Ready.', false); // order note is optional, if you want to  add a note to order
+                                    
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
 
                                       //end update sub orders
                                   }
@@ -277,23 +249,9 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-courier-accepted') )
                                   {
-                                      $order->update_status('courier-accepted', 'Order status changed to Courier accepted.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('courier-accepted');
-
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-courier-accepted']);
-
-                                      //no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('courier-accepted');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-courier-accepted']);
-                                      //     }
-                                      // }
+                                      $order->update_status('wc-courier-accepted', 'Order status changed to Courier accepted.', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-courier-accepted']);                                    
 
                                       //end update sub orders
                                   }
@@ -305,23 +263,10 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-start-collecting') )
                                   {
-                                      $order->update_status('start-collecting', 'Order status changed to Pending pick up.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('start-collecting');
+                                      $order->update_status('wc-start-collecting', 'Order status changed to Pending pick up.', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-start-collecting']);
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-start-collecting']);
-
-                                      //no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('start-collecting');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-start-collecting']);
-                                      //     }
-                                      // }
                                       //end update sub orders
                                   }
                               }
@@ -332,23 +277,10 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-failed-collection') )
                                   {
-                                      $order->update_status('failed-collection', 'Order status changed to Pick up failed.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('failed-collection');
+                                      $order->update_status('wc-failed-collection', 'Order status changed to Pick up failed.', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-failed-collection']);
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-failed-collection']);
-
-                                      //no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('failed-collection');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-failed-collection']);
-                                      //     }
-                                      // }
                                       //end update sub orders
                                   }
                               }
@@ -359,23 +291,10 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-collected') )
                                   {
-                                      $order->update_status('collected', 'Order status changed to Pick up complete.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('collected');
+                                      $order->update_status('wc-collected', 'Order status changed to Pick up complete.', false); // order note is optional, if you want to  add a note to order
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-collected']);
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-collected']);
 
-                                      // no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('collected');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-collected']);
-                                      //     }
-                                      // }
                                       //end update sub orders
                                   }
                               }
@@ -386,23 +305,10 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-start-delivery') )
                                   {
-                                      $order->update_status('start-delivery', 'Order status changed to On the way for delivery.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('start-delivery');
+                                      $order->update_status('wc-start-delivery', 'Order status changed to On the way for delivery.', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-start-delivery']);
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-start-delivery']);
-
-                                      //no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('start-delivery');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-start-delivery']);
-                                      //     }
-                                      // }
                                       //end update sub orders
                                   }
                               }
@@ -413,23 +319,10 @@ function delyvax_webhook_get_tracking()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-failed-delivery') )
                                   {
-                                      $order->update_status('failed-delivery', 'Order status changed to Delivery failed.', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('failed-delivery');
+                                      $order->update_status('wc-failed-delivery', 'Order status changed to Delivery failed.', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-failed-delivery']);
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-failed-delivery']);
-
-                                      //no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('failed-delivery');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-failed-delivery']);
-                                      //     }
-                                      // }
                                       // //end update sub orders
                                   }
                               }
@@ -439,23 +332,10 @@ function delyvax_webhook_get_tracking()
                               {
                                   if( !$order->has_status('wc-completed') )
                                   {
-                                      $order->update_status('completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
-                                      // $order->update_status('completed');
+                                      $order->update_status('wc-completed', 'Order status changed to Completed', false); // order note is optional, if you want to  add a note to order
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-completed']);
 
-                                      wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-completed']);
-
-                                      // no need - vendor will be fulfilling sub order instead of main order
-                                      //start update sub orders
-                                      // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-                                      //
-                                      // if ( $sub_orders ) {
-                                      //     foreach ($sub_orders as $sub)
-                                      //     {
-                                      //         $sub_order = wc_get_order($sub->ID);
-                                      //         $sub_order->update_status('completed');
-                                      //         wp_update_post(['ID' => $sub->ID, 'post_status' => 'wc-completed']);
-                                      //     }
-                                      // }
                                       //end update sub orders
                                   }
                               }
@@ -467,9 +347,9 @@ function delyvax_webhook_get_tracking()
                                   {
                                       if( !$order->has_status('wc-cancelled') )
                                       {
-                                          $order->update_status('cancelled', 'Order status changed to Cancelled', false); 
+                                          $order->update_status('wc-cancelled', 'Order status changed to Cancelled', false); 
                                           
-                                          wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-cancelled']);
+                                          // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-cancelled']);
                                       }
                                   }
                               }

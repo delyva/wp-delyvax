@@ -893,11 +893,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
             $main_order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
             $main_order->save();
 
-            // $main_order->update_status('wc-ready-to-collect');
-            // $main_order->update_status('wc-ready-to-collect', '<a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a>.', false);
-            // $main_order->update_status('wc-ready-to-collect', '<a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
-
-            $main_order->update_status('ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
+            $main_order->update_status('wc-ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
 
             $consignmentNo = $trackingNo;
 
@@ -1326,15 +1322,15 @@ function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
 
         if ('mark_processing' === $key)
         {
-            $new_actions['mark_preparing'] = __( 'Mark as Preparing', 'woocommerce');
-            $new_actions['mark_ready-to-collect'] = __( 'Mark as Package is Ready', 'woocommerce');
-            $new_actions['mark_courier-accepted'] = __( 'Mark as Courier accepted', 'woocommerce');
-            $new_actions['mark_start-collecting'] = __( 'Mark as Pending pick up', 'woocommerce');
-            $new_actions['mark_collected'] = __( 'Mark as Pick up complete', 'woocommerce');
-            $new_actions['mark_failed-collection'] = __( 'Mark as Pick up failed', 'woocommerce');
-            $new_actions['mark_start-delivery'] = __( 'Mark as On the way for delivery', 'woocommerce');
-            $new_actions['mark_failed-delivery'] = __( 'Mark as Delivery failed', 'woocommerce');
-            $new_actions['mark_request-refund'] = __( 'Mark as Request refund', 'woocommerce');
+            $new_actions['mark_preparing'] = __( 'Change status to preparing', 'woocommerce');
+            $new_actions['mark_ready-to-collect'] = __( 'Change status to package is ready', 'woocommerce');
+            $new_actions['mark_courier-accepted'] = __( 'Change status to courier accepted', 'woocommerce');
+            $new_actions['mark_start-collecting'] = __( 'Change status to pending pick up', 'woocommerce');
+            $new_actions['mark_collected'] = __( 'Change status to pick-up complete', 'woocommerce');
+            $new_actions['mark_failed-collection'] = __( 'Change status to pick-up failed', 'woocommerce');
+            $new_actions['mark_start-delivery'] = __( 'Change status to delivery start', 'woocommerce');
+            $new_actions['mark_failed-delivery'] = __( 'Change status to delivery failed', 'woocommerce');
+            $new_actions['mark_request-refund'] = __( 'Change status to request refund', 'woocommerce');
         }
     }
 
