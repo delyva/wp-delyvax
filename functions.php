@@ -1051,7 +1051,7 @@ function delyvax_post_create_order($order, $user, $process=false) {
             // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
             $main_order->save();
 
-            $consignmentNo = $trackingNo;
+            // $consignmentNo = $trackingNo;
 
             // no need vendor to process sub order separately
             //save tracking no into order to all parent order and suborders

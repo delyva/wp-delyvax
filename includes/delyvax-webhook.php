@@ -1,8 +1,8 @@
 <?php
 defined( 'ABSPATH' ) or die( 'No script kiddies please!');
 
-add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_order_created',10,0);
-add_action( 'woocommerce_after_register_post_type', 'delyvax_webhook_get_tracking',10,0);
+add_action( 'parse_request', 'delyvax_webhook_order_created',10,0);
+add_action( 'parse_request', 'delyvax_webhook_get_tracking',10,0);
 add_action( 'woocommerce_update_options', 'delyvax_woocommerce_update_options', 10, 1 );
 
 // check for duplicate, fix old url
@@ -109,63 +109,66 @@ function delyvax_webhook_order_created()
             if( isset($data['id']) && isset($data['consignmentNo']) && isset($data['statusCode'])
                   && intval($settings['customer_id']) === intval($data['customerId']) )
             {
-                  if ($settings['api_webhook_enable'] == 'yes')
+                  if($data['statusCode'] == 100)
                   {
-                      $shipmentId = $data['id'];
-                      $consignmentNo = $data['consignmentNo'];
-                      $statusCode = $data['statusCode'];
-                      $nanoId = $data['nanoId'];
-
-                      if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
+                      if ($settings['api_webhook_enable'] == 'yes')
                       {
-                        return;
-                      }
+                          $shipmentId = $data['id'];
+                          $consignmentNo = $data['consignmentNo'];
+                          $statusCode = $data['statusCode'];
+                          $nanoId = $data['nanoId'];
 
-                      global $woocommerce;
-
-                      ///find order_id by $shipmentId
-                      $orders = wc_get_orders( array(
-                          // 'limit'        => -1, // Query all orders
-                          // 'orderby'      => 'date',
-                          // 'order'        => 'DESC',
-                          'meta_key'     => 'DelyvaXOrderID', // The postmeta key field
-                          'meta_value' => $shipmentId, // The comparison argument
-                      ));
-
-                      for($i=0; $i < sizeof($orders); $i++)
-                      {
-                          $order = wc_get_order($orders[$i]->get_id());
-
-                          // $order->get_status();
-
-                          $labelUrl = 'https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id;
-
-                          // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                          $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
-                          $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
-                          $order->update_meta_data( 'DelyvaXLabelUrl', $labelUrl );
-                          $order->save();
-
-                          if (!empty($order))
+                          if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
                           {
-                              //on the way to pick up
-                              if( !$order->has_status('wc-ready-to-collect') )
+                              return;
+                          }
+
+                          global $woocommerce;
+
+                          ///find order_id by $shipmentId
+                          $orders = wc_get_orders( array(
+                              // 'limit'        => -1, // Query all orders
+                              // 'orderby'      => 'date',
+                              // 'order'        => 'DESC',
+                              'meta_key'     => 'DelyvaXOrderID', // The postmeta key field
+                              'meta_value' => $shipmentId, // The comparison argument
+                          ));
+
+                          for($i=0; $i < sizeof($orders); $i++)
+                          {
+                              $order = wc_get_order($orders[$i]->get_id());
+
+                              // $order->get_status();
+
+                              $labelUrl = 'https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id;
+
+                              // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
+                              $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
+                              $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
+                              $order->update_meta_data( 'DelyvaXLabelUrl', $labelUrl );
+                              $order->save();
+
+                              if (!empty($order))
                               {
-                                  $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
-                                  
-                                  // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
-                                  //end update sub orders
+                                  //on the way to pick up
+                                  if( !$order->has_status('wc-ready-to-collect') )
+                                  {
+                                      $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+                                      
+                                      // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
+                                      //end update sub orders
+                                  }
                               }
                           }
+
                       }
 
+                      header('Content-Type: application/json');
+                      die(json_encode([
+                            'status' => 'OK-delyvax_webhook_order_created',
+                            'version' => DELYVAX_PLUGIN_VERSION,
+                      ], JSON_UNESCAPED_SLASHES));
                   }
-
-                  header('Content-Type: application/json');
-                  die(json_encode([
-                        'status' => 'OK',
-                        'version' => DELYVAX_PLUGIN_VERSION,
-                  ], JSON_UNESCAPED_SLASHES));
             }
         }
     }
@@ -361,7 +364,7 @@ function delyvax_webhook_get_tracking()
                       }
                       header('Content-Type: application/json');
                       die(json_encode([
-                            'status' => 'OK',
+                            'status' => 'OK-delyvax_webhook_get_tracking',
                             'version' => DELYVAX_PLUGIN_VERSION,
                       ], JSON_UNESCAPED_SLASHES));
                 }
