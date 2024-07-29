@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 6.1
-Stable tag: 1.1.54
+Stable tag: 1.1.55
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -32,6 +32,11 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.55 =
+*Release Date - 30th July 2024*
+
+* Fix missing fulfil button. Ignore only virtual orders.
+
 = 1.1.54 =
 *Release Date - 28th July 2024*
 
@@ -46,69 +51,3 @@ Delyva WooCommerce plugin
 *Release Date - 30th January 2024*
 
 * Fixes for missing orders on ready to collect status.
-
-= 1.1.51 =
-*Release Date - 12th July 2023*
-
-* Fixes regarding non-kg product weight and product variances.
-
-= 1.1.50 =
-*Release Date - 29th May 2023*
-
-* Ignore localpickup shipping method and fix free shipping conditions.
-
-= 1.1.49 =
-*Release Date - 31st March 2023*
-
-* Bug fixes for empty weight, default to 1kg.
-
-= 1.1.48 =
-*Release Date - 21st March 2023*
-
-* Bug fixes for some use case.
-
-= 1.1.47 =
-*Release Date - 17th March 2023*
-
-* Bug fixes regarding cancel order and cancel delivery.
-
-= 1.1.46 =
-*Release Date - 13th March 2023*
-
-* Select courier on view order page. Ignore create order for payment method 'pos_cash'.
-
-= 1.1.45 =
-*Release Date - 2nd March 2023*
-
-* Hot fix shipping phone functions.
-
-= 1.1.44 =
-*Release Date - 27th February 2023*
-
-* Display tracking number at my orders page, orders page. 
-* Option to enable shipping phone number at the checkout page.
-* Option to cancel the order if the delivery is cancelled.
-* Option to cancel the delivery if the order is cancelled.
-* Free shipping take into account total after discount amount.
-
-= 1.1.43 =
-*Release Date - 25th January 2023*
-
-* Send WooCommerce order id as reference no.
-
-= 1.1.42 =
-*Release Date - 19th January 2023*
-
-* Add currency conversion rate for live checkout shipping rates.
-
-= 1.1.41 =
-*Release Date - 18th January 2023*
-
-* Bug-fixes for non-numeric or empty dimension or weight.
-
-= 1.1.40 =
-*Release Date - 16th January 2023*
-
-* Bug-fixes for shipping and billing address.
-
-For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.

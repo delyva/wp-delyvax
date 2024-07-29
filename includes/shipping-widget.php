@@ -1,22 +1,32 @@
 <?php
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
-add_action ( 'add_meta_boxes', 'delyvax_add_box' );
-add_action( 'save_post', 'delyvax_meta_save' );
 
-function delyvax_add_box() {
+add_action( 'woocommerce_process_shop_order_meta', 'delyvax_meta_save', 10, 1 );
 
-	add_meta_box (
-	    'DelyvaTrackingMetaBox',
-	    'Delyva',
-	    'delyvax_show_box',
-	    'shop_order',
-	    'side',
-	    'high'
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
+
+// Add a delyva metabox
+add_action( 'add_meta_boxes', 'admin_order_delyvax_metabox' );
+function admin_order_delyvax_metabox() {
+    $screen = class_exists( '\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController' ) && wc_get_container()->get( CustomOrdersTableController::class )->custom_orders_table_usage_is_enabled()
+        ? wc_get_page_screen_id( 'shop-order' )
+        : 'shop_order';
+
+    add_meta_box(
+        'DelyvaMetaBox',
+        'Delyva',
+        'delyvax_show_box',
+        $screen,
+        'side',
+        'high'
     );
 }
 
-function delyvax_show_box( $post ) {
-    $order = wc_get_order ( $post->ID );
+// Metabox content
+function delyvax_show_box( $object ) {
+    // Get the WC_Order object
+    $order = is_a( $object, 'WP_Post' ) ? wc_get_order( $object->ID ) : $object;
+    //$order = wc_get_order ( $post->ID );
 	// $TrackingCode = isset( $post->TrackingCode ) ? $post->TrackingCode : '';
 
 	$settings = get_option( 'woocommerce_delyvax_settings' );
@@ -34,6 +44,8 @@ function delyvax_show_box( $post ) {
 	//ignore local_pickup
 	$shipping_method = delyvax_get_order_shipping_method($order->id);
 	if($shipping_method == 'local_pickup') return;
+	//skip virtual product
+	if ( only_virtual_order_items( $order ) ) return; 
 	//
 
 	$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
@@ -126,35 +138,34 @@ function delyvax_show_box( $post ) {
         			</p>
     				</div>";
 		}
-	}
+	}    
 }
 
 /**
  * Saves the custom meta input
  */
-function delyvax_meta_save($post_id) {
-    $order = wc_get_order( $post_id );
-
-    // Checks save status
-    $is_autosave = wp_is_post_autosave( $post_id );
-    $is_revision = wp_is_post_revision( $post_id );
-    $is_valid_nonce = ( isset( $_POST[ 'prfx_nonce' ] ) && wp_verify_nonce( $_POST[ 'prfx_nonce' ], basename( __FILE__ ) ) ) ? 'true' : 'false';
- 
-    // Exits script depending on save status
-    if ( $is_autosave || $is_revision || !$is_valid_nonce ) {
-        return;
-    }
+function delyvax_meta_save($order_id) {
+    $order = wc_get_order($order_id);
 
     // Checks for input and sanitizes/saves if needed
     if( isset( $_POST[ 'service_code' ] ) ) {
-		echo $service_code = $_POST[ 'service_code' ];
-		
-		$order->update_meta_data('DelyvaXServiceCode',sanitize_text_field($service_code));
-		$order->save();
-		
-		//change status to preparing
-		$order->update_status('preparing', 'Order status changed to Preparing.', false);
+    	$service_code = $_POST[ 'service_code' ];
+    	if($service_code !== '')
+    	{
+    	    if ( $order->has_status(array('processing'))) {
+        		$order->update_meta_data('DelyvaXServiceCode',$service_code);
+        // 		$order->update_post_meta( 'DelyvaXServiceCode', $service_code);
+
+        		$order->save();
+
+				delyvax_update_service($order, $service_code);
+        		
+        		//change status to preparing
+        	    $order->update_status('wc-preparing', 'Order status changed to Preparing.', false);        		
+    	    }
+    	}
     }
+    return $order;
 }
 
 function delyvax_get_order_services( $order ) {
@@ -236,3 +247,18 @@ function delyvax_get_services_select($adxservices, $DelyvaXServiceCode)
 	}
 }
 
+function delyvax_update_service($order, $service_code)
+{
+	if (!class_exists('DelyvaX_Shipping_API')) {
+        include_once 'delyvax-api.php';
+    }
+
+	$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
+	
+	$postRequestArr = [
+		"serviceCode" => $service_code,
+	];
+
+	$resultProcess = DelyvaX_Shipping_API::updateOrderData($order, $DelyvaXOrderID, $postRequestArr);
+
+}

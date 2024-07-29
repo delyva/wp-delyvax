@@ -406,6 +406,9 @@ function delyvax_create_order($order, $user, $process=false) {
         //ignore local_pickup
         $shipping_method = delyvax_get_order_shipping_method($order->id);
         if($shipping_method == 'local_pickup') return;
+
+        //skip virtual product
+        if ( only_virtual_order_items( $order ) ) return; 
         //
 
         $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
@@ -1498,6 +1501,22 @@ function delyvax_action_woocommerce_admin_order_data_after_shipping_address( $or
     }
 }
 add_action( 'woocommerce_admin_order_data_after_shipping_address', 'delyvax_action_woocommerce_admin_order_data_after_shipping_address', 10, 1 );
+
+// Conditional function that check if order items are all virtual
+function only_virtual_order_items( $order ) {
+    $only_virtual_items = true; // Initializing
+
+    // Loop through order items
+    foreach( $order->get_items() as $item ) {
+        $product = $item->get_product();
+        // Check if there are items that are not virtual
+        if ( ! ( $product->is_virtual() || $product->is_downloadable() ) ) {
+            $only_virtual_items = false;
+            break;
+        }
+    }
+    return $only_virtual_items;
+}
 
 // Display on email notifications
 // function filter_woocommerce_email_order_meta_fields( $fields, $sent_to_admin, $order ) {
