@@ -3,6 +3,7 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
 if (!class_exists('DelyvaX_Shipping_Method')) {
 
+  #[AllowDynamicProperties]
   class DelyvaX_Shipping_Method extends WC_Shipping_Method {
 
 

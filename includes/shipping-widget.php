@@ -42,7 +42,7 @@ function delyvax_show_box( $object ) {
 	}
 
 	//ignore local_pickup
-	$shipping_method = delyvax_get_order_shipping_method($order->id);
+	$shipping_method = delyvax_get_order_shipping_method($order->get_id());
 	if($shipping_method == 'local_pickup') return;
 	//skip virtual product
 	if ( only_virtual_order_items( $order ) ) return; 

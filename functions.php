@@ -404,7 +404,7 @@ function delyvax_create_order($order, $user, $process=false) {
         }
 
         //ignore local_pickup
-        $shipping_method = delyvax_get_order_shipping_method($order->id);
+        $shipping_method = delyvax_get_order_shipping_method($order->get_id());
         if($shipping_method == 'local_pickup') return;
 
         //skip virtual product
