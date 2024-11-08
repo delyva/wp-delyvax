@@ -3,7 +3,7 @@ Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 5.4
 Tested up to: 6.1
-Stable tag: 1.1.56
+Stable tag: 1.1.57
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -32,6 +32,11 @@ Delyva WooCommerce plugin
 
 == Changelog ==
 
+= 1.1.57 =
+*Release Date - 8th November 2024*
+
+* Add support for frozen, chilled and temperature control item type.
+
 = 1.1.56 =
 *Release Date - 5th August 2024*
 
@@ -40,7 +45,7 @@ Delyva WooCommerce plugin
 = 1.1.55 =
 *Release Date - 30th July 2024*
 
-* Fix missing fulfil button. Ignore only virtual orders.
+* Fix missing fulfil button. Ignore only virtual products.
 
 = 1.1.54 =
 *Release Date - 28th July 2024*

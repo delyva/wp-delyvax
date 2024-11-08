@@ -1514,6 +1514,9 @@ function only_virtual_order_items( $order ) {
             $only_virtual_items = false;
             break;
         }
+
+        //check product addons
+
     }
     return $only_virtual_items;
 }

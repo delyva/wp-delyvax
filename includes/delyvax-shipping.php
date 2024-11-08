@@ -200,7 +200,10 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   'DOCUMENT' => __( 'DOCUMENT', 'woocommerce' ),
                   'FOOD' => __( 'FOOD', 'woocommerce' ),
                   'PACKAGE' => __( 'PACKAGE', 'woocommerce' ),
-                  'BULKY' => __( 'BULKY', 'woocommerce' )
+                  'BULKY' => __( 'BULKY', 'woocommerce' ),
+                  'FROZEN' => __( 'FROZEN', 'woocommerce' ),
+                  'CHILLED' => __( 'CHILLED', 'woocommerce' ),
+                  'TEMP-CONTROL' => __( 'TEMP-CONTROL', 'woocommerce' )
                 )
             ),
             'processing_days' => array(
@@ -855,7 +858,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                   						$service_label = $shipper['service']['name'];
                   						$service_label = str_replace('(DROP)', '', $service_label);
                   						$service_label = str_replace('(PICKUP)', '', $service_label);
-                              $service_label = str_replace('(PARCEL)', '', $service_label);
+                                        $service_label = str_replace('(PARCEL)', '', $service_label);
                   						// $service_label = str_replace('(COD)', '', $service_label);
 
                               if($cost == 0)
