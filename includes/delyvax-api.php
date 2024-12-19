@@ -62,110 +62,59 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             }
         }
 
-        public static function postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons, $referenceNo)
+        public static function postCreateOrder($order, $ms2781Request)
         {
-              $url = Self::$api_endpoint . "/order";// . trim(esc_attr($settings['integration_id']), " ");
+            $url = Self::$api_endpoint . "/order/ms2781/create";
+            $settings = get_option('woocommerce_delyvax_settings');
+            $api_token = $settings['api_token'];
 
-              $settings = get_option( 'woocommerce_delyvax_settings' );
-
-              $company_id = $settings['company_id'];
-              $user_id = $settings['user_id'];
-              $customer_id = $settings['customer_id'];
-              $api_token = $settings['api_token'];
-              $processing_days = $settings['processing_days'];
-
-              $source = ($settings['source']) ? $settings['source'] : "PARCEL" ;
-
-              if($serviceCode)
-              {
-                  $postRequestArr = [
-                      // 'companyId' => $company_id,
-                      // 'userId' => $user_id,
-                      "customerId" => $customer_id,
-                      "process" => false,
-                      "serviceCode" => $serviceCode,
-                      'origin' => $origin,
-                      'destination' => $destination,
-                      'weight' => $weight,
-                      'note' => $order_notes,
-                      "serviceAddon" => $addons,
-                      'source'=> $source,
-                      'referenceNo'=> $referenceNo.""
-                  ];
-              }else {
-                  $postRequestArr = [
-                      // 'companyId' => $company_id,
-                      // 'userId' => $user_id,
-                      "customerId" => $customer_id,
-                      "process" => false,
-                      'origin' => $origin,
-                      'destination' => $destination,
-                      'weight' => $weight,
-                      'note' => $order_notes,
-                      "serviceAddon" => $addons,
-                      'source'=> $source,
-                      'referenceNo'=> $referenceNo.""
-                  ];
-              }
-
-              $response = wp_remote_post($url, array(
-                  'headers' => array(
+            // Make the API request
+            $response = wp_remote_post($url, array(
+                'headers' => array(
                     'content-type' => 'application/json',
                     'X-Delyvax-Access-Token' => $api_token,
                     'X-Delyvax-Wp-Version' => DELYVAX_PLUGIN_VERSION,
-                  ),
-                  'body' => json_encode($postRequestArr),
-                  'method' => 'POST',
-                  'timeout' => 25
-              ));
+                ),
+                'body' => json_encode($ms2781Request),
+                'method' => 'POST',
+                'timeout' => 25
+            ));
 
-              if (is_wp_error($response)) {
-                  $error_message = $response->get_error_message();
-                  if ($error_message == 'fsocket timed out') {
-                      throw new Exception("Sorry, unable to create shipment, please try again later");
-                  } else {
-                      throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                  }
-              } else {
-                  if ($response['response']['code'] == 200) {
-                      $body = json_decode($response['body'], true);
-                      return $body['data'];
-                  } else {
-                      $body = json_decode($response['body'], true);
-                      $order->update_meta_data( 'DelyvaXError', $body['error']['message'] );
-                      $order->save();
-                      throw new Exception("Error: ".$body['error']['message'].". Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                  }
-              }
-              ///
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+                if ($error_message == 'fsocket timed out') {
+                    throw new Exception("Sorry, unable to create shipment, please try again later");
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            }
+
+            if ($response['response']['code'] == 200) {
+                $body = json_decode($response['body'], true);
+                $order->delete_meta_data('DelyvaXError');
+                return $body;
+            } else {
+                $body = json_decode($response['body'], true);
+                $order->update_meta_data('DelyvaXError', $body['error']['message']);
+                $order->save();
+                throw new Exception("Error: " . $body['error']['message'] . ". Sorry, something went wrong with the API. If the problem persists, please contact us!");
+            }
         }
 
         public static function postProcessOrder($order, $shipmentId, $serviceCode)
         {
-              $url = Self::$api_endpoint . "/order/:orderId/process";// . trim(esc_attr($settings['integration_id']), " ");
-
-              $url = str_replace(":orderId", $shipmentId, $url);
+              $url = Self::$api_endpoint . "/order/process";
 
               $settings = get_option( 'woocommerce_delyvax_settings' );
-
-              $company_id = $settings['company_id'];
-              $user_id = $settings['user_id'];
-              $customer_id = $settings['customer_id'];
               $api_token = $settings['api_token'];
-              $processing_days = $settings['processing_days'];
 
-              if($serviceCode)
-              {
-                  $postRequestArr = [
-                      'orderId' => $shipmentId,
-                      "serviceCode" => $serviceCode,
-                      "skipQueue" => true,
-                  ];
-              }else {
-                  $postRequestArr = [
-                      'orderId' => $shipmentId,
-                      "skipQueue" => true,
-                  ];
+              $postRequestArr = [
+                'orderId' => $shipmentId,
+                "skipQueue" => true,
+              ];
+
+              if ($serviceCode) {
+                $postRequestArr['serviceCode'] = $serviceCode;
               }
 
               $response = wp_remote_post($url, array(
@@ -189,62 +138,61 @@ if (!class_exists('DelyvaX_Shipping_API')) {
               } else {
                   if ($response['response']['code'] == 200) {
                       $body = json_decode($response['body'], true);
+                      $order->delete_meta_data('DelyvaXError');
+                      $order->save();
                       return $body['data'];
                   } else {
                       $body = json_decode($response['body'], true);
-                      $order->update_meta_data( 'DelyvaXError', $body['error']['message'] );
+                      $order->update_meta_data( 'DelyvaXError', $body['error']['message']);
                       $order->save();
                       throw new Exception("Error: ".$body['error']['message'].". Sorry, something went wrong with the API. If the problem persists, please contact us!");
                   }
               }
-              ///
         }
 
-        public static function postCancelOrder($order, $shipmentId)
-        {
-              $url = Self::$api_endpoint . "/order/:orderId/cancel";
+        public static function postCancelOrder($order, $shipmentId) {
+            $url = Self::$api_endpoint . "/order/ms2781/cancel";
+        
+            $settings = get_option('woocommerce_delyvax_settings');
+        
+            $company_id = $settings['company_id'];
+            $user_id = $settings['user_id'];
+            $customer_id = $settings['customer_id'];
+            $api_token = $settings['api_token'];
+        
+            $postRequestArr = [
+                "orderId" => $shipmentId
+            ];
 
-              $url = str_replace(":orderId", $shipmentId, $url);
-
-              $settings = get_option( 'woocommerce_delyvax_settings' );
-
-              $company_id = $settings['company_id'];
-              $user_id = $settings['user_id'];
-              $customer_id = $settings['customer_id'];
-              $api_token = $settings['api_token'];
-
-            //   $postRequestArr = [];
-
-              $response = wp_remote_post($url, array(
-                  'headers' => array(
+            $response = wp_remote_post($url, array(
+                'headers' => array(
                     'content-type' => 'application/json',
                     'X-Delyvax-Access-Token' => $api_token,
                     'X-Delyvax-Wp-Version' => DELYVAX_PLUGIN_VERSION,
-                  ),
-                //   'body' => json_encode($postRequestArr),
-                  'method' => 'POST',
-                  'timeout' => 25
-              ));
+                ),
+                'body' => json_encode($postRequestArr),
+                'method' => 'POST',
+                'timeout' => 25
+            ));
 
-              if (is_wp_error($response)) {
-                  $error_message = $response->get_error_message();
-                  if ($error_message == 'fsocket timed out') {
-                      throw new Exception("Sorry, unable to cancel shipment, please try again later");
-                  } else {
-                      throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                  }
-              } else {
-                  if ($response['response']['code'] == 200) {
-                      $body = json_decode($response['body'], true);
-                      return $body['data'];
-                  } else {
-                      $body = json_decode($response['body'], true);
-                      $order->update_meta_data( 'DelyvaXError', $body['error']['message'] );
-                      $order->save();
-                      throw new Exception("Error: ".$body['error']['message'].". Sorry, something went wrong with the API. If the problem persists, please contact us!");
-                  }
-              }
-              ///
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+                if ($error_message == 'fsocket timed out') {
+                    throw new Exception("Sorry, unable to cancel shipment, please try again later");
+                } else {
+                    throw new Exception("Sorry, something went wrong with the API. If the problem persists, please contact us!");
+                }
+            } 
+        
+            if ($response['response']['code'] == 200) {
+                $body = json_decode($response['body'], true);
+                return $body;
+            } 
+            
+            $body = json_decode($response['body'], true);
+            $order->update_meta_data('DelyvaXError', $body['error']['message']);
+            $order->save();
+            throw new Exception("Error: " . $body['error']['message'] . ". Sorry, something went wrong with the API. If the problem persists, please contact us!");
         }
 
         public static function getTrackOrderByOrderId($shipmentId)

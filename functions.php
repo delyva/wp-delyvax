@@ -217,183 +217,44 @@ function delyvax_order_confirmed( $order_id, $old_status, $new_status ) {
 
 function delyvax_set_pickup_delivery_time($order)
 {
-    $settings = get_option( 'woocommerce_delyvax_settings' );
-
+    $settings = get_option('woocommerce_delyvax_settings');
     $processing_days = $settings['processing_days'];
     $processing_hours = $settings['processing_hours'];
     $processing_time = $settings['processing_time'];
 
-    $gmtoffset = get_option('gmt_offset');
-    $stimezone = get_option('timezone_string');
-
-    $dtimezone = new DateTimeZone($stimezone);
-
-    //initialise
-    $pickup_date = new DateTime();
-    $pickup_date->setTimezone($dtimezone);
-
-    $pickup_time = new DateTime();
-    // $pickup_time->setTimezone($dtimezone);
-
-    $delivery_date = new DateTime();
-    $delivery_date->setTimezone($dtimezone);
-
-    $delivery_time = new DateTime();
-    $delivery_time->setTimezone($dtimezone);
-
-    $dx_delivery_date = null;
-    $dx_delivery_time = null;
-    $dx_delivery_date_format = null;
-
-    $dx_pickup_date = null;
-    $dx_pickup_time = null;
-    $dx_pickup_date_format = null;
-
-    $delivery_type = null;
-    //
+    // Fetch WordPress timezone setting
+    $timezone_string = get_option('timezone_string') ?: 'UTC';
+    $wp_timezone = new DateTimeZone($timezone_string);
 
     try {
-        //pickup / delivery
-        $delivery_type = $order->get_meta( 'delivery_type');
-        //if = pickup, take dx_delivery_date from pickup_date //WooDelivery
+        $delivery_date = new DateTime('now', $wp_timezone);
 
-        //set delivery_date
-        if($order->get_meta( 'dx_delivery_date' ) != null)
-        {
-            $dx_delivery_date = $order->get_meta( 'dx_delivery_date' );
-
-            $delivery_date = new DateTime( '@'.(int)$order->get_meta( 'dx_delivery_date' ));
-            $delivery_date->setTimezone($dtimezone);
-            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-        }else if($order->get_meta( 'delivery_date' ) != null)
-        {
-            $delivery_date = new DateTime($order->get_meta( 'delivery_date' ));
-            $delivery_date->setTimezone($dtimezone);
-
-            $dx_delivery_date = $delivery_date->getTimestamp();
-
-            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-        }else if($processing_days > 0)
-        {
-            $delivery_date->modify('+'.$processing_days.' day');
-
-            $dx_delivery_date = $delivery_date->getTimestamp();
-
-            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
-        }else {
-            // $delivery_date->modify('+0 day');
-
-            $dx_delivery_date = $delivery_date->getTimestamp();
-
-            $dx_delivery_date_format = $delivery_date->format('d-M-Y');
+        // Processing days
+        if ($processing_days > 0) {
+            $delivery_date->modify("+{$processing_days} day");
         }
 
-        //set delivery time
-        if($order->get_meta( 'dx_delivery_time' ) != null)
-        {
-            $dx_delivery_time = $order->get_meta( 'dx_delivery_time' );
-
-        }else if($order->get_meta( 'delivery_time' ) != null)
-        {
-            $w_delivery_time = $order->get_meta( 'delivery_time'); //1440 minutes / 24
-            $a_delivery_time = explode(",",$w_delivery_time);
-
-            $timeslot_from_hour = 0;
-            $timeslot_from_min = 0;
-
-            if(sizeof($a_delivery_time) > 0)
-            {
-                $timeslot_from = $a_delivery_time[0]/60; //e.g. 675/60 = 11.25 =  11.15am
-
-                $timeslot_from_hour = floor($timeslot_from);
-                $timeslot_from_min = fmod($timeslot_from, 1) * 60;
-            }else {
-                //set current time add 1 hour
-                $delivery_time->add(new DateInterval("PT5M"));
-
-                $timeslot_from_hour = $delivery_time->format('H');
-                $timeslot_from_min = $delivery_time->format('i');
-            }
-
-            $delivery_time = $delivery_date;
-            $delivery_time->setTime($timeslot_from_hour,$timeslot_from_min,00);
-
-            $dx_delivery_time = $delivery_time->format('H:i');
-        }else if($processing_days > 0 && $processing_time != '')
-        {
-            $processing_time = str_replace(":00","",$processing_time);
-
-            $delivery_time = $delivery_date;
-            $delivery_time->setTime($processing_time,00,00);
-
-            $dx_delivery_time = $delivery_time->format('H:i');
-        }else if($processing_days > 0 && $processing_time == '')
-        {
-            $delivery_time = $delivery_date;
-            $delivery_time->setTime('11',00,00);
-
-            $dx_delivery_time = $delivery_time->format('H:i');
-        }else if($processing_days == 0 && $processing_hours > 0)
-        {
-            $delivery_time->add(new DateInterval("PT".$processing_hours."H"));
-
-            $dx_delivery_time = $delivery_time->format('H:i');
-        }else {
-            $delivery_time->add(new DateInterval("PT5M"));
-
-            $dx_delivery_time = $delivery_time->format('H:i');
+        // Processing hours if no days
+        if ($processing_days == 0 && $processing_hours > 0) {
+            $delivery_date->add(new DateInterval("PT{$processing_hours}H"));
         }
 
-        //set pick up date
-        if($order->get_meta( 'dx_pickup_date' ) != null)
-        {
-            $dx_pickup_date = $order->get_meta( 'dx_pickup_date' );
-
-            $pickup_date = new DateTime( '@'.(int)$order->get_meta( 'dx_pickup_date' ));
-            $pickup_date->setTimezone($dtimezone);
-            $dx_pickup_date_format = $pickup_date->format('d-M-Y');
-        }else if($order->get_meta( 'pickup_date' ) != null)
-        {
-            $pickup_date = new DateTime( $order->get_meta( 'pickup_date' ));
-            $pickup_date->setTimezone($dtimezone);
-
-            $dx_pickup_date = $pickup_date->getTimestamp();
-
-            $dx_pickup_date_format = $pickup_date->format('d-M-Y');
-        }else if($processing_days > 0)
-        {
-            $pickup_date = $delivery_date;
-            $dx_pickup_date = $pickup_date->getTimestamp();
-
-            $dx_pickup_date_format = $pickup_date->format('d-M-Y');
-        }else {
-            $dx_pickup_date = $dx_delivery_date;
-
-            $dx_pickup_date_format = $dx_delivery_date_format;
+        // Set delivery time
+        if (!empty($processing_time)) {
+            [$hours, $minutes] = explode(':', $processing_time);
+            $delivery_date->setTime($hours, $minutes, 0);
         }
-    } catch(Exception $e) {
-          echo 'Message: ' .$e->getMessage();
 
-          $dx_delivery_date = $delivery_date->getTimestamp();
-          $dx_delivery_time = $delivery_time->format('H:i');
-          $dx_delivery_date_format = $delivery_date->format('d-M-Y');
+        $order->update_meta_data('dx_delivery_datetime', $delivery_date->format('Y-m-d H:i:s'));
+        $order->save();
 
-          $dx_pickup_date = $dx_delivery_date;
-          $dx_pickup_time = $dx_delivery_time;
-          $dx_pickup_date_format = $dx_delivery_date_format;
+    } catch (Exception $e) {
+        echo 'Message: ' . $e->getMessage();
+        $now = new DateTime();
+        $order->update_meta_data('dx_delivery_datetime', $now->format('Y-m-d H:i:s'));
+        $order->save();
     }
-
-    $order->update_meta_data( 'dx_delivery_date', $dx_delivery_date );
-    $order->update_meta_data( 'dx_delivery_time', $dx_delivery_time );
-    $order->update_meta_data( 'dx_delivery_date_format', $dx_delivery_date_format );
-
-    $order->update_meta_data( 'dx_pickup_date', $dx_pickup_date );
-    $order->update_meta_data( 'dx_pickup_time', $dx_pickup_time );
-    $order->update_meta_data( 'dx_pickup_date_format', $dx_pickup_date_format );
-
-    $order->save();
 }
-
 
 function delyvax_create_order($order, $user, $process=false) {
     try {
@@ -416,685 +277,518 @@ function delyvax_create_order($order, $user, $process=false) {
 
         if(!$DelyvaXTrackingCode)
         {
-            $resultCreate = delyvax_post_create_order($order, $user, $process);
+            $resultCreate = delyvax_post_create_order($order, $process);
         }
     } catch (Exception $e) {
         print_r($e);
     }
 }
 
-//rewire logic here, API is only for post
-function delyvax_post_create_order($order, $user, $process=false) {
-      $settings = get_option( 'woocommerce_delyvax_settings' );
-
-      $company_id = $settings['company_id'];
-      $company_code = $settings['company_code'];
-      $user_id = $settings['user_id'];
-      $customer_id = $settings['customer_id'];
-      $api_token = $settings['api_token'];
-      $processing_days = $settings['processing_days'];
-      $processing_hours = $settings['processing_hours'];
-      $item_type = ($settings['item_type']) ? $settings['item_type'] : "PARCEL" ;
-
-      $include_order_note = $settings['include_order_note'];
-
-      $multivendor_option = $settings['multivendor'];
-
-      $insurance_premium = $settings['insurance_premium'] ?? '';
-
-      //----delivery date & time (pull from meta data), if not available, set to +next day 8am.
-      $gmtoffset = get_option('gmt_offset');
-
-      $stimezone = get_option('timezone_string');
-
-      $dtimezone = new DateTimeZone($stimezone);
-
-      $timeslot_hour = 0;
-      $timeslot_min = 0;
-
-      $delivery_date = new DateTime();
-      $delivery_date->setTimezone($dtimezone);
-
-      $delivery_time = new DateTime();
-      $delivery_time->setTimezone($dtimezone);
-
-      $delivery_type = 'delivery';
-
-      if($order->get_meta( 'delivery_type' ) != null)
-      {
-          $delivery_type = $order->get_meta( 'delivery_type'); //pickup / delivery
-      }
-
-      $delivery_date = new DateTime('@'.(int)$order->get_meta( 'dx_delivery_date' ));
-      $delivery_date->setTimezone($dtimezone);
-
-      $dx_delivery_time = $order->get_meta( 'dx_delivery_time' );
-      $split_dx_delivery_time = explode( ":", $dx_delivery_time );
-      $delivery_time->setTime($split_dx_delivery_time[0],$split_dx_delivery_time[1],00);
-
-      $timeslot_hour = $delivery_time->format('H');
-      $timeslot_min = $delivery_time->format('i');
-
-      $scheduledAt = $delivery_date;
-      $scheduledAt->setTime($timeslot_hour,$timeslot_min,00);
-
-      //service      
-      $serviceCode = "";
-
-      $main_order = $order;
-
-      if($order->parent_id)
-      {
-          $main_order = wc_get_order($order->parent_id);
-      }
-
-      // Iterating through order shipping items
-      $DelyvaXServiceCode = $main_order->get_meta( 'DelyvaXServiceCode');
-
-      if($DelyvaXServiceCode)
-      {
-            $serviceCode = $DelyvaXServiceCode;
-      }else {
-            foreach( $main_order->get_items( 'shipping' ) as $item_id => $shipping_item_obj )
-            {
-                $serviceobject = $shipping_item_obj->get_meta_data();
+/**
+ * Optimize box dimensions based on total volume and maximum item dimensions for multiple items
+ */
+function optimize_box_dimensions($total_volume, $max_length, $max_width, $max_height) {
+    // Ensure box is at least as large as the biggest item
+    $box_length = $max_length;
+    $box_width = $max_width;
+    $box_height = $max_height;
     
-                for($i=0; $i < sizeof($serviceobject); $i++)
-                {
-                    if($serviceobject[$i]->key == "service_code")
-                    {
-                        $serviceCode = $serviceobject[0]->value;
-                        
-                        $main_order->update_meta_data( 'DelyvaXServiceCode', $serviceCode );
-                        $main_order->save();
+    // Adjust dimensions to accommodate total volume while maintaining proportions
+    $current_volume = $box_length * $box_width * $box_height;
+    if ($current_volume < $total_volume) {
+        $scale_factor = pow($total_volume / $current_volume, 1/3);
+        $box_length *= $scale_factor;
+        $box_width *= $scale_factor;
+        $box_height *= $scale_factor;
+    }
+    
+    return [
+        'length' => ceil($box_length),
+        'width' => ceil($box_width),
+        'height' => ceil($box_height),
+        'volume' => ceil($box_length * $box_width * $box_height)
+    ];
+}
+
+function process_delivery_pricing($main_order, $deliveryPrice, $total_quantity, $total_price)
+{
+    $settings = get_option('woocommerce_delyvax_settings');
+    $deliveryMarkup = 0;
+    $deliveryDiscount = 0;
+
+    //store price discount or markup
+    if ($deliveryPrice && $deliveryPrice > 0) {
+        $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
+
+        $ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
+        $percentRate = $ra_percentage / 100 * $deliveryPrice;
+
+        $flatRate = $settings['rate_adjustment_flat'] ?? 0;
+
+        if ($rate_adjustment_type == 'markup') {
+            $deliveryMarkup = round($percentRate + $flatRate, 2);
+        } else {
+            $deliveryDiscount = round($percentRate + $flatRate, 2);
+        }
+
+        //handle free shipping
+        $free_shipping_type = $settings['free_shipping_type'] ?? '';
+        $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
+        $free_shipping_value = $settings['free_shipping_value'] ?? '0';
+
+        if ($free_shipping_type == 'total_quantity') {
+            if ($free_shipping_condition == '>') {
+                if ($total_quantity > $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '>=') {
+                if ($total_quantity >= $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '==') {
+                if ($total_quantity == $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '<=') {
+                if ($total_quantity <= $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '<') {
+                if ($total_quantity < $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            }
+        } else if ($free_shipping_type == 'total_amount') {
+            if ($free_shipping_condition == '>') {
+                if ($total_price > $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '>=') {
+                if ($total_price >= $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '==') {
+                if ($total_price == $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '<=') {
+                if ($total_price <= $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            } else if ($free_shipping_condition == '<') {
+                if ($total_price < $free_shipping_value) {
+                    $deliveryDiscount = $deliveryPrice;
+                }
+            }
+        }
+    }
+
+    return array(
+        'deliveryMarkup' => $deliveryMarkup,
+        'deliveryDiscount' => $deliveryDiscount
+    );
+}
+
+function get_product_dimensions($product) {
+    return array(
+        'weight' => delyvax_default_weight(delyvaX_weight_to_kg($product->get_weight())),
+        'length' => delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length())),
+        'width' => delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width())),
+        'height' => delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height()))
+    );
+}
+
+function get_receiver_address($order) {
+    $r_shipping_phone = $order->get_shipping_phone();
+    
+    if ($order->get_shipping_address_1() || $order->get_shipping_address_2()) {
+        return [
+            'contactName' => $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name(),
+            'contactEmail' => $order->get_billing_email(),
+            'contactNumber' => $r_shipping_phone ?: $order->get_billing_phone(),
+            'location' => [
+                'address' => $order->get_shipping_address_1(),
+                'address2' => $order->get_shipping_address_2(),
+                'city' => $order->get_shipping_city(),
+                'state' => $order->get_shipping_state(),
+                'country' => $order->get_shipping_country(),
+                'postcode' => $order->get_shipping_postcode(),
+            ]
+        ];
+    }
+    
+    return [
+        'contactName' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+        'contactEmail' => $order->get_billing_email(),
+        'contactNumber' => $order->get_billing_phone(),
+        'location' => [
+            "address" => $order->get_billing_address_1(),
+            "address2" => $order->get_billing_address_2(),
+            "city" => $order->get_billing_city(),
+            "state" => $order->get_billing_state(),
+            "postcode" => $order->get_billing_postcode(),
+            "country" => $order->get_billing_country(),
+        ]
+    ];
+}
+
+function delyvax_post_create_order($order, $process = false)
+{
+    if (!$order) return false;
+    $settings = get_option('woocommerce_delyvax_settings');
+    $multivendor_option = $settings['multivendor'];
+    $customer_id = $settings['customer_id'];
+    $company_id = $settings['company_id'];
+    $company_code = $settings['company_code'];
+
+    $DelyvaXOrderID = $order->get_meta('DelyvaXOrderID');
+    $store_name = get_bloginfo('name');
+
+    $delivery_datetime = $order->get_meta('dx_delivery_datetime');
+    $wp_timezone = new DateTimeZone(get_option('timezone_string') ?: 'UTC');
+
+    if ($delivery_datetime) {
+        $scheduledAt = DateTime::createFromFormat('Y-m-d H:i:s', $delivery_datetime, $wp_timezone);
+        $scheduledAt->setTimezone($wp_timezone);
+    } else {
+        $scheduledAt = new DateTime('now', $wp_timezone);
+    }
+
+    $main_order = $order;
+
+    // Don't create shipment for parent order
+    if ($multivendor_option == 'DOKAN') {
+        $has_sub_order = $order->get_meta('has_sub_order');
+        if ($has_sub_order == '1') return;
+    } else if ($order->get_parent_id()) {
+        $main_order = wc_get_order($order->get_parent_id());
+    }
+
+    // Iterating through order shipping items
+    $DelyvaXServiceCode = $main_order->get_meta('DelyvaXServiceCode');
+    $include_order_note = $settings['include_order_note'] ?? '';
+    $insurance_premium = $settings['insurance_premium'] ?? '';
+    $total_weight = 0;
+    $total_volume = 0;
+    $max_length = 0;
+    $max_width = 0;
+    $max_height = 0;
+    $order_notes = '';
+    $product_id = null;
+
+    if ($DelyvaXServiceCode) {
+        $serviceCode = $DelyvaXServiceCode;
+    } else {
+        foreach ($main_order->get_items('shipping') as $item_id => $shipping_item_obj) {
+            $serviceobject = $shipping_item_obj->get_meta_data();
+
+            for ($i = 0; $i < sizeof($serviceobject); $i++) {
+                if ($serviceobject[$i]->key == "service_code") {
+                    $serviceCode = $serviceobject[0]->value;
+
+                    $main_order->update_meta_data('DelyvaXServiceCode', $serviceCode);
+                    $main_order->save();
+                }
+            }
+        }
+    }
+
+    $count = 0;
+    $total_quantity = 0;
+    $total_price = 0;
+    $inventories = [];
+
+    foreach ($main_order->get_items() as $item) {
+        $product_id = $item->get_product_id();
+        $product_variation_id = $item->get_variation_id();
+        $product = $item->get_product();
+        $product_name = $item->get_name();
+        $quantity = $item->get_quantity();
+        $subtotal = $item->get_subtotal();
+        $total = $item->get_total();
+        $tax = $item->get_subtotal_tax();
+        $taxclass = $item->get_tax_class();
+        $taxstat = $item->get_tax_status();
+        $allmeta = $item->get_meta_data();
+        // $somemeta = $item->get_meta( '_whatever', true );
+        $type = $item->get_type();
+
+        //get seller info
+        $product_store_name = get_bloginfo('name');
+
+        $_pf = new WC_Product_Factory();
+
+        $product = $_pf->get_product($product_id);
+        
+        $weightDimension = [
+            'weight' => 0,
+            'length' => 0,
+            'width' => 0,
+            'height' => 0,
+        ];
+
+        if ($product->is_type('variable')) {
+            $variation = $_pf->get_product($product_variation_id);
+
+            if ($variation) {
+                $product_name = $variation->get_name();
+                $weightDimension = get_product_dimensions($variation);
+            }
+        } else {
+            $weightDimension = get_product_dimensions($product);
+        }
+
+        $product_weight = $weightDimension['weight'];
+        $product_length = $weightDimension['length'];
+        $product_width = $weightDimension['width'];
+        $product_height = $weightDimension['height'];
+
+        // Calculate volume for this product considering quantity
+        $item_volume = $product_length * $product_width * $product_height * $quantity;
+        $total_volume += $item_volume;
+
+        // Track maximum dimensions
+        $max_length = max($max_length, $product_length);
+        $max_width = max($max_width, $product_width);
+        $max_height = max($max_height, $product_height);
+
+        $product_description = '[' . $product_store_name . '] ' . $product_name . ' - Order ID #' . $main_order->get_id();
+
+        $inventories[] = [
+            "name" => $product_name,
+            "value" => array(
+                "amount" => $total,
+                "currency" => $main_order->get_currency(),
+            ),
+            "weight" => array(
+                "value" => $product_weight,
+                "unit" => 'kg'
+            ),
+            "quantity" => $quantity,
+            "description" => $product_description
+        ];
+
+        $total_weight = $total_weight + ($product_weight * $quantity);
+        $total_price = $total_price + $subtotal;
+        $total_quantity = $total_quantity + $quantity;
+
+        if ($include_order_note == 'ordernproduct') {
+            $order_notes = $order_notes . '#' . ($count + 1) . '. [' . $store_name . '] ' . $product_name . ' X ' . $quantity . 'pcs. ';
+        }
+        $count++;
+    }
+
+    if ($DelyvaXOrderID && $process == true) {
+        $resultProcess = delyvax_post_process_order($order, $DelyvaXOrderID);
+
+        $trackingNo = $resultProcess["consignmentNo"];
+        $nanoId = $resultProcess["nanoId"];
+
+        $main_order->update_meta_data('DelyvaXTrackingCode', $trackingNo);
+        $main_order->update_meta_data('DelyvaXTrackingShort', $nanoId);
+
+        $main_order->update_status('wc-ready-to-collect', 'Delivery order number: ' . $trackingNo . ' - <a href="https://api.delyva.app/v1.0/order/' . $DelyvaXOrderID . '/label?companyId=' . $company_id . '" target="_blank">Print label</a> - <a href="https://' . $company_code . '.delyva.app/customer/strack?trackingNo=' . $trackingNo . '" target="_blank">Track</a>.', false);
+
+        $pricing = process_delivery_pricing($main_order, $resultProcess['price']['amount'], $total_quantity, $total_price);
+
+        $main_order->update_meta_data('DelyvaXDeliveryPrice', $resultProcess['price']['amount']);
+        $main_order->update_meta_data('DelyvaXMarkup', $pricing['deliveryMarkup']);
+        $main_order->update_meta_data('DelyvaXDiscount', $pricing['deliveryDiscount']);
+        $main_order->save();
+    } else {
+        $main_order = $order;
+        $store_raw_country = get_option('woocommerce_default_country');
+
+        // Split the country/state
+        $split_country = explode(":", $store_raw_country);
+
+        // Country and state separated:
+        $store_country = $split_country[0];
+        $store_state = $split_country[1];
+
+        if ($include_order_note != 'empty')
+            $order_notes = 'Order No: #' . $main_order->get_id() . ': ';
+
+        $box_dimensions = optimize_box_dimensions($total_volume, $max_length, $max_width, $max_height);
+
+        $receiver = get_receiver_address($order);
+        $sender = [
+            'contactName' => $settings['shop_name'],
+            'contactEmail' => $settings['shop_email'],
+            'contactNumber' => $settings['shop_mobile'],
+            'location' => [
+                'address' => get_option('woocommerce_store_address'),
+                'address2' => get_option('woocommerce_store_address_2'),
+                'city' => get_option('woocommerce_store_city'),
+                'state' => $store_state,
+                'country' => $store_country,
+                'postcode' => get_option('woocommerce_store_postcode'),
+            ]
+        ];
+
+        if ($multivendor_option == 'DOKAN') {
+            if (function_exists('dokan_get_seller_id_by_order') && function_exists('dokan_get_store_info')) {
+                $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
+                $store_info = dokan_get_store_info($seller_id);
+                $user_info = get_userdata($seller_id);
+                $store_info['email'] = $user_info->user_email;
+
+                $product_store_name = $store_info['store_name'];
+
+                if ($store_info['store_name'])
+                    $sender['contactName'] = $store_info['store_name'];
+                // if ($store_info['first_name'])
+                //     $store_first_name = $store_info['first_name'];
+                // if ($store_info['last_name'])
+                //     $store_last_name = $store_info['last_name'];
+                if ($store_info['phone'])
+                    $sender['contactNumber'] = $store_info['phone'];
+                if ($store_info['email'])
+                    $sender['contactEmail'] = $store_info['email'];
+                $sender['location']['address'] = $store_info['address']['street_1'];
+                $sender['location']['address2'] = $store_info['address']['street_2'];
+                $sender['location']['city'] = $store_info['address']['city'];
+                $sender['location']['state'] = $store_info['address']['state'];
+                $sender['location']['postcode'] = $store_info['address']['zip'];
+                $sender['location']['country'] = $store_info['address']['country'];
+
+                $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+                $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
+
+                if ($origin_lat && $origin_lon) {
+                    $sender['location']['coordinates'] = [
+                        'lat' => $origin_lat,
+                        'lom' => $origin_lon,
+                    ];
+                }
+            }
+        } else if ($multivendor_option == 'WCFM') {
+            if (function_exists('wcfm_get_vendor_id_by_post')) {
+                $vendor_id = $order->get_meta('_vendor_id');
+                if (!$vendor_id && function_exists('wcfm_get_vendor_id_by_post')) {
+                    $vendor_id = wcfm_get_vendor_id_by_post($product_id);
+                }            
+
+                $store_info = get_user_meta($vendor_id, 'wcfmmp_profile_settings', true);
+
+                if ($store_info) {
+                    $sender['contactName'] = $store_name = $store_info['store_name'];
+                    // $store_first_name = $store_info['store_name'];
+                    // $store_last_name = $store_info['store_name'];
+                    $sender['contactNumber'] = $store_info['phone'];
+                    $sender['contactEmail'] = $store_info['store_email'] ? $store_info['store_email'] : $store_info['customer_support']['email'];
+                    $sender['location']['address'] = isset($store_info['address']['street_1']) ? $store_info['address']['street_1'] : '';
+                    $sender['location']['address2'] = isset($store_info['address']['street_2']) ? $store_info['address']['street_2'] : '';
+                    $sender['location']['city'] = isset($store_info['address']['city']) ? $store_info['address']['city'] : '';
+                    $sender['location']['state'] = isset($store_info['address']['state']) ? $store_info['address']['state'] : '';
+                    $sender['location']['postcode'] = isset($store_info['address']['zip']) ? $store_info['address']['zip'] : '';
+                    $sender['location']['country'] = isset($store_info['address']['country']) ? $store_info['address']['country'] : '';
+
+                    $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
+                    $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
+
+                    if ($origin_lat && $origin_lon) {
+                        $sender['location']['coordinates'] = [
+                            'lat' => $origin_lat,
+                            'lom' => $origin_lon,
+                        ];
                     }
                 }
             }
-      }          
-
-      //inventory / items
-      $count = 0;
-      $inventories = array();
-      $total_weight = 0;
-      $total_dimension = 0;
-      $total_price = 0;
-      $order_notes = '';
-      $total_quantity = 0;
-
-      $store_name = get_bloginfo( 'name' );
-      $store_phone = null;
-      $store_email = null;
-      $store_address_1 = null;
-      $store_address_2 = null;
-      $store_city = null;
-      $store_postcode = null;
-      $store_country = null;
-      $store_country = null;
-
-      $product_id = null;
-
-      //store info
-	  $store_name = $settings['shop_name'];
-      $store_email = $settings['shop_email'];
-      $store_phone = $settings['shop_mobile'];
-
-      $store_address_1 = get_option( 'woocommerce_store_address');
-      $store_address_2 = get_option( 'woocommerce_store_address_2');
-      $store_city = get_option( 'woocommerce_store_city');
-      $store_postcode = get_option( 'woocommerce_store_postcode');
-
-      $origin_lat = null;
-      $origin_lon = null;
-
-      // The country/state
-      if($store_country == null)
-      {
-          $store_raw_country = get_option( 'woocommerce_default_country');
-
-          // Split the country/state
-          $split_country = explode( ":", $store_raw_country );
-
-          // Country and state separated:
-          $store_country = $split_country[0];
-          $store_state   = $split_country[1];
-      }
-
-      $main_order = $order;
-
-      if($include_order_note != 'empty') $order_notes = 'Order No: #'.$main_order->get_id().': ';
-
-      $product_store_name = get_bloginfo( 'name' );
-
-      foreach ( $main_order->get_items() as $item )
-      {
-          $product_id = $item->get_product_id();
-      }
-
-      if($multivendor_option == 'DOKAN')
-      {
-          if(function_exists('dokan_get_seller_id_by_order') && function_exists('dokan_get_store_info'))
-          {
-              $seller_id = dokan_get_seller_id_by_order($main_order->get_id());
-              $store_info = dokan_get_store_info( $seller_id );
-		  	      $user_info = get_userdata($seller_id);
-		          $store_info['email'] = $user_info->user_email;
-
-              $product_store_name = $store_info['store_name'];
-
-              if($store_info['store_name']) $store_name = $store_info['store_name'];
-              if($store_info['first_name']) $store_first_name = $store_info['first_name'];
-              if($store_info['last_name']) $store_last_name = $store_info['last_name'];
-              if($store_info['phone']) $store_phone = $store_info['phone'];
-              if($store_info['email']) $store_email = $store_info['email'];
-              $store_address_1 = $store_info['address']['street_1'];
-              $store_address_2 = $store_info['address']['street_2'];
-              $store_city = $store_info['address']['city'];
-              $store_state = $store_info['address']['state'];
-              $store_postcode = $store_info['address']['zip'];
-              $store_country = $store_info['address']['country'];
-
-              $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
-              $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
-          }
-      }else if($multivendor_option == 'WCFM')
-      {
-          if(function_exists('wcfm_get_vendor_id_by_post'))
-          {
-              $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
-
-              $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
-
-              if($store_info)
-              {
-                  $product_store_name = $store_name = $store_info['store_name'];
-                  $store_first_name = $store_info['store_name'];
-                  $store_last_name = $store_info['store_name'];
-                  $store_phone = $store_info['phone'];
-                  $store_email = $store_info['store_email'] ? $store_info['store_email'] : $store_info['customer_support']['email'];
-                  $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
-                  $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
-                  $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
-                  $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
-                  $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
-                  $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
-
-                  $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
-                  $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
-              }
-          }
-        }else if($multivendor_option == 'MKING')
-        {
-            $vendor_id = marketking()->get_product_vendor( $product_id );
+        } else if ($multivendor_option == 'MKING') {
+            $vendor_id = marketking()->get_product_vendor($product_id);
 
             // $company = get_user_meta($vendor_id, 'billing_company', true);      
-            $store_name = marketking()->get_store_name_display($vendor_id);              
+            $sender['contactName'] = marketking()->get_store_name_display($vendor_id);
             // $store_name = get_user_meta($vendor_id, 'marketking_store_name', true);
-            $store_first_name = get_user_meta($vendor_id, 'billing_first_name', true);
-            $store_last_name = get_user_meta($vendor_id, 'billing_last_name', true);
-            $store_phone = get_user_meta($vendor_id, 'billing_phone', true);
-            $store_email = marketking()->get_vendor_email($vendor_id);
+            // $store_first_name = get_user_meta($vendor_id, 'billing_first_name', true);
+            // $store_last_name = get_user_meta($vendor_id, 'billing_last_name', true);
+            $sender['contactNumber'] = get_user_meta($vendor_id, 'billing_phone', true);
+            $sender['contactEmail'] = marketking()->get_vendor_email($vendor_id);
             // $store_email = get_user_meta($vendor_id, 'billing_email', true);
 
-            $store_address_1 = get_user_meta($vendor_id, 'billing_address_1', true);
-            $store_address_2 = get_user_meta($vendor_id, 'billing_address_2', true);
-            $store_city = get_user_meta($vendor_id, 'billing_city', true);
-            $store_state = get_user_meta($vendor_id, 'billing_postcode', true);
-            $store_postcode = get_user_meta($vendor_id, 'billing_state', true);
-            $store_country = get_user_meta($vendor_id, 'billing_country', true);
-            
+            $sender['location']['address'] = get_user_meta($vendor_id, 'billing_address_1', true);
+            $sender['location']['address2'] = get_user_meta($vendor_id, 'billing_address_2', true);
+            $sender['location']['city'] = get_user_meta($vendor_id, 'billing_city', true);
+            $sender['location']['state'] = get_user_meta($vendor_id, 'billing_postcode', true);
+            $sender['location']['postcode'] = get_user_meta($vendor_id, 'billing_state', true);
+            $sender['location']['country'] = get_user_meta($vendor_id, 'billing_country', true);
+
             // $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
             // $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
-      }else {
-          // echo 'no multivendor';
-      }
-
-      foreach ( $main_order->get_items() as $item )
-      {
-          $product_id = $item->get_product_id();
-          $product_variation_id = $item->get_variation_id();
-          $product = $item->get_product();
-          $product_name = $item->get_name();
-          $quantity = $item->get_quantity();
-          $subtotal = $item->get_subtotal();
-          $total = $item->get_total();
-          $tax = $item->get_subtotal_tax();
-          $taxclass = $item->get_tax_class();
-          $taxstat = $item->get_tax_status();
-          $allmeta = $item->get_meta_data();
-          // $somemeta = $item->get_meta( '_whatever', true );
-          $type = $item->get_type();
-
-          $product_weight = 0;
-          $product_length = 0;
-          $product_width = 0;
-          $product_height = 0;
-
-          //get seller info
-          $product_store_name = get_bloginfo( 'name' );
-
-          $_pf = new WC_Product_Factory();
-
-          $product = $_pf->get_product($product_id);
-
-          if( $product->is_type( 'variable' ) ){
-              $variation = $_pf->get_product( $product_variation_id );
-
-              if($variation)
-              {
-                  $product_name = $variation->get_name();
-                  $product_weight = delyvax_default_weight(delyvaX_weight_to_kg($variation->get_weight()));
-                  $product_length = delyvax_default_dimension(delyvax_dimension_to_cm($variation->get_length()));
-                  $product_width = delyvax_default_dimension(delyvax_dimension_to_cm($variation->get_width()));
-                  $product_height = delyvax_default_dimension(delyvax_dimension_to_cm($variation->get_height()));
-              }else {
-                  $product_weight = delyvax_default_weight(delyvaX_weight_to_kg($product->get_weight()));
-                  $product_length = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()));
-                  $product_width = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()));
-                  $product_height = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height()));
-              }
-          }else{
-                $product_weight = delyvax_default_weight(delyvaX_weight_to_kg($product->get_weight()));
-                $product_length = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_length()));
-                $product_width = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_width()));
-                $product_height = delyvax_default_dimension(delyvax_dimension_to_cm($product->get_height()));
-          }
-
-          $product_description = '['.$product_store_name.'] '.$product_name.' - Order ID #'.$main_order->get_id();
-
-          $inventories[$count] = array(
-              "name" => $product_name,
-              "type" => $item_type, //$type PARCEL / FOOD
-              "price" => array(
-                  "amount" => $total,
-                  "currency" => $main_order->get_currency(),
-              ),
-              "weight" => array(
-                  "value" => $product_weight,
-                  "unit" => 'kg'
-              ),
-              "dimension" => array(
-                  "unit" => 'cm',
-                  "width" => $product_width,
-                  "length" => $product_length,
-                  "height" => $product_height
-              ),
-              "quantity" => $quantity,
-              "description" => $product_description
-          );
-
-          $total_weight = $total_weight + ($product_weight*$quantity);
-
-          $total_dimension = $total_dimension + $product_width
-                * $product_length
-                * $product_height;
-
-          $total_price = $total_price + $subtotal;
-
-          $total_quantity = $total_quantity + $quantity;
-
-          if($include_order_note == 'ordernproduct') $order_notes = $order_notes.'#'.($count+1).'. ['.$store_name.'] '.$product_name.' X '.$quantity.'pcs. ';
-
-          $count++;
-      }
-
-      $origin = array(
-          "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
-          "inventory" => $inventories,
-          "contact" => array(
-              "name" => $store_name,
-              "email" => $store_email,
-              "phone" => $store_phone,
-              "mobile" => $store_phone,
-              "address1" => $store_address_1,
-              "address2" => $store_address_2,
-              "city" => $store_city,
-              "state" => $store_state,
-              "postcode" => $store_postcode,
-              "country" => $store_country
-              // "coord" => array(
-              //     "lat" => "",
-              //     "lon" => ""
-              // )
-          ),
-          "note"=> $order_notes
-      );
-
-      if($origin_lat && $origin_lon)
-      {
-          $origin['contact']['coord']['lat'] = $origin_lat;
-          $origin['contact']['coord']['lon'] = $origin_lon;
-      }
-      //
-
-      //destination
-      $r_shipping_phone = $order->get_meta( 'shipping_phone' ) ? $order->get_meta( 'shipping_phone' ) : $order->get_meta( '_shipping_phone' );
-
-      $destination_lat = $order->get_meta( 'shipping_lat' ) ? $order->get_meta( 'shipping_lat' ) : null;
-      $destination_lon = $order->get_meta( 'shipping_lon' ) ? $order->get_meta( 'shipping_lon' ) : null;
-
-      if($order->get_shipping_address_1() || $order->get_shipping_address_2())
-      {
-          $destination = array(
-              "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
-              "inventory" => $inventories,
-              "contact" => array(
-                  "name" => $order->get_shipping_first_name().' '.$order->get_shipping_last_name(),
-                  "email" => $order->get_billing_email(),
-                  "phone" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
-                  "mobile" => $r_shipping_phone ? $r_shipping_phone : $order->get_billing_phone(),
-                  "address1" => $order->get_shipping_address_1(),
-                  "address2" => $order->get_shipping_address_2(),
-                  "city" => $order->get_shipping_city(),
-                  "state" => $order->get_shipping_state(),
-                  "postcode" => $order->get_shipping_postcode(),
-                  "country" => $order->get_shipping_country(),
-                  // "coord" => array(
-                  //     "lat" => "",
-                  //     "lon" => ""
-                  // )
-              ),
-              // "note"=> $order_notes
-          );
-      }else {
-          $destination = array(
-              "scheduledAt" => $scheduledAt->format('c'), //"2019-11-15T12:00:00+0800",
-              "inventory" => $inventories,
-              "contact" => array(
-                  "name" => $order->get_billing_first_name().' '.$order->get_billing_last_name(),
-                  "email" => $order->get_billing_email(),
-                  "phone" => $order->get_billing_phone(),
-                  "mobile" => $order->get_billing_phone(),
-                  "address1" => $order->get_billing_address_1(),
-                  "address2" => $order->get_billing_address_2(),
-                  "city" => $order->get_billing_city(),
-                  "state" => $order->get_billing_state(),
-                  "postcode" => $order->get_billing_postcode(),
-                  "country" => $order->get_billing_country(),
-                  // "coord" => array(
-                  //     "lat" => "",
-                  //     "lon" => ""
-                  // )
-              ),
-              // "note"=> $order_notes
-          );
-      }
-
-      if($destination_lat && $destination_lon)
-      {
-          $destination['contact']['coord']['lat'] = $destination_lat;
-          $destination['contact']['coord']['lon'] = $destination_lon;
-      }
-      //
-
-      //calculate volumetric weight
-      $total_actual_weight = delyvax_default_weight(delyvaX_weight_to_kg($total_weight));
-      $total_weight = $total_actual_weight;
-
-      $weight = array(
-        "value" => $total_weight,
-        "unit" => 'kg'
-      );
-
-      //
-      $cod = array(
-        "id"=> -1,
-        "qty"=> 1,
-        "value"=> $total_price
-      );
-
-      $insurance = array(
-        "id"=> -3,
-        "qty"=> 1,
-        "value"=> $total_price
-      );
-
-      $addons = array();
-
-      if($order->get_payment_method() == 'cod')
-      {
-          array_push($addons, $cod);
-      }
-
-      if($insurance_premium == 'yes')
-      {
-          array_push($addons, $insurance);
-      }
-
-      $referenceNo = $main_order->get_id();
-      //
-      
-      $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
-
-      if($DelyvaXOrderID)
-      {
-            $shipmentId = $DelyvaXOrderID;
-      }else {
-            $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $origin, $destination, $weight, $serviceCode, $order_notes, $addons, $referenceNo);
-
-            if($resultCreate)
-            {
-                $shipmentId = $resultCreate["id"];
-
-                $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                $order->save();
-            }
-      }
-
-    if($process)
-    {
-        $resultProcess = delyvax_post_process_order($order, $user, $shipmentId);
-
-        if($resultProcess)
-        {
-            $trackingNo = $resultProcess["consignmentNo"];
-            $nanoId = $resultProcess["nanoId"];
-
-            $main_order = $order;
-
-            $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-            $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-            $main_order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
-            $main_order->save();
-
-            $main_order->update_status('wc-ready-to-collect', 'Delivery order number: '.$trackingNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$trackingNo.'" target="_blank">Track</a>.', false);
-
-            $consignmentNo = $trackingNo;
-
-            //store price discount or markup
-            if($resultProcess["price"])
-            {
-                $deliveryPrice = $resultProcess['price']['amount'];
-                $deliveryMarkup = 0;
-                $deliveryDiscount = 0;
-
-                $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
-
-                $ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
-                $percentRate = $ra_percentage / 100 * $deliveryPrice;
-
-                $flatRate = $settings['rate_adjustment_flat'] ?? 0;
-
-                if($rate_adjustment_type == 'markup')
-                {
-                    $deliveryMarkup = round($percentRate + $flatRate, 2);
-                }else {
-                    $deliveryDiscount = round($percentRate + $flatRate, 2);
-                }
-
-                $main_order->update_meta_data( 'DelyvaXDeliveryPrice', $deliveryPrice );
-                $main_order->update_meta_data( 'DelyvaXMarkup', $deliveryMarkup );
-                $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
-                $main_order->save();
-            }
-
-            //handle free shipping
-            $free_shipping_type = $settings['free_shipping_type'] ?? '';
-            $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
-            $free_shipping_value = $settings['free_shipping_value'] ?? '0';
-
-            if($free_shipping_type == 'total_quantity')
-            {
-                if($free_shipping_condition == '>')
-                {
-                    if($total_quantity > $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '>=')
-                {
-                    if($total_quantity >= $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '==')
-                {
-                    if($total_quantity == $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '<=')
-                {
-                    if($total_quantity <= $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '<')
-                {
-                    if($total_quantity < $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }
-            }else if($free_shipping_type == 'total_amount')
-            {
-                if($free_shipping_condition == '>')
-                {
-                    if($total_price > $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '>=')
-                {
-                    if($total_price >= $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '==')
-                {
-                    if($total_price == $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '<=')
-                {
-                    if($total_price <= $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }else if($free_shipping_condition == '<')
-                {
-                    if($total_price < $free_shipping_value)
-                    {
-                        $deliveryDiscount = $deliveryPrice;
-                    }
-                }
-            }
-
-            $main_order->update_meta_data( 'DelyvaXDiscount', $deliveryDiscount );
-            $main_order->save();
-            ////end free shipping
-
-            // no need - vendor to process sub order separately
-            //save tracking no into order to all parent order and suborders
-            /*
-            $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-
-            if( sizeof($sub_orders) > 0 )
-            {
-                $main_order = wc_get_order($order->get_id());
-
-                $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                $main_order->save();
-
-                $main_order->update_status('wc-ready-to-collect');
-
-                $count = 0;
-                foreach ($sub_orders as $sub)
-                {
-                    $sub_order = wc_get_order($sub->ID);
-
-                    $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                    $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                    $sub_order->save();
-
-                    $sub_order->update_status('wc-ready-to-collect');
-
-                    $consignmentNo = $trackingNo."-".($count+1);
-
-
-                    $count++;
-                }
-            }else {
-                $main_order = $order;
-
-                $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-                $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-                $main_order->save();
-
-                $main_order->update_status('wc-ready-to-collect');
-
-                $consignmentNo = $trackingNo."-1";
-            }*/
         }
-    }else {
-            $main_order = $order;
 
-            $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-            // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
+        $ms2781Request = [
+            'customerId' => $customer_id,
+            'orderNumber' => (string) $order->get_id(),
+            'sender' => $sender,
+            'receiver' => $receiver,
+            'parcel' => [
+                'weight' => [
+                    "unit" => "kg",
+                    "parcelWeight" => $total_weight,
+                ],
+                'quantity' => 1,
+                'orderRemarks' => $order_notes,
+            ],
+            'inventory' => $inventories,
+            'deliveryService' => [
+                'serviceType' => $serviceCode,
+                'pickupDateTime' => $scheduledAt->format('Y-m-d H:i:s'),
+                'codAmount' => $order->get_payment_method() == 'cod' ? $total_price : 0,
+                'insuranceAmount' => $insurance_premium == 'yes' ? $total_price : 0,
+                'itemType' => $settings['item_type'] ? $settings['item_type'] : 'PARCEL',
+            ],
+            'source' => $settings["source"],
+
+            'isDraft' => !$process,
+        ];
+
+        if (
+            isset($box_dimensions)
+            && floatval($box_dimensions['width']) > 0
+            && floatval($box_dimensions['length']) > 0
+            && floatval($box_dimensions['height']) > 0
+        ) {
+            $ms2781Request['parcel']['dimension'] = [
+                "unit" => "cm",
+                "width" => floatval($box_dimensions['width']),
+                "length" => floatval($box_dimensions['length']),
+                "height" => floatval($box_dimensions['height'])
+            ];
+        }
+
+        $resultCreate = DelyvaX_Shipping_API::postCreateOrder($order, $ms2781Request);
+
+        if ($resultCreate) {
+            $deliveryService = $resultCreate["deliveryService"];
+            $shipmentId = $deliveryService["orderId"];
+            $trackingNo = $deliveryService["trackingNumber"];
+            $nanoId = $deliveryService["nanoId"];
+
+            $main_order->update_meta_data('DelyvaXOrderID', $shipmentId);
+            $main_order->update_meta_data('DelyvaXTrackingCode', $trackingNo);
+            $main_order->update_meta_data('DelyvaXTrackingShort', $nanoId);
+
+            $deliveryCost = $deliveryService['deliveryCost']['amount'];
+
+            if ($process) {
+                $main_order->update_status('wc-ready-to-collect', 'Delivery order number: ' . $trackingNo . ' - <a href="https://api.delyva.app/v1.0/order/' . $shipmentId . '/label?companyId=' . $company_id . '" target="_blank">Print label</a> - <a href="https://' . $company_code . '.delyva.app/customer/strack?trackingNo=' . $trackingNo . '" target="_blank">Track</a>.', false);
+            }
+        
+            if ($deliveryCost > 0) {
+                $pricing = process_delivery_pricing($main_order, $deliveryCost, $total_quantity, $total_price);
+                $main_order->update_meta_data('DelyvaXDeliveryPrice', $deliveryCost);
+                $main_order->update_meta_data('DelyvaXMarkup', $pricing['deliveryMarkup']);
+                $main_order->update_meta_data('DelyvaXDiscount', $pricing['deliveryDiscount']);
+            }
             $main_order->save();
-
-            // $consignmentNo = $trackingNo;
-
-            // no need vendor to process sub order separately
-            //save tracking no into order to all parent order and suborders
-            // $sub_orders = get_children( array( 'post_parent' => $order->get_id(), 'post_type' => 'shop_order' ) );
-            //
-            // if( sizeof($sub_orders) > 0 )
-            // {
-            //     $main_order = wc_get_order($order->get_id());
-            //
-            //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-            //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-            //     $main_order->save();
-            //
-            //     $count = 0;
-            //     foreach ($sub_orders as $sub)
-            //     {
-            //         $sub_order = wc_get_order($sub->ID);
-            //
-            //         $sub_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-            //         // $sub_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-            //         $sub_order->save();
-            //
-            //         $consignmentNo = $trackingNo."-".($count+1);
-            //
-            //         $count++;
-            //     }
-            // }else {
-            //     $main_order = $order;
-            //
-            //     $main_order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
-            //     // $main_order->update_meta_data( 'DelyvaXTrackingCode', $trackingNo );
-            //     $main_order->save();
-            //
-            //     $consignmentNo = $trackingNo."-1";
-            // }
+        }
     }
 }
 
 //rewire logic here, API is only for post
-function delyvax_post_process_order($order, $user, $shipmentId) {
+function delyvax_post_process_order($order, $shipmentId) {
       //service
       $serviceCode = "";
 

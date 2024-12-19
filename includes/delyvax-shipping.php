@@ -582,8 +582,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         if($store_info)
                         {
                             $store_name = $store_info['store_name'];
-                            $store_first_name = $store_info['first_name'];
-                            $store_last_name = $store_info['last_name'];
                             $store_phone = $store_info['phone'];
                             $store_email = $store_info['email'];
                             $store_address_1 = $store_info['address']['street_1'];
@@ -609,8 +607,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     if($store_info)
                     {
                         $store_name = $store_info['store_name'];
-                        $store_first_name = $store_info['store_name'];
-                        $store_last_name = $store_info['store_name'];
                         $store_phone = $store_info['phone'];
                         $store_email = $store_info['store_email'] ? $store_info['store_email'] : $store_info['customer_support']['email'];
                         $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
@@ -631,8 +627,6 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 // $company = get_user_meta($vendor_id, 'billing_company', true);      
                 $store_name = marketking()->get_store_name_display($vendor_id);              
                 // $store_name = get_user_meta($vendor_id, 'marketking_store_name', true);
-                $store_first_name = get_user_meta($vendor_id, 'billing_first_name', true);
-                $store_last_name = get_user_meta($vendor_id, 'billing_last_name', true);
                 $store_phone = get_user_meta($vendor_id, 'billing_phone', true);
                 // $store_email = get_user_meta($vendor_id, 'billing_email', true);
                 $store_email = marketking()->get_vendor_email($vendor_id);
