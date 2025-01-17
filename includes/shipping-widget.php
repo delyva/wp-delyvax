@@ -86,7 +86,13 @@ function delyvax_show_box( $object ) {
 			if($DelyvaXOrderID != null && sizeof($adxservices) > 0) {
 				delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
 
-				echo '<p><button class="button button-primary" type="submit">Fulfill with '.$company_name.'</button></p>';
+				$delyvax_nonce = uniqid('order_' . $object->get_id() . '_', true);
+    		echo '<input type="hidden" name="delyvax_nonce" value="' . esc_attr($delyvax_nonce) . '">';
+				echo '<p><button id="fulfill-button" onclick="
+						this.disabled=true;
+						this.textContent=\'Processing...\';
+						this.form.submit();
+				" class="button button-primary">Fulfill with '.esc_html($company_name).'</button></p>';
 			}else {
 				echo "<div><p>
 					<a href=\"".wp_nonce_url( admin_url( 'admin-ajax.php?action=woocommerce_mark_order_status&status=preparing&order_id=' . $order->get_id() ), 'woocommerce-mark-order-status' )."\" class=\"button button-primary\">Fulfill with ".$company_name."</a>

@@ -68,12 +68,15 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $settings = get_option('woocommerce_delyvax_settings');
             $api_token = $settings['api_token'];
 
+            $idempotency_key = isset($_POST['delyvax_nonce']) ? $_POST['delyvax_nonce'] : uniqid('order_' . $order->get_id() . '_', true);
+
             // Make the API request
             $response = wp_remote_post($url, array(
                 'headers' => array(
                     'content-type' => 'application/json',
                     'X-Delyvax-Access-Token' => $api_token,
                     'X-Delyvax-Wp-Version' => DELYVAX_PLUGIN_VERSION,
+                    'idempotency-key' => $idempotency_key,
                 ),
                 'body' => json_encode($ms2781Request),
                 'method' => 'POST',
