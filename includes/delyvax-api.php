@@ -7,6 +7,22 @@ if (!class_exists('DelyvaX_Shipping_API')) {
     class DelyvaX_Shipping_API
     {
         private static $api_endpoint = "https://api.delyva.app/v1.0";
+        private static function get_idempotency_window() {
+            $timestamp = current_time('timestamp');
+            $hour = (int) date('G', $timestamp);
+            $minutes = (int) date('i', $timestamp);
+            
+            // If in last 5 minutes of the hour, skip to next hour
+            if ($minutes >= 55) {
+                $hour += 1;
+                // Handle midnight rollover
+                if ($hour === 24) {
+                    $hour = 0;
+                }
+            }
+            
+            return $hour;
+        }
 
         //instant quote
         public static function getPriceQuote($origin, $destination, $weight, $addons, $inventories)
@@ -68,8 +84,10 @@ if (!class_exists('DelyvaX_Shipping_API')) {
             $settings = get_option('woocommerce_delyvax_settings');
             $api_token = $settings['api_token'];
 
-            $idempotency_key = isset($_POST['delyvax_nonce']) ? $_POST['delyvax_nonce'] : uniqid('order_' . $order->get_id() . '_', true);
-
+            $site_url = parse_url(get_site_url(), PHP_URL_HOST);
+            $payload_hash = md5(json_encode($ms2781Request));
+            $idempotency_key = 'wp-' . md5($site_url . '_order_' . $order->get_id() . '_' . self::get_idempotency_window() . '_' . $payload_hash);
+        
             // Make the API request
             $response = wp_remote_post($url, array(
                 'headers' => array(

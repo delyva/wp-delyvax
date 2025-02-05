@@ -86,8 +86,6 @@ function delyvax_show_box( $object ) {
 			if($DelyvaXOrderID != null && sizeof($adxservices) > 0) {
 				delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
 
-				$delyvax_nonce = uniqid('order_' . $object->get_id() . '_', true);
-    		echo '<input type="hidden" name="delyvax_nonce" value="' . esc_attr($delyvax_nonce) . '">';
 				echo '<p><button id="fulfill-button" onclick="
 						this.disabled=true;
 						this.textContent=\'Processing...\';
@@ -260,11 +258,12 @@ function delyvax_update_service($order, $service_code)
     }
 
 	$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
-	
-	$postRequestArr = [
-		"serviceCode" => $service_code,
-	];
 
-	$resultProcess = DelyvaX_Shipping_API::updateOrderData($order, $DelyvaXOrderID, $postRequestArr);
+	if ($DelyvaXOrderID) {
+		$postRequestArr = [
+			"serviceCode" => $service_code,
+		];
 
+		$resultProcess = DelyvaX_Shipping_API::updateOrderData($order, $DelyvaXOrderID, $postRequestArr);
+	}
 }
