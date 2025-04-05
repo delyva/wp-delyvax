@@ -13,7 +13,7 @@ add_action( 'woocommerce_payment_complete', 'delyvax_payment_complete');
 add_action( 'woocommerce_order_status_changed', 'delyvax_order_confirmed', 10, 3 );
 add_filter( 'woocommerce_cod_process_payment_order_status', 'delyvax_change_cod_payment_order_status', 10, 2 );
 
-include_once 'includes/delyvax-webhook.php';
+add_action('init', 'register_shipping_phone_validation_filter');
 
 function delyvax_check_cart_weight(){
     $weight = WC()->cart->get_cart_contents_weight();
@@ -55,14 +55,10 @@ function delyvaxPluginUninstalled() {
     delete_option('delyvax_create_shipment_on_paid');
     delete_option('delyvax_create_shipment_on_confirm');
     delete_option('delyvax_change_order_status');
-    delete_option('delyvax_company_id');
-    delete_option('delyvax_company_name');    
-    delete_option('delyvax_user_id');
-    delete_option('delyvax_customer_id');
     delete_option('delyvax_api_token');
     delete_option('delyvax_api_webhook_enable');
     delete_option('delyvax_api_webhook_key');
-
+    delete_option('delyvax_customer_id');
     delete_option('delyvax_shop_name');
     delete_option('delyvax_shop_mobile');
     delete_option('delyvax_shop_email');
@@ -90,6 +86,11 @@ function delyvaxPluginUninstalled() {
     delete_option('delyvax_free_shipping_type');
     delete_option('delyvax_free_shipping_condition');
     delete_option('delyvax_free_shipping_value');
+
+    // ---
+    delete_option('delyvax_company_id');
+    delete_option('delyvax_company_name');    
+    delete_option('delyvax_user_id');
 }
 
 function delyvaxRequest() {
@@ -105,14 +106,15 @@ function delyvaxRequest() {
     }
 }
 
-function delyvax_get_order_shipping_method( $order_id ){
+function delyvax_get_order_shipping_method($order_id) {
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        return null;
+    }
     $shipping_method = null;
-
-    $order = wc_get_order( $order_id );
-	foreach( $order->get_items( 'shipping' ) as $item_id => $item )
-    {
+    foreach($order->get_items('shipping') as $item_id => $item) {
         $shipping_method = $item->get_method_id();
-	}
+    }
     return $shipping_method;
 }
 
@@ -272,7 +274,7 @@ function delyvax_create_order($order, $user, $process=false) {
         if ( only_virtual_order_items( $order ) ) return; 
         //
 
-        $DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID');
+        $delyvax_order_id = $order->get_meta( 'DelyvaXOrderID');
         $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
 
         if(!$DelyvaXTrackingCode)
@@ -438,10 +440,9 @@ function delyvax_post_create_order($order, $process = false)
     $settings = get_option('woocommerce_delyvax_settings');
     $multivendor_option = $settings['multivendor'];
     $customer_id = $settings['customer_id'];
-    $company_id = $settings['company_id'];
     $company_code = $settings['company_code'];
 
-    $DelyvaXOrderID = $order->get_meta('DelyvaXOrderID');
+    $delyvax_order_id = $order->get_meta('DelyvaXOrderID');
     $store_name = get_bloginfo('name');
 
     $delivery_datetime = $order->get_meta('dx_delivery_datetime');
@@ -578,16 +579,13 @@ function delyvax_post_create_order($order, $process = false)
         $count++;
     }
 
-    if ($DelyvaXOrderID && $process == true) {
-        $resultProcess = delyvax_post_process_order($order, $DelyvaXOrderID);
+    if ($delyvax_order_id && $process == true) {
+        $resultProcess = delyvax_post_process_order($order, $delyvax_order_id);
 
         $trackingNo = $resultProcess["consignmentNo"];
-        $nanoId = $resultProcess["nanoId"];
-
         $main_order->update_meta_data('DelyvaXTrackingCode', $trackingNo);
-        $main_order->update_meta_data('DelyvaXTrackingShort', $nanoId);
 
-        $main_order->update_status('wc-ready-to-collect', 'Delivery order number: ' . $trackingNo . ' - <a href="https://api.delyva.app/v1.0/order/' . $DelyvaXOrderID . '/label?companyId=' . $company_id . '" target="_blank">Print label</a> - <a href="https://' . $company_code . '.delyva.app/customer/strack?trackingNo=' . $trackingNo . '" target="_blank">Track</a>.', false);
+        $main_order->update_status('wc-ready-to-collect', 'Delivery order number: ' . $trackingNo . ' - <a href="https://api.delyva.app/v1.0/order/' . $delyvax_order_id . '/label" target="_blank">Print label</a> - <a href="https://' . $company_code . '.delyva.app/customer/strack?trackingNo=' . $trackingNo . '" target="_blank">Track</a>.', false);
 
         $pricing = process_delivery_pricing($main_order, $resultProcess['price']['amount'], $total_quantity, $total_price);
 
@@ -764,16 +762,14 @@ function delyvax_post_create_order($order, $process = false)
             $deliveryService = $resultCreate["deliveryService"];
             $shipmentId = $deliveryService["orderId"];
             $trackingNo = $deliveryService["trackingNumber"];
-            $nanoId = $deliveryService["nanoId"];
 
             $main_order->update_meta_data('DelyvaXOrderID', $shipmentId);
             $main_order->update_meta_data('DelyvaXTrackingCode', $trackingNo);
-            $main_order->update_meta_data('DelyvaXTrackingShort', $nanoId);
 
             $deliveryCost = $deliveryService['deliveryCost']['amount'];
 
             if ($process) {
-                $main_order->update_status('wc-ready-to-collect', 'Delivery order number: ' . $trackingNo . ' - <a href="https://api.delyva.app/v1.0/order/' . $shipmentId . '/label?companyId=' . $company_id . '" target="_blank">Print label</a> - <a href="https://' . $company_code . '.delyva.app/customer/strack?trackingNo=' . $trackingNo . '" target="_blank">Track</a>.', false);
+                $main_order->update_status('wc-ready-to-collect', 'Delivery order number: ' . $trackingNo . ' - <a href="https://api.delyva.app/v1.0/order/' . $shipmentId . '/label" target="_blank">Print label</a> - <a href="https://' . $company_code . '.delyva.app/customer/strack?trackingNo=' . $trackingNo . '" target="_blank">Track</a>.', false);
             }
         
             if ($deliveryCost > 0) {
@@ -895,21 +891,22 @@ function delyvax_default_dimension($length)
 
 // Register new status
 function delyvax_register_order_statuses() {
-    register_post_status( 'wc-preparing', array(
-        'label'                     => _x('Preparing', 'Order status', 'default' ),
-        'public'                    => true,
-        'exclude_from_search'       => false,
-        'show_in_admin_all_list'    => true,
+    // Register statuses regardless of HPOS status
+    register_post_status('wc-preparing', array(
+        'label' => _x('Preparing', 'Order status', 'default'),
+        'public' => true,
+        'exclude_from_search' => false,
+        'show_in_admin_all_list' => true,
         'show_in_admin_status_list' => true,
-        'label_count'               => _n_noop( 'Preparing (%s)', 'Preparing (%s)' )
-    ) );
+        'label_count' => _n_noop('Preparing (%s)', 'Preparing (%s)')
+    ));
     register_post_status( 'wc-ready-to-collect', array(
-        'label'                     => _x('Package is Ready', 'Order status', 'default' ),
-        'public'                    => true,
-        'exclude_from_search'       => false,
-        'show_in_admin_all_list'    => true,
+        'label' => _x('Package is Ready', 'Order status', 'default' ),
+        'public' => true,
+        'exclude_from_search' => false,
+        'show_in_admin_all_list' => true,
         'show_in_admin_status_list' => true,
-        'label_count'               => _n_noop( 'Package is Ready (%s)', 'Package is Ready (%s)' )
+        'label_count' => _n_noop( 'Package is Ready (%s)', 'Package is Ready (%s)' )
     ) );
     register_post_status( 'wc-courier-accepted', array(
         'label'                     => _x('Courier accepted', 'Order status', 'default' ),
@@ -984,7 +981,6 @@ function include_custom_order_status_to_reports( $statuses ){
 // Add to list of WC Order statuses
 // Add custom status to order edit page drop down (and displaying orders with this custom status in the list)
 function delyvax_add_to_order_statuses( $order_statuses ) {
-
     $new_order_statuses = array();
 
     // add new order status after processing
@@ -1007,33 +1003,6 @@ function delyvax_add_to_order_statuses( $order_statuses ) {
     return $new_order_statuses;
 }
 add_filter( 'wc_order_statuses', 'delyvax_add_to_order_statuses',20,1);
-//
-
-// Adding custom status  to admin order list bulk actions dropdown
-function delyvax_dropdown_bulk_actions_shop_order( $actions ) {
-    $new_actions = array();
-
-    // add new order status before processing
-    foreach ($actions as $key => $action) {
-        $new_actions[$key] = $action;
-
-        if ('mark_processing' === $key)
-        {
-            $new_actions['mark_preparing'] = __( 'Change status to preparing', 'woocommerce');
-            $new_actions['mark_ready-to-collect'] = __( 'Change status to package is ready', 'woocommerce');
-            $new_actions['mark_courier-accepted'] = __( 'Change status to courier accepted', 'woocommerce');
-            $new_actions['mark_start-collecting'] = __( 'Change status to pending pick up', 'woocommerce');
-            $new_actions['mark_collected'] = __( 'Change status to pick-up complete', 'woocommerce');
-            $new_actions['mark_failed-collection'] = __( 'Change status to pick-up failed', 'woocommerce');
-            $new_actions['mark_start-delivery'] = __( 'Change status to delivery start', 'woocommerce');
-            $new_actions['mark_failed-delivery'] = __( 'Change status to delivery failed', 'woocommerce');
-            $new_actions['mark_request-refund'] = __( 'Change status to request refund', 'woocommerce');
-        }
-    }
-
-    return $new_actions;
-}
-add_filter( 'bulk_actions-edit-shop_order', 'delyvax_dropdown_bulk_actions_shop_order', 100, 1 );
 
 // Add new column(s) to the "My Orders" table in the account.
 function filter_woocommerce_account_orders_columns( $columns ) {
@@ -1051,43 +1020,6 @@ function filter_woocommerce_account_orders_columns( $columns ) {
 
 add_filter( 'woocommerce_account_orders_columns', 'filter_woocommerce_account_orders_columns', 10, 1 );
 
-// Adds data to the custom column in "My Account > Orders"
-function filter_woocommerce_my_account_my_orders_column_order_track( $order ) {
-    $settings = get_option( 'woocommerce_delyvax_settings' );
-    $company_code = $settings['company_code'];
-
-    $DelyvaXTrackingCode = $order->get_meta( 'DelyvaXTrackingCode');
-    $DelyvaXTrackingShort = $order->get_meta( 'DelyvaXTrackingShort');
-    $DelyvaXPersonnel = $order->get_meta( 'DelyvaXPersonnel');
-    
-    $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$DelyvaXTrackingCode;
-    $shorturl = 'https://'.$company_code.'.delyva.app/customer/etrack/'.$DelyvaXTrackingShort;
-
-    if($DelyvaXTrackingShort)
-    {
-        $theurl = $shorturl;
-    }else {
-        $theurl = $url;
-    }
-
-    echo '<a href="'.$theurl.'" target="_blank" >'.$DelyvaXTrackingCode.'</a>';
-
-    if($DelyvaXPersonnel && !is_array($DelyvaXPersonnel))
-    {
-        $personnelInfo = json_decode($DelyvaXPersonnel);
-
-        // var_dump($personnelInfo);
-
-        $personnelName = $personnelInfo->name;
-        $personnelPhone = $personnelInfo->phone;
-
-        echo '<br/><a href="tel:+'.$personnelPhone.'" target="_blank" >'.$personnelName.'</a>';
-    }
-
-}
-add_action( 'woocommerce_my_account_my_orders_column_order_track', 'filter_woocommerce_my_account_my_orders_column_order_track', 10, 1 );
-
-/* add custom column under order listing page */
 /**
  * Add 'track' column header to 'Orders' page immediately after 'status' column.
  *
@@ -1095,7 +1027,6 @@ add_action( 'woocommerce_my_account_my_orders_column_order_track', 'filter_wooco
  * @return string[] $new_columns
  */
 function sv_wc_cogs_add_order_profit_column_header( $columns ) {
-
     $new_columns = array();
 
     foreach ( $columns as $column_name => $column_info ) {
@@ -1107,94 +1038,187 @@ function sv_wc_cogs_add_order_profit_column_header( $columns ) {
 
     return $new_columns;
 }
-add_filter( 'manage_edit-shop_order_columns', 'sv_wc_cogs_add_order_profit_column_header', 20 );
+add_filter('manage_edit-shop_order_columns', 'sv_wc_cogs_add_order_profit_column_header', 20);
+add_filter('woocommerce_shop_order_list_table_columns', 'sv_wc_cogs_add_order_profit_column_header', 20);
 
-/**
- * Add 'track' column content to 'Orders' page immediately after 'Total' column.
- *
- * @param string[] $column name of column being displayed
- */
-function sv_wc_cogs_add_order_profit_column_order_track( $column ) {
-    global $post;
+function sv_wc_cogs_add_order_profit_column_order_track($column, $post_or_order_object = null) {
+    if ('order_track' === $column) {
+        // Get order object based on context
+        $order = null;
+        
+        // Check if we're dealing with an order object (HPOS)
+        if (is_object($post_or_order_object) && method_exists($post_or_order_object, 'get_id')) {
+            $order = $post_or_order_object;
+            $order_id = $order->get_id();
+        } 
+        // Check if we have a post ID (traditional)
+        else if (is_numeric($post_or_order_object)) {
+            $order_id = $post_or_order_object;
+            $order = wc_get_order($order_id);
+        }
+        // Fallback
+        else {
+            global $theorder;
+            
+            if ($theorder) {
+                $order = $theorder;
+            } else if (!empty($_GET['id'])) {
+                $order_id = absint($_GET['id']);
+                $order = wc_get_order($order_id);
+            }
+        }
 
-    if ( 'order_track' === $column ) {    
-        // $company_name = !empty(get_post_meta($post->ID,'track',true)) ? get_post_meta($post->ID,'track',true) : 'N/A';
+        if (!$order) {
+            return;
+        }
         
-        // echo $company_name;
+        $settings = get_option('woocommerce_delyvax_settings');
+        if (!$settings || !isset($settings['company_code'])) {
+            return;
+        }
         
-        $settings = get_option( 'woocommerce_delyvax_settings' );
         $company_code = $settings['company_code'];
+        $delyvax_tracking_code = $order->get_meta('DelyvaXTrackingCode');
+        $delyvax_order_id = $order->get_meta( 'DelyvaXOrderID');
+        $DelyvaXPersonnel = $order->get_meta('DelyvaXPersonnel');
+        $delyvax_error = delyvax_get_order_meta($order, ['delyvax_error', 'DelyvaXError']);
 
-        $DelyvaXTrackingCode = !empty(get_post_meta($post->ID,'DelyvaXTrackingCode',true)) ? get_post_meta($post->ID,'DelyvaXTrackingCode',true) : '';
-        $DelyvaXTrackingShort = !empty(get_post_meta($post->ID,'DelyvaXTrackingShort',true)) ? get_post_meta($post->ID,'DelyvaXTrackingShort',true) : '';
-        $DelyvaXLabelUrl = !empty(get_post_meta($post->ID,'DelyvaXLabelUrl',true)) ? get_post_meta($post->ID,'DelyvaXLabelUrl',true) : '';
-        $DelyvaXPersonnel = !empty(get_post_meta($post->ID,'DelyvaXPersonnel',true)) ? get_post_meta($post->ID,'DelyvaXPersonnel',true) : '';
-        
-        $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$DelyvaXTrackingCode;
-        $shorturl = 'https://'.$company_code.'.delyva.app/customer/etrack/'.$DelyvaXTrackingShort;
-
-        if($DelyvaXTrackingShort)
-        {
-            $theurl = $shorturl;
-        }else {
-            $theurl = $url;
+        if ($delyvax_error && !$delyvax_tracking_code) {
+            $display_error = strlen($delyvax_error) > 30 ? substr($delyvax_error, 0, 30) . '...' : $delyvax_error;
+            echo '<span style="color: red;" title="' . esc_attr($delyvax_error) . '">Delyva Error: ' . $display_error . '</span>';
         }
         
-        echo '<a href="'.$theurl.'" target="_blank" >'.$DelyvaXTrackingCode.'</a>';
-        if($DelyvaXLabelUrl)
-        {
-            echo '<br/>';
-            echo '<a href="'.$DelyvaXLabelUrl.'" target="_blank" >Print Label</a>';
-        }
+        if ($delyvax_tracking_code) {
+            $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$delyvax_tracking_code;
+            
+            echo '<a href="'.esc_url($url).'" target="_blank">'.esc_html($delyvax_tracking_code).'</a>';
+            
+            if($delyvax_order_id && !$order->has_status( array( 'completed' ))) {
+                $label_url = 'https://api.delyva.app/v1.0/order/' . urlencode($delyvax_order_id) . '/label';
 
-        if($DelyvaXPersonnel && !is_array($DelyvaXPersonnel))
-        {
-            $personnelInfo = json_decode($DelyvaXPersonnel);
-    
-            // var_dump($personnelInfo);
-    
-            $personnelName = $personnelInfo->name;
-            $personnelPhone = $personnelInfo->phone;
-    
-            echo '<br/><a href="tel:+'.$personnelPhone.'" target="_blank" >'.$personnelName.'</a>';
+                echo '<a href="' . esc_url($label_url) . '" target="_blank" class="button button-small">' . 
+                 __('Print Label', 'delyvax') . '</a>';
+            }
+
+            if($DelyvaXPersonnel && !is_array($DelyvaXPersonnel)) {
+                $personnelInfo = json_decode($DelyvaXPersonnel);
+                if ($personnelInfo && isset($personnelInfo->name) && isset($personnelInfo->phone)) {
+                    $personnelName = $personnelInfo->name;
+                    $personnelPhone = $personnelInfo->phone;
+                    echo '<br/><a href="tel:+'.esc_attr($personnelPhone).'" target="_blank">'.esc_html($personnelName).'</a>';
+                }
+            }
         }
     }
-    
 }
-add_action( 'manage_shop_order_posts_custom_column', 'sv_wc_cogs_add_order_profit_column_order_track' );
+
+// Support both traditional and HPOS column content
+add_action('manage_shop_order_posts_custom_column', 'sv_wc_cogs_add_order_profit_column_order_track', 10, 2);
+add_action('manage_woocommerce_page_wc-orders_custom_column', 'sv_wc_cogs_add_order_profit_column_order_track', 10, 2);
 
 // Shipping field on my account edit-addresses and checkout
-function delyvax_filter_woocommerce_shipping_fields( $fields ) {   
+add_filter( 'woocommerce_shipping_fields' , 'delyvax_make_phone_required', 10, 1 ); 
+function delyvax_make_phone_required($address_fields) {
     $settings = get_option( 'woocommerce_delyvax_settings');
     $is_shipping_phone = $settings['shipping_phone'];
 
-    if($is_shipping_phone == 'yes')
-    {
-        $fields['shipping_phone'] = array(
-            'label' => __( 'Shipping Phone', 'woocommerce' ),
-            'required' => true,
-            'class' => array( 'form-row-wide' ),
-            'priority'    => 4
-        );
-    }    
-    
-    return $fields;
+    if($is_shipping_phone == 'yes') {
+        $address_fields['shipping_phone']['required'] = true;
+    }
+    return $address_fields;
 }
-add_filter( 'woocommerce_shipping_fields' , 'delyvax_filter_woocommerce_shipping_fields', 10, 1 ); 
 
-// Display on the order edit page (backend)
-function delyvax_action_woocommerce_admin_order_data_after_shipping_address( $order ) {
-    $settings = get_option( 'woocommerce_delyvax_settings');
+/**
+ * Common validation function for shipping phone
+ * 
+ * @param string $phone The phone number to validate
+ * @return array [is_valid, error_message]
+ */
+function delyvax_validate_shipping_phone($phone) {
+    // Check if empty
+    if (empty($phone)) {
+        return [false, 'Shipping phone number is required. Please enter a phone number for shipping.'];
+    }
+    
+    // Check for alphabetic characters which suggest multiple numbers
+    if (preg_match('/[a-zA-Z]/', $phone)) {
+        return [false, 'Please enter only one valid phone number without text.'];
+    }
+    
+    // Basic phone format validation
+    if (!preg_match('/^[0-9+\-\s()]{6,20}$/', $phone)) {
+        return [false, 'Please enter a valid phone number format.'];
+    }
+    
+    // If we made it here, the phone is valid
+    return [true, ''];
+}
+
+/**
+ * Regular checkout validation
+ */
+add_action('woocommerce_checkout_process', 'validate_shipping_phone_field');
+
+function validate_shipping_phone_field() {
+    $settings = get_option('woocommerce_delyvax_settings');
     $is_shipping_phone = $settings['shipping_phone'];
 
-    if($is_shipping_phone == 'yes')
-    {
-        if ( $value = $order->get_meta( '_shipping_phone' ) ) {
-            echo '<p><strong>' . __( 'Shipping Phone', 'woocommerce' ) . ':</strong> ' . $value . '</p>';
+    if($is_shipping_phone == 'yes') {
+        $phone = isset($_POST['shipping_phone']) ? sanitize_text_field($_POST['shipping_phone']) : '';
+        
+        list($is_valid, $error_message) = delyvax_validate_shipping_phone($phone);
+        
+        if (!$is_valid) {
+            wc_add_notice($error_message, 'error');
         }
     }
 }
-add_action( 'woocommerce_admin_order_data_after_shipping_address', 'delyvax_action_woocommerce_admin_order_data_after_shipping_address', 10, 1 );
+
+/**
+ * Blocks checkout validation
+ */
+function register_shipping_phone_validation_filter() {
+    $settings = get_option('woocommerce_delyvax_settings');
+    $is_shipping_phone = $settings['shipping_phone'];
+
+    if ($is_shipping_phone == 'yes' && class_exists('Automattic\WooCommerce\StoreApi\StoreApi')) {
+        add_action('woocommerce_store_api_checkout_order_processed', 'validate_shipping_phone_blocks_checkout', 10, 1);
+    }
+}
+
+function validate_shipping_phone_blocks_checkout($order) {
+    // Only run this on actual checkout form submission
+    if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return $order;
+    }
+    
+    // Check if we're in the actual checkout process, not just viewing the page
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!isset($data['payment_method'])) {
+        return $order;
+    }
+    
+    // Get the phone data from the order
+    $shipping_phone = $order->get_shipping_phone();
+    
+    // Use the common validation function
+    list($is_valid, $error_message) = delyvax_validate_shipping_phone($shipping_phone);
+    
+    if (!$is_valid) {
+        // Log the error
+        error_log('Shipping phone validation error: ' . $error_message);
+        
+        // Add error notice
+        wc_add_notice($error_message, 'error');
+        
+        // Prevent order completion
+        add_action('woocommerce_after_checkout_validation', function($data, $errors) use ($error_message) {
+            $errors->add('shipping_phone_error', $error_message);
+        }, 10, 2);
+    }
+    
+    return $order;
+}
 
 // Conditional function that check if order items are all virtual
 function only_virtual_order_items( $order ) {
@@ -1214,17 +1238,3 @@ function only_virtual_order_items( $order ) {
     }
     return $only_virtual_items;
 }
-
-// Display on email notifications
-// function filter_woocommerce_email_order_meta_fields( $fields, $sent_to_admin, $order ) {
-//     $settings = get_option( 'woocommerce_delyvax_settings');
-//     $is_shipping_phone = $settings['shipping_phone'];
-    
-//     if($is_shipping_phone == 'yes')
-//     {
-//         // Get meta
-//         $shipping_phone = $order->get_meta( '_shipping_phone' );
-//     }
-// }
-
-//

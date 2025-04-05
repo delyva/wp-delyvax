@@ -5,6 +5,54 @@
 This file contains older changelog entries, so we can keep the size of the standard WordPress readme.txt file reasonable.
 For the latest changes, please see the "Changelog" section of the [readme.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/readme.txt).
 
+= 1.1.60 =
+*Release Date - 5th February 2025*
+
+* Enhanced duplicate order prevention system
+
+= 1.1.59 =
+*Release Date - 17th January 2025*
+
+* Added protection against duplicate order submissions by disabling the fulfill button after first click
+* Implemented idempotency key support for order creation to prevent duplicate orders during network issues or page refreshes
+
+= 1.1.58 =
+*Release Date - 19th December 2024*
+
+* Major update: Migrated to MS2781 order API implementation
+* Fix: Failed to create order when timezone is set to UTC
+* Enhanced: Optimized order creation process
+
+= 1.1.57 =
+*Release Date - 8th November 2024*
+
+* Add support for frozen, chilled and temperature control item type.
+
+= 1.1.56 =
+*Release Date - 5th August 2024*
+
+* Fix issue regarding deprecated dynamic property.
+
+= 1.1.55 =
+*Release Date - 30th July 2024*
+
+* Fix missing fulfil button. Ignore only virtual products.
+
+= 1.1.54 =
+*Release Date - 28th July 2024*
+
+* Fix missing orders after automated status updates.
+
+= 1.1.53 =
+*Release Date - 4th February 2024*
+
+* Another fixes for missing orders on ready to collect status.
+
+= 1.1.52 =
+*Release Date - 30th January 2024*
+
+* Fixes for missing orders on ready to collect status.
+
 = 1.1.51 =
 *Release Date - 12th July 2023*
 
@@ -68,8 +116,6 @@ For the latest changes, please see the "Changelog" section of the [readme.txt fi
 *Release Date - 16th January 2023*
 
 * Bug-fixes for shipping and billing address.
-
-For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/delyvax/trunk/changelog.txt) delivered with the plugin.
 
 = 1.1.39 =
 *Release Date - 14th December 2022*
