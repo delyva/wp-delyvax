@@ -60,7 +60,7 @@ function delyvax_add_print_labels_page() {
     add_submenu_page(
         '',
         __('Delyva: Print Labels', 'delyvax'),
-        __('Delyva: Print Labels', 'delyvax'),
+        __('Print Labels', 'delyvax'),
         'manage_woocommerce',
         'delyvax-print-labels-alt',
         'delyvax_print_labels_page_content'
@@ -83,17 +83,57 @@ function delyvax_print_labels_page_content() {
     // Construct the direct URL to the DelyvaX label API
     $label_url = 'https://api.delyva.app/v1.0/order/' . urlencode($order_ids) . '/label';
     
-    // Simply redirect to the API URL
+    ?>
+    <div class="wrap">
+        <h1 class="wp-heading-inline"><?php _e('Print DelyvaX Labels', 'delyvax'); ?></h1>
+        <hr class="wp-header-end">
+
+        <div id="popup-blocked-notice" class="notice notice-warning inline" style="display: none;">
+            <p>
+                <strong><?php _e('Pop-up Blocked', 'delyvax'); ?></strong>
+                <br>
+                <?php _e('Your browser blocked the automatic download. Please allow pop-ups for this site or click the download button below.', 'delyvax'); ?>
+            </p>
+        </div>
+
+        <div class="postbox">
+            <div class="inside">
+                <div class="notice notice-info inline">
+                    <p><?php _e('Your labels are being prepared. If the download doesn\'t start automatically, please click the button below:', 'delyvax'); ?></p>
+                </div>
+
+                <a href="<?php echo esc_url($label_url); ?>" class="button button-primary button-hero" id="downloadButton" target="_blank">
+                    <?php _e('Download Labels', 'delyvax'); ?>
+                </a>
+            </div>
+        </div>
+
+        <a href="<?php echo esc_url(admin_url('edit.php?post_type=shop_order')); ?>" class="button button-secondary">
+            <?php _e('← Return to Orders', 'delyvax'); ?>
+        </a>
+    </div>
+    <?php
+    // Ensure jQuery is loaded
+    wp_enqueue_script('jquery');
     ?>
     <script type="text/javascript">
-        // Open the URL in a new tab
-        window.open('<?php echo esc_js($label_url); ?>', '_blank');
-        
-        // Redirect back to the orders page
-        window.location.href = '<?php echo esc_js(admin_url('edit.php?post_type=shop_order')); ?>';
+        document.addEventListener('DOMContentLoaded', function() {
+            var downloadButton = document.getElementById('downloadButton');
+            if (downloadButton) {
+                // Try to open in new window
+                var popupWindow = window.open(downloadButton.href, '_blank');
+                
+                // Check if popup was blocked
+                setTimeout(function() {
+                    if (!popupWindow || popupWindow.closed || typeof popupWindow.closed == 'undefined') {
+                        // Show the popup blocked notice
+                        document.getElementById('popup-blocked-notice').style.display = 'block';
+                    }
+                }, 100);
+            }
+        });
     </script>
     <?php
-    exit;
 }
 
 // Show admin notices for errors

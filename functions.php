@@ -1091,7 +1091,7 @@ function sv_wc_cogs_add_order_profit_column_order_track($column, $post_or_order_
         if ($delyvax_tracking_code) {
             $url = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$delyvax_tracking_code;
             
-            echo '<a href="'.esc_url($url).'" target="_blank">'.esc_html($delyvax_tracking_code).'</a>';
+            echo '<a href="'.esc_url($url).'" target="_blank">'.esc_html($delyvax_tracking_code).'</a> ';
             
             if($delyvax_order_id && !$order->has_status( array( 'completed' ))) {
                 $label_url = 'https://api.delyva.app/v1.0/order/' . urlencode($delyvax_order_id) . '/label';
