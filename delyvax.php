@@ -17,10 +17,10 @@
  * Text Domain:       delyvax
  * License:           GPL v3 or later
  * License URI:       http://www.gnu.org/licenses/gpl-3.0.txt
- * Requires at least: 5.0
- * Requires PHP:      7.2
- * WC requires at least: 3.0
- * WC tested up to:   7.0
+ * Requires at least: 6.0
+ * Requires PHP:      7.4
+ * WC requires at least: 7.0
+ * WC tested up to:   9.7
  */
 
 // Exit if accessed directly

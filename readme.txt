@@ -1,10 +1,10 @@
 === delyvax ===
 Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
-Requires at least: 5.4
+Requires at least: 6.0
 Tested up to: 6.7
 Stable tag: 1.2.0
-Requires PHP: 7.2
+Requires PHP: 7.4
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -28,6 +28,12 @@ Delyva WooCommerce plugin
 2. In your Woocommerce store admin,  go to Woocommerce > Settings > Shipping > DelyvaX
 3. Insert your delivery service provider's Company code, Company id, User id, Customer id, and API Key.
 4. Configure the settings as per your requirements.
+
+== Requirements ==
+
+* WordPress 6.0 or higher
+* WooCommerce 7.0 or higher
+* PHP 7.4 or higher
 
 == Changelog ==
 
