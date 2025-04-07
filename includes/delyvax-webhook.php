@@ -1,17 +1,18 @@
 <?php
-defined( 'ABSPATH' ) or die( 'No script kiddies please!');
+defined( 'ABSPATH' ) or die();
+
+if (!class_exists('DelyvaX_Shipping_API')) {
+    require_once dirname(__FILE__) . '/delyvax-api.php';
+}
 
 add_action( 'parse_request', 'delyvax_webhook_order_created',10,0);
 add_action( 'parse_request', 'delyvax_webhook_get_tracking',10,0);
-add_action( 'woocommerce_update_options', 'delyvax_woocommerce_update_options', 10, 1 );
+
+add_filter('woocommerce_settings_api_sanitized_fields_delyvax', 'delyvax_detect_webhook_changes', 10, 1);
+
 
 // check for duplicate, fix old url
 function delyvax_webhook_duplicate_check() {
-  if (!class_exists('DelyvaX_Shipping_API')) {
-    include_once 'delyvax-api.php';
-  }
-
-  $old_url = get_site_url()."/";
   $valid_url = get_site_url()."/?delyvax=webhook";
 
   try {
@@ -22,8 +23,6 @@ function delyvax_webhook_duplicate_check() {
       $wh = $webhooks[$i];
       if (array_key_exists($wh['event'], $available) && $wh['url'] === $valid_url) {
         DelyvaX_Shipping_API::deleteWebhook($wh['id']);
-      } else if ($wh['url'] === $old_url) {
-        DelyvaX_Shipping_API::updateWebhookUrl($wh['id']);
       } else if ($wh['url'] === $valid_url) {
         $available[$wh['event']] = $wh['url'];
       }
@@ -34,10 +33,6 @@ function delyvax_webhook_duplicate_check() {
 }
 
 function delyvax_webhook_unsubscribe() {
-  if (!class_exists('DelyvaX_Shipping_API')) {
-    include_once 'delyvax-api.php';
-  }
-
   $valid_url = [
     get_site_url()."/",
     get_site_url()."/?delyvax=webhook",
@@ -59,13 +54,10 @@ function delyvax_webhook_unsubscribe() {
 }
 
 function delyvax_webhook_subscribe() {
-  if (!class_exists('DelyvaX_Shipping_API')) {
-    include_once 'delyvax-api.php';
-  }
   $settings = get_option( 'woocommerce_delyvax_settings');
 
   $valid_url = get_site_url()."/?delyvax=webhook";
-  $needed_event = ['order_tracking.update','order.created'];
+  $needed_event = ['order_tracking.change','order.created'];
 
   try {
     $webhooks = DelyvaX_Shipping_API::getWebhook();
@@ -90,6 +82,10 @@ function delyvax_webhook_subscribe() {
 
 function delyvax_webhook_order_created()
 {
+    if (!class_exists('Automattic\WooCommerce\Utilities\OrderUtil')) {
+        return;
+    }
+
     $raw = file_get_contents('php://input');
     // var_dump($raw);
     // throw new Exception();
@@ -102,8 +98,6 @@ function delyvax_webhook_order_created()
         {
             $data = $json;
             $settings = get_option( 'woocommerce_delyvax_settings');
-
-            $company_id = $settings['company_id'];
             $company_code = $settings['company_code'];
 
             if( isset($data['id']) && isset($data['consignmentNo']) && isset($data['statusCode'])
@@ -116,7 +110,6 @@ function delyvax_webhook_order_created()
                           $shipmentId = $data['id'];
                           $consignmentNo = $data['consignmentNo'];
                           $statusCode = $data['statusCode'];
-                          $nanoId = $data['nanoId'];
 
                           if(strlen($shipmentId) < 3 || strlen($consignmentNo) < 3 )
                           {
@@ -138,14 +131,8 @@ function delyvax_webhook_order_created()
                           {
                               $order = wc_get_order($orders[$i]->get_id());
 
-                              // $order->get_status();
-
-                              $labelUrl = 'https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id;
-
                               // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                               $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
-                              $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
-                              $order->update_meta_data( 'DelyvaXLabelUrl', $labelUrl );
                               $order->save();
 
                               if (!empty($order))
@@ -153,7 +140,7 @@ function delyvax_webhook_order_created()
                                   //on the way to pick up
                                   if( !$order->has_status('wc-ready-to-collect') )
                                   {
-                                      $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label?companyId='.$company_id.'" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
+                                      $order->update_status('wc-ready-to-collect', 'Delivery order number: '.$consignmentNo.' - <a href="https://api.delyva.app/v1.0/order/'.$shipmentId.'/label" target="_blank">Print label</a> - <a href="https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$consignmentNo.'" target="_blank">Track</a>.', false);
                                       
                                       // wp_update_post(['ID' => $order->get_id(), 'post_status' => 'wc-ready-to-collect']);
                                       //end update sub orders
@@ -176,6 +163,10 @@ function delyvax_webhook_order_created()
 
 function delyvax_webhook_get_tracking()
 {
+    if (!class_exists('Automattic\WooCommerce\Utilities\OrderUtil')) {
+        return;
+    }
+
     $raw = file_get_contents('php://input');
     // var_dump($raw);
     // throw new Exception();
@@ -200,7 +191,6 @@ function delyvax_webhook_get_tracking()
                       $shipmentId = $data['orderId'];
                       $consignmentNo = $data['consignmentNo'];
                       $statusCode = $data['statusCode'];
-                      $nanoId = $data['nanoId'];
                       $personnel = $data['personnel'];
 
                       global $woocommerce;
@@ -222,10 +212,6 @@ function delyvax_webhook_get_tracking()
 
                           // $order->update_meta_data( 'DelyvaXOrderID', $shipmentId );
                           $order->update_meta_data( 'DelyvaXTrackingCode', $consignmentNo );
-                          if($nanoId)
-                          {
-                            $order->update_meta_data( 'DelyvaXTrackingShort', $nanoId );
-                          }
                           if($personnel) 
                           {
                             $order->update_meta_data( 'DelyvaXPersonnel', json_encode($personnel) );
@@ -382,13 +368,23 @@ function delyvax_webhook_get_tracking()
     }
 }
 
-function delyvax_woocommerce_update_options( $array ) {
-  $settings = get_option( 'woocommerce_delyvax_settings');
-
-  if ($settings['api_webhook_enable'] == 'yes') {
-    delyvax_webhook_subscribe();
-    delyvax_webhook_duplicate_check();
-  } else {
-    delyvax_webhook_unsubscribe();
+function delyvax_detect_webhook_changes($settings) {
+  if (!class_exists('Automattic\WooCommerce\Utilities\OrderUtil')) {
+      return $settings;
   }
-};
+  
+  $previous_settings = get_option('woocommerce_delyvax_settings', array());
+  $previous_enabled = isset($previous_settings['api_webhook_enable']) && $previous_settings['api_webhook_enable'] === 'yes';
+  $new_enabled = isset($settings['api_webhook_enable']) && $settings['api_webhook_enable'] === 'yes';
+  
+  if ($previous_enabled !== $new_enabled) {
+      if ($new_enabled) {
+          delyvax_webhook_subscribe();
+          delyvax_webhook_duplicate_check();
+      } else {
+          delyvax_webhook_unsubscribe();
+      }
+  }
+  
+  return $settings;
+}

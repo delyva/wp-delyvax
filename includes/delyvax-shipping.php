@@ -1,419 +1,458 @@
 <?php
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+defined('ABSPATH') or die();
+
+if (!class_exists('DelyvaX_Shipping_API')) {
+    include_once 'delyvax-api.php';
+}
 
 if (!class_exists('DelyvaX_Shipping_Method')) {
 
-  #[AllowDynamicProperties]
-  class DelyvaX_Shipping_Method extends WC_Shipping_Method {
+    #[AllowDynamicProperties]
+    class DelyvaX_Shipping_Method extends WC_Shipping_Method
+    {
+        /**
+         * Constructor for your shipping class.
+         */
+        public function __construct($instance_id = 0)
+        {
+            $this->id = 'delyvax';
+            $this->instance_id = absint($instance_id);
+            $this->method_title = __('DelyvaX', 'delyvax');
+            $this->supports = array(
+                'shipping-zones',
+                'settings'
+            );
+            $this->init();
+            $this->enabled = isset($this->settings['enabled']) ? $this->settings['enabled'] : 'yes';
+            $this->title = isset($this->settings['title']) ? $this->settings['title'] : __('DelyvaX Shipping', 'delyvax');
+            $this->control_discount = 0;
 
+            add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
+        }
 
-      /**
-       * Constructor for your shipping class.
-       */
-      public function __construct($instance_id = 0) {
-          $this->id = 'delyvax';
-          $this->instance_id = absint($instance_id);
-          $this->method_title = __('DelyvaX', 'delyvax');  // Title shown in admin
-          $settings = get_option( 'woocommerce_delyvax_settings' );
-          if ($settings['api_token']) {
-              $this->method_description = __('<a href="https://www.delyva.com/solutions" target="_blank">DelyvaX</a> dynamic shipping rates at checkout.', 'delyvax');
-          } else {
-              $this->method_description = __('<h3 style="color:red"><b>NOTICE!</b> This app is not configured! Please contact your account manager.</h3>', 'delyvax');
-          }
-          $this->supports = array(
-              'shipping-zones',
-              'settings'
-          );
-          $this->init();
-          $this->enabled = isset($this->settings['enabled']) ? $this->settings['enabled'] : 'yes';
-          $this->title = isset($this->settings['title']) ? $this->settings['title'] : __('DelyvaX', 'delyvax');
-		  $this->control_discount = 0;
+        /**
+         * Check if the API token is valid
+         *
+         * @param string $token API token to validate
+         * @return boolean True if valid, false if invalid
+         */
+        public function is_valid_api_token($token) {
+            // Check if token starts with 'dx' and is followed by a 40-character hex string
+            // This pattern matches 'dx' followed by 40 hex characters
+            return (bool) preg_match('/^dx[0-9a-f]{40}$/', $token);
+        }
 
-          add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
-      }
+        /**
+         * Init your settings.
+         */
+        public function init()
+        {
+            // Load the settings API
+            $this->init_form_fields(); // This is part of the settings API. Override the method to add your own settings
+            $this->init_settings(); // This is part of the settings API. Loads settings you previously init.
+            add_filter('woocommerce_settings_tabs_array', __CLASS__ . '::add_settings_tab', 50);
+            // Save settings in admin if you have any defined
+            add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
+        }
 
-      /**
-       * Init your settings.
-       */
-      public function init() {
-          // Load the settings API
-          $this->init_form_fields(); // This is part of the settings API. Override the method to add your own settings
-          $this->init_settings(); // This is part of the settings API. Loads settings you previously init.
-          add_filter('woocommerce_settings_tabs_array', __CLASS__ . '::add_settings_tab', 50);
-          // Save settings in admin if you have any defined
-          add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
-      }
+        public static function add_settings_tab($settings_tabs)
+        {
+            $settings_tabs['shipping&section=delyvax'] = __('Delyvax', 'delyvax-shipping');
+            return $settings_tabs;
+        }
 
-      public static function add_settings_tab($settings_tabs) {
-          $settings_tabs['shipping&section=delyvax'] = __('Delyvax', 'delyvax-shipping');
-          return $settings_tabs;
-      }
+        //settings
+        public function init_form_fields()
+        {
+            $is_form_submission = (
+                isset($_SERVER['REQUEST_METHOD']) && 
+                $_SERVER['REQUEST_METHOD'] === 'POST' && 
+                isset($_POST['woocommerce_delyvax_api_token'])
+            );
 
-      //settings
-      public function init_form_fields() {
-          $this->form_fields = array(
-            array(
-                'title' => __( 'Settings', 'delyvax' ),
-                'type' => 'title',
-                'id' => 'delyvax_settings_title',
-            ),
-            'enable' => array(
-                'title'    	=> __( 'Shipping Rate', 'delyvax' ),
-                'id'       	=> 'delyvax_pricing_enable',
-                'description'  	=> __( 'Enable dynamic shipping rate on checkout', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> 'yes'
-            ),
-            'limit_service_options' => array(
-                'title' => __('Number of delivery service options', 'delyvax'),
-                'type' => 'text',
-                'default' => __('0', 'delyvax'),
-                'id' => 'delyvax_limit_service_options',
-                'description' => __( 'Limit delivery service options at the checkout page. 0 - no limit.' ),
-            ),
-            'create_shipment_on_paid' => array(
-                'title'    	=> __( 'After order has been paid', 'delyvax' ),
-                'id'       	=> 'delyvax_create_shipment_on_paid',
-                'description'  	=> __( 'After order has been paid, create and process the delivery order immediately OR only create delivery order and save as draft, then you can confirm the delivery order in the customer portal.', 'delyvax' ),
-                'default'	=> '',
-                'type'    => 'select',
-                'options' => array(
-                  '' => __( 'Save as draft', 'woocommerce' ),
-                  'yes' => __( 'Process immediately', 'woocommerce' ),
-                  'nothing' => __( 'Do nothing', 'woocommerce' )
-                )
-            ),
-            'create_shipment_on_confirm' => array(
-                'title'    	=> __( 'After order marked as preparing', 'delyvax' ),
-                'id'       	=> 'delyvax_create_shipment_on_confirm',
-                'description'  	=> __( 'After order has been marked as preparing, create and process the delivery order immediately OR only create delivery order and save as draft then, you can confirm the delivery order in the customer portal.', 'delyvax' ),
-                'default'	=> '',
-                'type'    => 'select',
-                'options' => array(
-                  '' => __( 'Save as draft', 'woocommerce' ),
-                  'yes' => __( 'Process immediately', 'woocommerce' ),
-                  'nothing' => __( 'Do nothing', 'woocommerce' )
-                )
-            ),
-            'company_id' => array(
-                'title' => __('Company ID', 'delyvax'),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_company_id',
-                'description' => __( 'DelyvaX Company ID (e.g. e44c7375-c4dc-47e9-8b24-70a28e024a83)' ),
-            ),
-            'company_code' => array(
-                'title' => __('Company Code', 'delyvax'),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_company_code',
-                'description' => __( 'DelyvaX Company Code (e.g. my)' ),
-            ),
-            'company_name' => array(
-                'title' => __('Company Name', 'delyvax'),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_company_name',
-                'description' => __( 'DelyvaX Company Name (e.g. Delyva)' ),
-            ),
-            'user_id' => array(
-                'title' => __('User ID', 'delyvax'),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_user_id',
-                'description' => __( 'DelyvaX User ID (e.g. d50d1780-aabc-11ea-8557-fb3ba8b0c74b)' ),
-            ),
-            'customer_id' => array(
-                'title' => __('Customer ID', 'delyvax'),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_customer_id',
-                'description' => __( 'DelyvaX Customer ID (e.g. 323)' ),
-            ),
-            'api_token' => array(
-                'title' => __('API token', 'delyvax'),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_api_token',
-                'description' => __( 'DelyvaX API Token (e.g. d50d1780-aabc-11ea-8557-fb3ba8b0c74b)' ),
-            ),
-            'api_webhook_enable' => array(
-                'title'    	=> __( 'Auto Change Order Status', 'delyvax' ),
-                'id'       	=> 'delyvax_api_webhook_enable',
-                'description'  	=> __( 'Enable API Webhook for status tracking updates', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> ''
-            ),
-            'multivendor' => array(
-                'title'    	=> __( 'Multi-vendor system', 'delyvax' ),
-                'default' => __('SINGLE', 'delyvax'),
-                'id' => 'delyvax_multivendor',
-                'description' => __( '' ),
-                'type'    => 'select',
-                'options' => array(
-                  'SINGLE' => __( 'Single vendor', 'woocommerce' ),
-                  'DOKAN' => __( 'Dokan', 'woocommerce' ),
-                  'WCFM' => __( 'WCFM', 'woocommerce' )
-                //   'MKING' => __( 'MarketKing', 'woocommerce' ),
-                )
-            ),
-            'shop_name' => array(
-                'title'    	=> __( 'Store - Contact Name', 'delyvax' ),
-                'type' => 'text',
-                'default' => __('Store name', 'delyvax'),
-                'id' => 'delyvax_shop_name',
-                'description' => __( 'e.g. John Woo' ),
-            ),
-            'shop_mobile' => array(
-                'title'    	=> __( 'Store - Contact Mobile No', 'delyvax' ),
-                'type' => 'text',
-                'default' => __('60129908855', 'delyvax'),
-                'id' => 'delyvax_shop_mobile',
-                'description' => __( 'e.g. 60129908855' ),
-            ),
-            'shop_email' => array(
-                'title'    	=> __( 'Store - Contact E-mail', 'delyvax' ),
-                'type' => 'text',
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_shop_email',
-                'description' => __( 'e.g. your@email.com' ),
-            ),
-            'shipping_phone' => array(
-                'title'    	=> __( 'Shipping phone', 'delyvax' ),
-                'default' => __('no', 'delyvax'),
-                'id' => 'delyvax_shipping_phone',
-                'description' => __( 'Enable shipping phone no field at the checkout page' ),
-                'type'    => 'select',
-                'options' => array(
-                  'no' => __( 'No', 'woocommerce' ),
-                  'yes' => __( 'Yes', 'woocommerce' )
-                )
-            ),
-            'item_type' => array(
-                'title'    	=> __( 'Default Order - Item type', 'delyvax' ),
-                'default' => __('PARCEL', 'delyvax'),
-                'id' => 'delyvax_item_type',
-                'description' => __( 'Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.' ),
-                'type'    => 'select',
-                'options' => array(
-                  'PARCEL' => __( 'PARCEL', 'woocommerce' ),
-                  'DOCUMENT' => __( 'DOCUMENT', 'woocommerce' ),
-                  'FOOD' => __( 'FOOD', 'woocommerce' ),
-                  'PACKAGE' => __( 'PACKAGE', 'woocommerce' ),
-                  'BULKY' => __( 'BULKY', 'woocommerce' ),
-                  'FROZEN' => __( 'FROZEN', 'woocommerce' ),
-                  'CHILLED' => __( 'CHILLED', 'woocommerce' ),
-                  'TEMP-CONTROL' => __( 'TEMP-CONTROL', 'woocommerce' )
-                )
-            ),
-            'processing_days' => array(
-                'title'    	=> __( 'Processing days', 'delyvax' ),
-                'default' => __('1', 'delyvax'),
-                'id' => 'delyvax_processing_days',
-                'description' => __( 'Number of processing days. e.g. 0 - same day ship out; 1 - next day ship out.' ),
-                'type'    => 'select',
-                'options' => array(
-                  '0' => __( 'Same day', 'woocommerce' ),
-                  '1' => __( 'Next (1) day', 'woocommerce' ),
-                  '2' => __( 'Next (2) day', 'woocommerce' ),
-                  '3' => __( 'Next (3) day', 'woocommerce' ),
-                  '4' => __( 'Next (4) day', 'woocommerce' ),
-                  '5' => __( 'Next (5) day', 'woocommerce' ),
-                  '6' => __( 'Next (6) day', 'woocommerce' ),
-                  '7' => __( 'Next (7) day', 'woocommerce' ),
-                )
-            ),
-            'processing_hours' => array(
-                'title'    	=> __( 'Processing hours', 'delyvax' ),
-                'default' => __('1', 'delyvax'),
-                'id' => 'delyvax_processing_hours',
-                'description' => __( 'Number of processing hours if processing day is 0. e.g. 0 - ship now; 1 - ship in 1 hour; 4 - ship in 4 hours.' ),
-                'type'    => 'select',
-                'options' => array(
-                  '0' => __( 'Now', 'woocommerce' ),
-                  '1' => __( 'Next (1) hour', 'woocommerce' ),
-                  '2' => __( 'Next (2) hours', 'woocommerce' ),
-                  '3' => __( 'Next (3) hours', 'woocommerce' ),
-                  '4' => __( 'Next (4) hours', 'woocommerce' ),
-                  '5' => __( 'Next (5) hours', 'woocommerce' ),
-                  '6' => __( 'Next (6) hours', 'woocommerce' ),
-                  '7' => __( 'Next (7) hours', 'woocommerce' ),
-                  '8' => __( 'Next (8) hours', 'woocommerce' ),
-                )
-            ),
-            'processing_time' => array(
-                'title'    	=> __( 'Processing time', 'delyvax' ),
-                'default' => __('11:00', 'delyvax'),
-                'id' => 'delyvax_processing_time',
-                'description' => __( 'If processing day is 1 or more, system will use this time as processing time and ignore processing hour. e.g. processing day: 1 and processing time: 11:00, delivery order will be scheduled to tomorrow at 11:00.' ),
-                'type'    => 'select',
-                'options' => array(
-                  '08:00' => __( '08:00', 'woocommerce' ),
-                  // '08:30' => __( '08:30', 'woocommerce' ),
-                  '09:00' => __( '09:00', 'woocommerce' ),
-                  // '09:30' => __( '09:30', 'woocommerce' ),
-                  '10:00' => __( '10:00', 'woocommerce' ),
-                  // '10:30' => __( '10:30', 'woocommerce' ),
-                  '11:00' => __( '11:00', 'woocommerce' ),
-                  // '11:30' => __( '11:30', 'woocommerce' ),
-                  '12:00' => __( '12:00', 'woocommerce' ),
-                  // '12:30' => __( '12:30', 'woocommerce' ),
-                  '13:00' => __( '13:00', 'woocommerce' ),
-                  // '13:30' => __( '13:30', 'woocommerce' ),
-                  '14:00' => __( '14:00', 'woocommerce' ),
-                  // '14:30' => __( '14:30', 'woocommerce' ),
-                  '15:00' => __( '15:00', 'woocommerce' ),
-                  // '15:30' => __( '15:30', 'woocommerce' ),
-                  '16:00' => __( '16:00', 'woocommerce' ),
-                  // '16:30' => __( '16:30', 'woocommerce' ),
-                  '17:00' => __( '17:00', 'woocommerce' ),
-                  // '17:30' => __( '17:30', 'woocommerce' ),
-                  '18:00' => __( '18:00', 'woocommerce' ),
-                  // '18:30' => __( '18:30', 'woocommerce' ),
-                  '19:00' => __( '19:00', 'woocommerce' ),
-                  // '19:30' => __( '19:30', 'woocommerce' ),
-                  '20:00' => __( '20:00', 'woocommerce' ),
-                  '21:00' => __( '21:00', 'woocommerce' ),
-                  '22:00' => __( '22:00', 'woocommerce' )
-                )
-            ),
-            'insurance_premium' => array(
-                'title'    	=> __( 'Insurance Premium', 'delyvax' ),
-                'id'       	=> 'delyvax_insurance_premium',
-                'description'  	=> __( 'Enable Insurance Premium - subject to additional charge', 'delyvax' ),
-                'type'     	=> 'checkbox',
-                'default'	=> 'no'
-            ),
-            'source' => array(
-                'title'    	=> __( 'Source of', 'delyvax' ),
-                'type' => 'text',
-                'default' => __('woocommerce', 'delyvax'),
-                'id' => 'delyvax_source',
-                'description' => __( 'Leave empty or type `woocommerce` or your web design agency code.' ),
-            ),
-            'include_order_note' => array(
-                'title'    	=> __( 'Order note', 'delyvax' ),
-                'default' => __('orderno', 'delyvax'),
-                'id' => 'delyvax_include_order_note',
-                'type'    => 'select',
-                'options' => array(
-                  'orderno' => __( 'Include order no.', 'woocommerce' ),
-                  'ordernproduct' => __( 'Include order no. + product info', 'woocommerce' ),
-                  'empty' => __( 'Empty', 'woocommerce' )
-                )
-            ),
-            'cancel_delivery' => array(
-                'title'    	=> __( 'Cancel delivery', 'delyvax' ),
-                'default' => __('no', 'delyvax'),
-                'id' => 'delyvax_cancel_delivery',
-                'description' => __( 'Cancel the delivery if the order is cancelled. Subject to cancellation rules by the courier.' ),
-                'type'    => 'select',
-                'options' => array(
-                  'no' => __( 'No', 'woocommerce' ),
-                  'yes' => __( 'Yes', 'woocommerce' )
-                )
-            ),
-            'cancel_order' => array(
-                'title'    	=> __( 'Cancel order', 'delyvax' ),
-                'default' => __('no', 'delyvax'),
-                'id' => 'delyvax_cancel_order',
-                'description' => __( 'Cancel the order if the delivery is cancelled.' ),
-                'type'    => 'select',
-                'options' => array(
-                  'no' => __( 'No', 'woocommerce' ),
-                  'yes' => __( 'Yes', 'woocommerce' )
-                )
-            ),
-            array(
-                'title' => __( 'Shipping Rate Adjustments', 'delyvax' ),
-                'type' => 'title',
-                'id' => 'wc_settings_delyvax_shipping_rate_adjustment',
-                'description' => __( 'Formula, shipping cost = shipping price + % rate + flat rate' ),
-            ),
-            'rate_currency_conversion' => array(
-                'title' => __('Currency Conversion Rate', 'delyvax'),
-                'type' => 'text',
-                'default' => __('1', 'delyvax'),
-                'id' => 'delyvax_rate_currency_conversion'
-            ),
-            'rate_adjustment_type' => array(
-                'title' => __('Rate Adjustment Type ("discount"/"markup")', 'delyvax'),
-                'default' => __('discount', 'delyvax'),
-                'id' => 'delyvax_rate_adjustment_type',
-                'type'    => 'select',
-                'options' => array(
-                  'discount' => __( 'Discount', 'woocommerce' ),
-                  'markup' => __( 'Markup', 'woocommerce' )
-                )
-            ),
-            'rate_adjustment_percentage' => array(
-                'title' => __('Percentage Rate %', 'delyvax'),
-                'type' => 'text',
-                'default' => __('0', 'delyvax'),
-                'id' => 'delyvax_rate_adjustment_percentage'
-            ),
-            'rate_adjustment_flat' => array(
-                'title' => __('Flat Rate', 'delyvax'),
-                'type' => 'text',
-                'default' => __('0', 'delyvax'),
-                'id' => 'delyvax_rate_adjustment_flat'
-            ),
-            array(
-                'title' => __( 'Free Shipping Conditions', 'delyvax' ),
-                'type' => 'title',
-                'id' => 'wc_settings_delyvax_free_shipping_title',
-                'description' => __( 'Match the following rule to allow free shipping' ),
-            ),
-            'free_shipping_type' => array(
-                'title' => __('Free Shipping Type', 'delyvax'),
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_free_shipping_type',
-                'type'    => 'select',
-                'options' => array(
-                  '' => __( 'Disable', 'woocommerce' ),
-                  'total_quantity' => __( 'Total Quantity', 'woocommerce' ),
-                  'total_amount' => __( 'Total Amount', 'woocommerce' )
-                )
-            ),
-            'free_shipping_condition' => array(
-                'title' => __('Condition', 'delyvax'),
-                'default' => __('', 'delyvax'),
-                'id' => 'delyvax_free_shipping_condition',
-                'type'    => 'select',
-                'options' => array(
-                  'gt' => __( 'Greater than', 'woocommerce' ),
-                  'gte' => __( 'Greater or equal', 'woocommerce' ),
-                  'eq' => __( 'Equal to', 'woocommerce' ),
-                  'lte' => __( 'Less than or equal', 'woocommerce' ),
-                  'lt' => __( 'Less than', 'woocommerce' ),
-                )
-            ),
-            'free_shipping_value' => array(
-                'title' => __('Value', 'delyvax'),
-                'type' => 'text',
-                'default' => __('0', 'delyvax'),
-                'id' => 'delyvax_free_shipping_value'
-            )
-          );
-      }
+            $settings = get_option('woocommerce_delyvax_settings', array());
+            $saved_api_token = isset($settings['api_token']) ? trim($settings['api_token']) : '';
+            $api_token = $saved_api_token;
+            
+            // If this is a form submission, use the submitted value instead
+            if ($is_form_submission) {
+                $api_token = trim($_POST['woocommerce_delyvax_api_token']);
+            }
 
-      //instant quote
-      /**
-       * calculate_shipping function.
-       *
-       * @param mixed $package
-       */
-      public function calculate_shipping($package = array())
-      {
+            if ($api_token) {
+                $this->method_description = __('<a href="https://www.delyva.com/solutions" target="_blank">DelyvaX</a> dynamic shipping rates at checkout.', 'delyvax');
+            } else {
+                $this->method_description = __('<h3 style="color:red"><b>NOTICE!</b> This app is not configured! Please contact your account manager.</h3>', 'delyvax');
+            }
+    
+            $settings = array(
+                array(
+                    'title' => __('Shipping Settings', 'delyvax'),
+                    'type' => 'title',
+                    'id' => 'delyvax_settings_title',
+                ),
+                'enable' => array(
+                    'title' => __('Shipping Rate', 'delyvax'),
+                    'id' => 'delyvax_pricing_enable',
+                    'description' => __('Enable dynamic shipping rate on checkout', 'delyvax'),
+                    'type' => 'checkbox',
+                    'default' => 'yes'
+                ),
+                'api_webhook_enable' => array(
+                    'title' => __('Auto Change Order Status', 'delyvax'),
+                    'id' => 'delyvax_api_webhook_enable',
+                    'description' => __('Enable API Webhook for status tracking updates', 'delyvax'),
+                    'type' => 'checkbox',
+                    'default' => ''
+                ),
+                'limit_service_options' => array(
+                    'title' => __('Number of delivery service options', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('0', 'delyvax'),
+                    'id' => 'delyvax_limit_service_options',
+                    'description' => __('Limit delivery service options at the checkout page. 0 - no limit.'),
+                ),
+                'create_shipment_on_paid' => array(
+                    'title' => __('After order has been paid', 'delyvax'),
+                    'id' => 'delyvax_create_shipment_on_paid',
+                    'description' => __('After order has been paid, create and process the delivery order immediately OR only create delivery order and save as draft, then you can confirm the delivery order in the customer portal.', 'delyvax'),
+                    'default' => '',
+                    'type' => 'select',
+                    'options' => array(
+                        '' => __('Save as draft', 'woocommerce'),
+                        'yes' => __('Process immediately', 'woocommerce'),
+                        'nothing' => __('Do nothing', 'woocommerce')
+                    )
+                ),
+                'create_shipment_on_confirm' => array(
+                    'title' => __('After order marked as preparing', 'delyvax'),
+                    'id' => 'delyvax_create_shipment_on_confirm',
+                    'description' => __('After order has been marked as preparing, create and process the delivery order immediately OR only create delivery order and save as draft then, you can confirm the delivery order in the customer portal.', 'delyvax'),
+                    'default' => '',
+                    'type' => 'select',
+                    'options' => array(
+                        '' => __('Save as draft', 'woocommerce'),
+                        'yes' => __('Process immediately', 'woocommerce'),
+                        'nothing' => __('Do nothing', 'woocommerce')
+                    )
+                ),
+                'multivendor' => array(
+                    'title' => __('Multi-vendor system', 'delyvax'),
+                    'default' => __('SINGLE', 'delyvax'),
+                    'id' => 'delyvax_multivendor',
+                    'description' => __(''),
+                    'type' => 'select',
+                    'options' => array(
+                        'SINGLE' => __('Single vendor', 'woocommerce'),
+                        'DOKAN' => __('Dokan', 'woocommerce'),
+                        'WCFM' => __('WCFM', 'woocommerce')
+                        //   'MKING' => __( 'MarketKing', 'woocommerce' ),
+                    )
+                ),
+                'shop_name' => array(
+                    'title' => __('Store - Contact Name', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('Store name', 'delyvax'),
+                    'id' => 'delyvax_shop_name',
+                    'description' => __('e.g. John Woo'),
+                ),
+                'shop_mobile' => array(
+                    'title' => __('Store - Contact Mobile No', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('60129908855', 'delyvax'),
+                    'id' => 'delyvax_shop_mobile',
+                    'description' => __('e.g. 60129908855'),
+                ),
+                'shop_email' => array(
+                    'title' => __('Store - Contact E-mail', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('', 'delyvax'),
+                    'id' => 'delyvax_shop_email',
+                    'description' => __('e.g. your@email.com'),
+                ),
+                'shipping_phone' => array(
+                    'title' => __('Shipping phone', 'delyvax'),
+                    'default' => __('yes', 'delyvax'),
+                    'id' => 'delyvax_shipping_phone',
+                    'description' => __('Validate shipping phone field at the checkout page (Required for Shipping)'),
+                    'type' => 'select',
+                    'options' => array(
+                        'no' => __('No', 'woocommerce'),
+                        'yes' => __('Yes', 'woocommerce')
+                    )
+                ),
+                'item_type' => array(
+                    'title' => __('Default Order - Item type', 'delyvax'),
+                    'default' => __('PARCEL', 'delyvax'),
+                    'id' => 'delyvax_item_type',
+                    'description' => __('Default order - package item type. e.g. DOCUMENT / PARCEL / FOOD / PACKAGE.'),
+                    'type' => 'select',
+                    'options' => array(
+                        'PARCEL' => __('PARCEL', 'woocommerce'),
+                        'DOCUMENT' => __('DOCUMENT', 'woocommerce'),
+                        'FOOD' => __('FOOD', 'woocommerce'),
+                        'PACKAGE' => __('PACKAGE', 'woocommerce'),
+                        'BULKY' => __('BULKY', 'woocommerce'),
+                        'FROZEN' => __('FROZEN', 'woocommerce'),
+                        'CHILLED' => __('CHILLED', 'woocommerce'),
+                        'TEMP-CONTROL' => __('TEMP-CONTROL', 'woocommerce')
+                    )
+                ),
+                'processing_days' => array(
+                    'title' => __('Processing days', 'delyvax'),
+                    'default' => __('1', 'delyvax'),
+                    'id' => 'delyvax_processing_days',
+                    'description' => __('Number of processing days. e.g. 0 - same day ship out; 1 - next day ship out.'),
+                    'type' => 'select',
+                    'options' => array(
+                        '0' => __('Same day', 'woocommerce'),
+                        '1' => __('Next (1) day', 'woocommerce'),
+                        '2' => __('Next (2) day', 'woocommerce'),
+                        '3' => __('Next (3) day', 'woocommerce'),
+                        '4' => __('Next (4) day', 'woocommerce'),
+                        '5' => __('Next (5) day', 'woocommerce'),
+                        '6' => __('Next (6) day', 'woocommerce'),
+                        '7' => __('Next (7) day', 'woocommerce'),
+                    )
+                ),
+                'processing_hours' => array(
+                    'title' => __('Processing hours', 'delyvax'),
+                    'default' => __('1', 'delyvax'),
+                    'id' => 'delyvax_processing_hours',
+                    'description' => __('Number of processing hours if processing day is 0. e.g. 0 - ship now; 1 - ship in 1 hour; 4 - ship in 4 hours.'),
+                    'type' => 'select',
+                    'options' => array(
+                        '0' => __('Now', 'woocommerce'),
+                        '1' => __('Next (1) hour', 'woocommerce'),
+                        '2' => __('Next (2) hours', 'woocommerce'),
+                        '3' => __('Next (3) hours', 'woocommerce'),
+                        '4' => __('Next (4) hours', 'woocommerce'),
+                        '5' => __('Next (5) hours', 'woocommerce'),
+                        '6' => __('Next (6) hours', 'woocommerce'),
+                        '7' => __('Next (7) hours', 'woocommerce'),
+                        '8' => __('Next (8) hours', 'woocommerce'),
+                    )
+                ),
+                'processing_time' => array(
+                    'title' => __('Processing time', 'delyvax'),
+                    'default' => __('11:00', 'delyvax'),
+                    'id' => 'delyvax_processing_time',
+                    'description' => __('If processing day is 1 or more, system will use this time as processing time and ignore processing hour. e.g. processing day: 1 and processing time: 11:00, delivery order will be scheduled to tomorrow at 11:00.'),
+                    'type' => 'select',
+                    'options' => array(
+                        '08:00' => __('08:00', 'woocommerce'),
+                        // '08:30' => __( '08:30', 'woocommerce' ),
+                        '09:00' => __('09:00', 'woocommerce'),
+                        // '09:30' => __( '09:30', 'woocommerce' ),
+                        '10:00' => __('10:00', 'woocommerce'),
+                        // '10:30' => __( '10:30', 'woocommerce' ),
+                        '11:00' => __('11:00', 'woocommerce'),
+                        // '11:30' => __( '11:30', 'woocommerce' ),
+                        '12:00' => __('12:00', 'woocommerce'),
+                        // '12:30' => __( '12:30', 'woocommerce' ),
+                        '13:00' => __('13:00', 'woocommerce'),
+                        // '13:30' => __( '13:30', 'woocommerce' ),
+                        '14:00' => __('14:00', 'woocommerce'),
+                        // '14:30' => __( '14:30', 'woocommerce' ),
+                        '15:00' => __('15:00', 'woocommerce'),
+                        // '15:30' => __( '15:30', 'woocommerce' ),
+                        '16:00' => __('16:00', 'woocommerce'),
+                        // '16:30' => __( '16:30', 'woocommerce' ),
+                        '17:00' => __('17:00', 'woocommerce'),
+                        // '17:30' => __( '17:30', 'woocommerce' ),
+                        '18:00' => __('18:00', 'woocommerce'),
+                        // '18:30' => __( '18:30', 'woocommerce' ),
+                        '19:00' => __('19:00', 'woocommerce'),
+                        // '19:30' => __( '19:30', 'woocommerce' ),
+                        '20:00' => __('20:00', 'woocommerce'),
+                        '21:00' => __('21:00', 'woocommerce'),
+                        '22:00' => __('22:00', 'woocommerce')
+                    )
+                ),
+                'insurance_premium' => array(
+                    'title' => __('Insurance Premium', 'delyvax'),
+                    'id' => 'delyvax_insurance_premium',
+                    'description' => __('Enable Insurance Premium - subject to additional charge', 'delyvax'),
+                    'type' => 'checkbox',
+                    'default' => 'no'
+                ),
+                'source' => array(
+                    'title' => __('Source of', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('woocommerce', 'delyvax'),
+                    'id' => 'delyvax_source',
+                    'description' => __('Leave empty or type `woocommerce` or your web design agency code.'),
+                ),
+                'include_order_note' => array(
+                    'title' => __('Order note', 'delyvax'),
+                    'default' => __('orderno', 'delyvax'),
+                    'id' => 'delyvax_include_order_note',
+                    'type' => 'select',
+                    'options' => array(
+                        'orderno' => __('Include order no.', 'woocommerce'),
+                        'ordernproduct' => __('Include order no. + product info', 'woocommerce'),
+                        'empty' => __('Empty', 'woocommerce')
+                    )
+                ),
+                'cancel_delivery' => array(
+                    'title' => __('Cancel delivery', 'delyvax'),
+                    'default' => __('no', 'delyvax'),
+                    'id' => 'delyvax_cancel_delivery',
+                    'description' => __('Cancel the delivery if the order is cancelled. Subject to cancellation rules by the courier.'),
+                    'type' => 'select',
+                    'options' => array(
+                        'no' => __('No', 'woocommerce'),
+                        'yes' => __('Yes', 'woocommerce')
+                    )
+                ),
+                'cancel_order' => array(
+                    'title' => __('Cancel order', 'delyvax'),
+                    'default' => __('no', 'delyvax'),
+                    'id' => 'delyvax_cancel_order',
+                    'description' => __('Cancel the order if the delivery is cancelled.'),
+                    'type' => 'select',
+                    'options' => array(
+                        'no' => __('No', 'woocommerce'),
+                        'yes' => __('Yes', 'woocommerce')
+                    )
+                ),
+                array(
+                    'title' => __('Shipping Rate Adjustments', 'delyvax'),
+                    'type' => 'title',
+                    'id' => 'wc_settings_delyvax_shipping_rate_adjustment',
+                    'description' => __('Formula, shipping cost = shipping price + % rate + flat rate'),
+                ),
+                'rate_currency_conversion' => array(
+                    'title' => __('Currency Conversion Rate', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('1', 'delyvax'),
+                    'id' => 'delyvax_rate_currency_conversion'
+                ),
+                'rate_adjustment_type' => array(
+                    'title' => __('Rate Adjustment Type ("discount"/"markup")', 'delyvax'),
+                    'default' => __('discount', 'delyvax'),
+                    'id' => 'delyvax_rate_adjustment_type',
+                    'type' => 'select',
+                    'options' => array(
+                        'discount' => __('Discount', 'woocommerce'),
+                        'markup' => __('Markup', 'woocommerce')
+                    )
+                ),
+                'rate_adjustment_percentage' => array(
+                    'title' => __('Percentage Rate %', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('0', 'delyvax'),
+                    'id' => 'delyvax_rate_adjustment_percentage'
+                ),
+                'rate_adjustment_flat' => array(
+                    'title' => __('Flat Rate', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('0', 'delyvax'),
+                    'id' => 'delyvax_rate_adjustment_flat'
+                ),
+                array(
+                    'title' => __('Free Shipping Conditions', 'delyvax'),
+                    'type' => 'title',
+                    'id' => 'wc_settings_delyvax_free_shipping_title',
+                    'description' => __('Match the following rule to allow free shipping'),
+                ),
+                'free_shipping_type' => array(
+                    'title' => __('Free Shipping Type', 'delyvax'),
+                    'default' => __('', 'delyvax'),
+                    'id' => 'delyvax_free_shipping_type',
+                    'type' => 'select',
+                    'options' => array(
+                        '' => __('Disable', 'woocommerce'),
+                        'total_quantity' => __('Total Quantity', 'woocommerce'),
+                        'total_amount' => __('Total Amount', 'woocommerce')
+                    )
+                ),
+                'free_shipping_condition' => array(
+                    'title' => __('Condition', 'delyvax'),
+                    'default' => __('', 'delyvax'),
+                    'id' => 'delyvax_free_shipping_condition',
+                    'type' => 'select',
+                    'options' => array(
+                        'gt' => __('Greater than', 'woocommerce'),
+                        'gte' => __('Greater or equal', 'woocommerce'),
+                        'eq' => __('Equal to', 'woocommerce'),
+                        'lte' => __('Less than or equal', 'woocommerce'),
+                        'lt' => __('Less than', 'woocommerce'),
+                    )
+                ),
+                'free_shipping_value' => array(
+                    'title' => __('Value', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('0', 'delyvax'),
+                    'id' => 'delyvax_free_shipping_value'
+                ),
+            );
+
+            $integration_settings = array(
+                array(
+                    'title' => __('Integration Settings', 'delyvax'),
+                    'type' => 'title',
+                    'id' => 'wc_settings_delyvax_advanced_settings',
+                    'description' => __('Integration settings for DelyvaX shipping method'),
+                ),
+                'customer_id' => array(
+                    'title' => __('Customer ID', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('', 'delyvax'),
+                    'id' => 'delyvax_customer_id',
+                    'description' => __('DelyvaX Customer ID (e.g. 323)'),
+                ),
+                'api_token' => array(
+                    'title' => __('API token', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('', 'delyvax'),
+                    'id' => 'delyvax_api_token',
+                    'description' => __('DelyvaX API Token (e.g. dx4d1234567890dex1231231adf21sdsa)'),
+                ),
+                'company_code' => array(
+                    'title' => __('Company Code', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('my', 'delyvax'),
+                    'id' => 'delyvax_company_code',
+                    'description' => __('DelyvaX Company Code (e.g. my)'),
+                ),
+                'company_name' => array(
+                    'title' => __('Company Name', 'delyvax'),
+                    'type' => 'text',
+                    'default' => __('', 'delyvax'),
+                    'id' => 'delyvax_company_name',
+                    'description' => __('DelyvaX Company Name (e.g. Delyva)'),
+                ),
+            );
+
+            $this->form_fields = array_merge($integration_settings, $settings);
+        }
+
+        //instant quote
+        /**
+         * calculate_shipping function.
+         *
+         * @param mixed $package
+         */
+        public function calculate_shipping($package = array())
+        {
+            if ($this->enabled == 'no') {
+                return;
+            }
+
+            // Check if HPOS is enabled
+            if (!class_exists('Automattic\WooCommerce\Utilities\OrderUtil')) {
+                return;
+            }
+
             $status_allow_checkout = true;
 
-            $settings = get_option( 'woocommerce_delyvax_settings' );
+            $settings = get_option('woocommerce_delyvax_settings');
             $multivendor_option = $settings['multivendor'];
 
             $checkout_pricing_enable = $settings['enable'];
 
-            if($checkout_pricing_enable != 'yes')
-            {
+            if ($checkout_pricing_enable != 'yes') {
                 return;
             }
 
@@ -423,7 +462,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $volumetric_constant = $settings['volumetric_constant'] ?? '5000';
             $insurance_premium = $settings['insurance_premium'] ?? '';
 
-            $limit_service_options = $settings['limit_service_options'] ?? '0';
+            $limit_service_options = empty($settings['limit_service_options']) ? 0 : intval($settings['limit_service_options']);
 
             $pdestination = $package["destination"];
             $items = array();
@@ -464,8 +503,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 unset($discount_for_item);
             }
 
-            if($total_discount > 0)
-            {
+            if ($total_discount > 0) {
                 $total_amount = $total_amount - $total_discount;
             }
 
@@ -511,12 +549,12 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     $total_weight = $total_weight + $this->defaultWeight($this->weightToKg($product->get_weight()));
 
                     $total_dimension = $total_dimension + ($this->defaultDimension($this->dimensionToCm($product->get_width()))
-                          * $this->defaultDimension($this->dimensionToCm($product->get_length()))
-                          * $this->defaultDimension($this->dimensionToCm($product->get_height())));
+                        * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                        * $this->defaultDimension($this->dimensionToCm($product->get_height())));
 
                     $total_volumetric_weight = $total_volumetric_weight + (($this->defaultDimension($this->dimensionToCm($product->get_width()))
-                          * $this->defaultDimension($this->dimensionToCm($product->get_length()))
-                          * $this->defaultDimension($this->dimensionToCm($product->get_height())))/$volumetric_constant);
+                        * $this->defaultDimension($this->dimensionToCm($product->get_length()))
+                        * $this->defaultDimension($this->dimensionToCm($product->get_height()))) / $volumetric_constant);
                 }
 
                 $total_quantity = $total_quantity + $item["quantity"];
@@ -537,7 +575,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             }
 
             if (method_exists(WC()->cart, 'get_cart_contents_total')) {
-                $total_cart_with_discount = (float)WC()->cart->get_cart_contents_total();
+                $total_cart_with_discount = (float) WC()->cart->get_cart_contents_total();
             } else {
                 $total_cart_with_discount = WC()->cart->cart_contents_total;
             }
@@ -552,35 +590,31 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             }
 
             // The main address pieces:
-            $store_address_1     = get_option( 'woocommerce_store_address' );
-            $store_address_2   = get_option( 'woocommerce_store_address_2' );
-            $store_city        = get_option( 'woocommerce_store_city' );
-            $store_postcode    = get_option( 'woocommerce_store_postcode' );
+            $store_address_1 = get_option('woocommerce_store_address');
+            $store_address_2 = get_option('woocommerce_store_address_2');
+            $store_city = get_option('woocommerce_store_city');
+            $store_postcode = get_option('woocommerce_store_postcode');
 
             // The country/state
-            $store_raw_country = get_option( 'woocommerce_default_country' );
+            $store_raw_country = get_option('woocommerce_default_country');
 
             // Split the country/state
-            $split_country = explode( ":", $store_raw_country );
+            $split_country = explode(":", $store_raw_country);
 
             // Country and state separated:
             $store_country = $split_country[0];
-            $store_state   = $split_country[1];
+            $store_state = $split_country[1];
 
             $origin_lat = null;
             $origin_lon = null;
 
-            if($multivendor_option == 'DOKAN')
-            {
-                if(function_exists('dokan_get_seller_id_by_order') && function_exists('dokan_get_store_info'))
-                {
+            if ($multivendor_option == 'DOKAN') {
+                if (function_exists('dokan_get_seller_id_by_order') && function_exists('dokan_get_store_info')) {
                     $seller_id = $package['seller_id'];
 
-                    if($seller_id)
-                    {
-                        $store_info = dokan_get_store_info( $seller_id );
-                        if($store_info)
-                        {
+                    if ($seller_id) {
+                        $store_info = dokan_get_store_info($seller_id);
+                        if ($store_info) {
                             $store_name = $store_info['store_name'];
                             $store_phone = $store_info['phone'];
                             $store_email = $store_info['email'];
@@ -596,36 +630,32 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                         }
                     }
                 }
-            }else if($multivendor_option == 'WCFM')
-            {
-                if(function_exists('wcfm_get_vendor_id_by_post'))
-                {
-                    $vendor_id = wcfm_get_vendor_id_by_post( $product_id );
+            } else if ($multivendor_option == 'WCFM') {
+                if (function_exists('wcfm_get_vendor_id_by_post')) {
+                    $vendor_id = wcfm_get_vendor_id_by_post($product_id);
 
-                    $store_info = get_user_meta( $vendor_id, 'wcfmmp_profile_settings', true );
+                    $store_info = get_user_meta($vendor_id, 'wcfmmp_profile_settings', true);
 
-                    if($store_info)
-                    {
+                    if ($store_info) {
                         $store_name = $store_info['store_name'];
                         $store_phone = $store_info['phone'];
                         $store_email = $store_info['store_email'] ? $store_info['store_email'] : $store_info['customer_support']['email'];
-                        $store_address_1 = isset( $store_info['address']['street_1'] ) ? $store_info['address']['street_1'] : '';
-                        $store_address_2 = isset( $store_info['address']['street_2'] ) ? $store_info['address']['street_2'] : '';
-                        $store_city     = isset( $store_info['address']['city'] ) ? $store_info['address']['city'] : '';
-                        $store_state    = isset( $store_info['address']['state'] ) ? $store_info['address']['state'] : '';
-                        $store_postcode      = isset( $store_info['address']['zip'] ) ? $store_info['address']['zip'] : '';
-                        $store_country  = isset( $store_info['address']['country'] ) ? $store_info['address']['country'] : '';
+                        $store_address_1 = isset($store_info['address']['street_1']) ? $store_info['address']['street_1'] : '';
+                        $store_address_2 = isset($store_info['address']['street_2']) ? $store_info['address']['street_2'] : '';
+                        $store_city = isset($store_info['address']['city']) ? $store_info['address']['city'] : '';
+                        $store_state = isset($store_info['address']['state']) ? $store_info['address']['state'] : '';
+                        $store_postcode = isset($store_info['address']['zip']) ? $store_info['address']['zip'] : '';
+                        $store_country = isset($store_info['address']['country']) ? $store_info['address']['country'] : '';
 
                         $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
                         $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
                     }
                 }
-            }else if($multivendor_option == 'MKING')
-            {                
-                $vendor_id = marketking()->get_product_vendor( $product_id );
+            } else if ($multivendor_option == 'MKING') {
+                $vendor_id = marketking()->get_product_vendor($product_id);
 
                 // $company = get_user_meta($vendor_id, 'billing_company', true);      
-                $store_name = marketking()->get_store_name_display($vendor_id);              
+                $store_name = marketking()->get_store_name_display($vendor_id);
                 // $store_name = get_user_meta($vendor_id, 'marketking_store_name', true);
                 $store_phone = get_user_meta($vendor_id, 'billing_phone', true);
                 // $store_email = get_user_meta($vendor_id, 'billing_email', true);
@@ -638,10 +668,10 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 $store_state = get_user_meta($vendor_id, 'billing_postcode', true);
                 $store_postcode = get_user_meta($vendor_id, 'billing_state', true);
                 $store_country = get_user_meta($vendor_id, 'billing_country', true);
-                
+
                 // $origin_lat = isset($store_info['address']['lat']) ? $store_info['address']['lat'] : null;
                 // $origin_lon = isset($store_info['address']['lon']) ? $store_info['address']['lon'] : null;
-            }else {
+            } else {
                 // echo 'no multivendor';
             }
 
@@ -659,8 +689,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 // )
             );
 
-            if($origin_lat && $origin_lon)
-            {
+            if ($origin_lat && $origin_lon) {
                 $origin['coord']['lat'] = $origin_lat;
                 $origin['coord']['lon'] = $origin_lon;
             }
@@ -683,8 +712,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
             $destination_lat = isset($pdestination['lat']) ? $pdestination['lat'] : null;
             $destination_lon = isset($pdestination['lon']) ? $pdestination['lon'] : null;
 
-            if($destination_lat && $destination_lon)
-            {
+            if ($destination_lat && $destination_lon) {
                 $destination['coord']['lat'] = $destination_lat;
                 $destination['coord']['lon'] = $destination_lon;
             }
@@ -696,46 +724,40 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
             //
             $weight = array(
-              "value" => $total_weight,
-              "unit" => 'kg'
+                "value" => $total_weight,
+                "unit" => 'kg'
             );
 
             //
             $cod = array(
-              "id"=> -1,
-              "qty"=> 1,
-          		"value"=> $total_amount
+                "id" => -1,
+                "qty" => 1,
+                "value" => $total_amount
             );
 
             $insurance = array(
-              "id"=> -3,
-              "qty"=> 1,
-          		"value"=> $total_amount
+                "id" => -3,
+                "qty" => 1,
+                "value" => $total_amount
             );
 
             $addons = array();
             array_push($addons, $cod);
 
-            if($insurance_premium == 'yes')
-            {
+            if ($insurance_premium == 'yes') {
                 array_push($addons, $insurance);
-            }
-
-            //start DelyvaX API
-            if (!class_exists('DelyvaX_Shipping_API')) {
-                include_once 'delyvax-api.php';
             }
 
             $rates = array();
 
             try {
                 //if domestic delivery must have postcode, else
-                if( ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && strlen($pdestination["postcode"]) >= 3)
-                    || ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && ($store_country != $pdestination["country"]) )
-                  )
-                {
+                if (
+                    ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && strlen($pdestination["postcode"]) >= 3)
+                    || ($total_weight > 0 && strlen($store_country) >= 2 && strlen($pdestination["country"]) >= 2 && ($store_country != $pdestination["country"]))
+                ) {
                     $rates = DelyvaX_Shipping_API::getPriceQuote($origin, $destination, $weight, $addons, $inventories);
-                }else {
+                } else {
                     $status_allow_checkout = false;
                 }
             } catch (Exception $e) {
@@ -743,150 +765,116 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                 $status_allow_checkout = false;
             }
 
-            if(isset($rates['services']))
-            {
-				        $services = $rates['services'];
+            if (isset($rates['services'])) {
+                $services = $rates['services'];
 
-                if(sizeof($services) > 0)
-                {
-                      $serviceCount = 0;
-              				foreach ($services as $shipper)
-                      {
-              					  if (isset($shipper['service']['name']))
-                          {
-                              $cost = round($shipper['price']['amount'], 2);
+                if (sizeof($services) > 0) {
+                    $serviceCount = 0;
+                    foreach ($services as $shipper) {
+                        if (isset($shipper['service']['name'])) {
+                            $cost = floatval($shipper['price']['amount']);
+                            $rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
+                            $ra_percentage = floatval($settings['rate_adjustment_percentage'] ?? 1);
+                            $percentRate = $ra_percentage / 100 * $cost;
+                            $flatRate = floatval($settings['rate_adjustment_flat'] ?? 0);
 
-                  						$rate_adjustment_type = $settings['rate_adjustment_type'] ?? 'discount';
+                            if ($rate_adjustment_type == 'markup') {
+                                $cost = round($cost + $percentRate + $flatRate, 2);
+                            } else {
+                                $cost = round($cost - $percentRate - $flatRate, 2);
+                            }
 
-                  						$ra_percentage = $settings['rate_adjustment_percentage'] ?? 1;
-                  						$percentRate = $ra_percentage / 100 * $shipper['price']['amount'];
+                            //free shipping
+                            $free_shipping_type = $settings['free_shipping_type'] ?? '';
+                            $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
+                            $free_shipping_value = $settings['free_shipping_value'] ?? '';
 
-                  						$flatRate = $settings['rate_adjustment_flat'] ?? 0;
+                            if ($free_shipping_type == 'total_quantity') {
+                                if ($free_shipping_condition == '>' || $free_shipping_condition == 'gt') {
+                                    if ($total_quantity > $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '>=' || $free_shipping_condition == 'gte') {
+                                    if ($total_quantity >= $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '==' || $free_shipping_condition == 'eq') {
+                                    if ($total_quantity == $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '<=' || $free_shipping_condition == 'lte') {
+                                    if ($total_quantity <= $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '<' || $free_shipping_condition == 'lt') {
+                                    if ($total_quantity < $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                }
+                            } else if ($free_shipping_type == 'total_amount') {
+                                if ($free_shipping_condition == '>' || $free_shipping_condition == 'gt') {
+                                    if ($total_amount > $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '>=' || $free_shipping_condition == 'gte') {
+                                    if ($total_amount >= $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '==' || $free_shipping_condition == 'eq') {
+                                    if ($total_amount == $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '<=' || $free_shipping_condition == 'lte') {
+                                    if ($total_amount <= $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                } else if ($free_shipping_condition == '<' || $free_shipping_condition == 'lt') {
+                                    if ($total_amount < $free_shipping_value) {
+                                        $cost = 0;
+                                    }
+                                }
+                            }
 
-                  						if($rate_adjustment_type == 'markup')
-                  						{
-                  							$cost = round($shipper['price']['amount'] + $percentRate + $flatRate, 2);
-                  						}else {
-                  							$cost = round($shipper['price']['amount'] - $percentRate - $flatRate, 2);
-                  						}
+                            //convert currency
+                            if ($cost > 0) {
+                                $cost = $cost * floatval(empty($settings['rate_currency_conversion']) ? 1 : $settings['rate_currency_conversion']);
+                            }
 
-                              //free shipping
-                              $free_shipping_type = $settings['free_shipping_type'] ?? '';
-                              $free_shipping_condition = $settings['free_shipping_condition'] ?? '';
-                              $free_shipping_value = $settings['free_shipping_value'] ?? '';
+                            $service_label = $shipper['service']['name'];
+                            if ($service_label) {
+                                $service_label = str_replace('(DROP)', '', $service_label);
+                                $service_label = str_replace('(PICKUP)', '', $service_label);
+                                $service_label = str_replace('(PARCEL)', '', $service_label);
+                            }
+                            if ($cost == 0) {
+                                $service_label = $service_label . ': Free';
+                            }
 
-                              if($free_shipping_type == 'total_quantity')
-                              {
-                                  if($free_shipping_condition == '>' || $free_shipping_condition == 'gt')
-                                  {
-                                      if($total_quantity > $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '>=' || $free_shipping_condition == 'gte')
-                                  {
-                                      if($total_quantity >= $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '==' || $free_shipping_condition == 'eq')
-                                  {
-                                      if($total_quantity == $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '<=' || $free_shipping_condition == 'lte')
-                                  {
-                                      if($total_quantity <= $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '<' || $free_shipping_condition == 'lt')
-                                  {
-                                      if($total_quantity < $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }
-                              }else if($free_shipping_type == 'total_amount')
-                              {
-                                  if($free_shipping_condition == '>' || $free_shipping_condition == 'gt')
-                                  {
-                                      if($total_amount > $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '>=' || $free_shipping_condition == 'gte')
-                                  {
-                                      if($total_amount >= $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '==' || $free_shipping_condition == 'eq')
-                                  {
-                                      if($total_amount == $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '<=' || $free_shipping_condition == 'lte')
-                                  {
-                                      if($total_amount <= $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }else if($free_shipping_condition == '<' || $free_shipping_condition == 'lt')
-                                  {
-                                      if($total_amount < $free_shipping_value)
-                                      {
-                                         $cost = 0;
-                                      }
-                                  }
-                              }
+                            $service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
 
-                              //convert currency
-                              if($cost > 0)
-                              {
-                                    $cost = $cost * $settings['rate_currency_conversion'] ?? 1;
-                              }
-
-                  						$service_label = $shipper['service']['name'];
-                  						$service_label = str_replace('(DROP)', '', $service_label);
-                  						$service_label = str_replace('(PICKUP)', '', $service_label);
-                                        $service_label = str_replace('(PARCEL)', '', $service_label);
-                  						// $service_label = str_replace('(COD)', '', $service_label);
-
-                              if($cost == 0)
-                              {
-                                  $service_label = $service_label.': Free';
-                              }
-
-                              $service_code = $shipper['service']['serviceCompany']['companyCode'] ? $shipper['service']['serviceCompany']['companyCode'] : $shipper['service']['code'];
-                            
-                              $rate = array(
+                            $rate = array(
                                 'id' => $service_code,
                                 'label' => $service_label,
                                 'cost' => $cost,
                                 'taxes' => 'false',
                                 'calc_tax' => 'per_order',
                                 'meta_data' => array(
-                                  'service_code' => $service_code,
+                                    'service_code' => $service_code,
                                 ),
-                              );
+                            );
 
-                              if($limit_service_options == 0 || $serviceCount < $limit_service_options)
-                              {
-                                  if($status_allow_checkout)
-                      						{
-                      							// Register the rate
-                      							wp_cache_add('delyvax' . $rate["id"], $rate);
-                      							$this->add_rate($rate);
-                      						}
-                              }
-                          }
+                            if ($limit_service_options == 0 || $serviceCount < $limit_service_options) {
+                                if ($status_allow_checkout) {
+                                    // Register the rate
+                                    wp_cache_add('delyvax' . $rate["id"], $rate);
+                                    $this->add_rate($rate);
+                                }
+                            }
+                        }
 
-                          $serviceCount++;
-              				}
-              	}
+                        $serviceCount++;
+                    }
+                }
             }
             //end DelyvaX API
         }
@@ -894,8 +882,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
         protected function weightToKg($weight)
         {
             $weight_unit = get_option('woocommerce_weight_unit');
-            if($weight > 0)
-            {
+            if ($weight > 0) {
                 // convert other unit into kg
                 if ($weight_unit != 'kg') {
                     if ($weight_unit == 'g') {
@@ -914,8 +901,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
         protected function dimensionToCm($length)
         {
             $dimension_unit = get_option('woocommerce_dimension_unit');
-            if($length > 0)
-            {
+            if ($length > 0) {
                 // convert other units into cm
                 if ($dimension_unit != 'cm') {
                     if ($dimension_unit == 'm') {
@@ -947,33 +933,30 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
 
         protected function setDiscountForItem($count)
         {
-            if($this->control_discount && $count > 0)
-            {
+            if ($this->control_discount && $count > 0) {
                 $this->discount_for_item = $count;
             }
         }
 
         protected function getDiscountForItem()
         {
-            if($this->control_discount)
-            {
+            if ($this->control_discount) {
                 return $this->discount_for_item;
             }
         }
 
         protected function addControlDiscount($val)
         {
-            if($this->control_discount && $val > 0)
-            {
+            if ($this->control_discount && $val > 0) {
                 $this->control_discount += $val;
-            }else {
+            } else {
                 return 0;
             }
         }
 
         protected function declaredCustomsValue($subtotal, $count)
         {
-            $price = (float)(($subtotal / $count) * ((100 - $this->getDiscountForItem()) / 100));
+            $price = (float) (($subtotal / $count) * ((100 - $this->getDiscountForItem()) / 100));
             $price = round($price, 2);
             $this->addControlDiscount($price);
             return $price;

@@ -1,7 +1,8 @@
 <?php
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+defined( 'ABSPATH' ) or die();
 
-add_action( 'woocommerce_process_shop_order_meta', 'delyvax_meta_save', 10, 1 );
+add_action('woocommerce_admin_order_data_after_order_details', 'delyvax_meta_save', 10, 1);
+add_action('woocommerce_admin_order_data_after_order_details', 'admin_order_delyvax_metabox', 20, 1);
 
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 
@@ -26,11 +27,10 @@ function admin_order_delyvax_metabox() {
 function delyvax_show_box( $object ) {
     // Get the WC_Order object
     $order = is_a( $object, 'WP_Post' ) ? wc_get_order( $object->ID ) : $object;
-    //$order = wc_get_order ( $post->ID );
+	// $order = wc_get_order ( $post->ID );
 	// $TrackingCode = isset( $post->TrackingCode ) ? $post->TrackingCode : '';
 
 	$settings = get_option( 'woocommerce_delyvax_settings' );
-	$company_id = $settings['company_id'];
 	$company_code = $settings['company_code'];
 	$company_name = $settings['company_name'];
 	$create_shipment_on_paid = $settings['create_shipment_on_paid'];
@@ -48,15 +48,15 @@ function delyvax_show_box( $object ) {
 	if ( only_virtual_order_items( $order ) ) return; 
 	//
 
-	$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
+	$delyvax_order_id = $order->get_meta( 'DelyvaXOrderID' );
 	$TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
 
 	$DelyvaXServiceCode = $order->get_meta( 'DelyvaXServiceCode' );
 
-	$DelyvaXError = $order->get_meta( 'DelyvaXError' );	
+	$delyvax_error = $order->get_meta( 'delyvax_error' );	
 
 	$trackUrl = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$TrackingCode;
-	$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$DelyvaXOrderID.'/label?companyId='.$company_id;
+	$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$delyvax_order_id.'/label';
 	
 	//processing
 	if ( $order->has_status(array('processing'))) {
@@ -68,7 +68,7 @@ function delyvax_show_box( $object ) {
 
 			$adxservices = array();
 
-			if($DelyvaXOrderID != null && !$DelyvaXServices)
+			if($delyvax_order_id != null && !$DelyvaXServices)
 			{
 				$order = delyvax_get_order_services($order);
 				$DelyvaXServices = $order->get_meta( 'DelyvaXServices' );
@@ -79,11 +79,11 @@ function delyvax_show_box( $object ) {
 				$adxservices = json_decode($DelyvaXServices);
 			}
 
-			if($DelyvaXError) {
-				echo "Error: ".$DelyvaXError;
+			if($delyvax_error) {
+				echo "Error: ".$delyvax_error;
 			}
 
-			if($DelyvaXOrderID != null && sizeof($adxservices) > 0) {
+			if($delyvax_order_id != null && sizeof($adxservices) > 0) {
 				delyvax_get_services_select($adxservices, $DelyvaXServiceCode);
 
 				echo '<p><button id="fulfill-button" onclick="
@@ -103,7 +103,7 @@ function delyvax_show_box( $object ) {
 		}	
 	//preparing
 	} else if ( $order->has_status( array( 'preparing' )) ) {
-		if($DelyvaXOrderID != null && $TrackingCode != null){
+		if($delyvax_order_id != null && $TrackingCode != null){
 			echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
 			echo "<div><p>
 				<a href=\"".$printLabelUrl."\" class=\"button button-primary\" target=\"_blank\">Print label</a>
@@ -119,7 +119,7 @@ function delyvax_show_box( $object ) {
     				</div>";
 		}
 	}else if ( $order->has_status( array( 'completed' ) ) ) {
-		if($DelyvaXOrderID != null && $TrackingCode != null){
+		if($delyvax_order_id != null && $TrackingCode != null){
 			echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
 			echo "<div><p>
 				<a href=\"".$trackUrl."\" class=\"button button-primary\" target=\"_blank\">Track shipment</a>
@@ -127,7 +127,7 @@ function delyvax_show_box( $object ) {
 		}
 	//others
 	}else {
-		if($DelyvaXOrderID != null && $TrackingCode != null){
+		if($delyvax_order_id != null && $TrackingCode != null){
 			echo 'Tracking No.: <b>'.$TrackingCode.'</b>';
 			echo "<div><p>
 				<a href=\"".$printLabelUrl."\" class=\"button button-primary\" target=\"_blank\">Print label</a>
@@ -179,19 +179,19 @@ function delyvax_get_order_services( $order ) {
 
 	$user = $order->get_user();
 
-	$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
+	$delyvax_order_id = $order->get_meta( 'DelyvaXOrderID' );
 
 	$dxorder = null;
 	$services = array();
 	
-	if($DelyvaXOrderID)
+	if($delyvax_order_id)
 	{
-		$dxorder = DelyvaX_Shipping_API::getOrderQuotesByOrderId($DelyvaXOrderID);
+		$dxorder = DelyvaX_Shipping_API::getOrderQuotesByOrderId($delyvax_order_id);
 	}else {
 		delyvax_create_order($order, $user, false);
 
-		$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
-		$dxorder = DelyvaX_Shipping_API::getOrderQuotesByOrderId($DelyvaXOrderID);
+		$delyvax_order_id = $order->get_meta( 'DelyvaXOrderID' );
+		$dxorder = DelyvaX_Shipping_API::getOrderQuotesByOrderId($delyvax_order_id);
 	}
 
 	if($dxorder)
@@ -257,13 +257,13 @@ function delyvax_update_service($order, $service_code)
         include_once 'delyvax-api.php';
     }
 
-	$DelyvaXOrderID = $order->get_meta( 'DelyvaXOrderID' );
+	$delyvax_order_id = $order->get_meta( 'DelyvaXOrderID' );
 
-	if ($DelyvaXOrderID) {
+	if ($delyvax_order_id) {
 		$postRequestArr = [
 			"serviceCode" => $service_code,
 		];
 
-		$resultProcess = DelyvaX_Shipping_API::updateOrderData($order, $DelyvaXOrderID, $postRequestArr);
+		$resultProcess = DelyvaX_Shipping_API::updateOrderData($order, $delyvax_order_id, $postRequestArr);
 	}
 }
