@@ -9,54 +9,149 @@ use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableControlle
 // Add a delyva metabox
 add_action( 'add_meta_boxes', 'admin_order_delyvax_metabox' );
 function admin_order_delyvax_metabox() {
-    $screen = class_exists( '\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController' ) && wc_get_container()->get( CustomOrdersTableController::class )->custom_orders_table_usage_is_enabled()
-        ? wc_get_page_screen_id( 'shop-order' )
-        : 'shop_order';
+    // Check if WooCommerce is active
+    if ( ! class_exists( 'WooCommerce' ) ) {
+        return;
+    }
 
-    add_meta_box(
-        'DelyvaMetaBox',
-        'Delyva',
-        'delyvax_show_box',
-        $screen,
-        'side',
-        'high'
-    );
+    // Check if we're in admin area
+    if ( ! is_admin() ) {
+        return;
+    }
+
+    // Check if add_meta_box function is available
+    if ( ! function_exists( 'add_meta_box' ) ) {
+        return;
+    }
+
+    // Get current screen
+    $screen = get_current_screen();
+    if ( ! $screen ) {
+        return;
+    }
+
+    // Determine the correct screen for WooCommerce orders
+    $order_screen = null;
+    
+    // Check if WooCommerce HPOS (High-Performance Order Storage) is enabled
+    if ( class_exists( '\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController' ) ) {
+        try {
+            $container = wc_get_container();
+            if ( $container ) {
+                $controller = $container->get( CustomOrdersTableController::class );
+                if ( $controller && method_exists( $controller, 'custom_orders_table_usage_is_enabled' ) ) {
+                    if ( $controller->custom_orders_table_usage_is_enabled() ) {
+                        $order_screen = wc_get_page_screen_id( 'shop-order' );
+                    } else {
+                        $order_screen = 'shop_order';
+                    }
+                }
+            }
+        } catch ( Exception $e ) {
+            // Fallback to traditional post type
+            $order_screen = 'shop_order';
+        }
+    } else {
+        // Fallback to traditional post type
+        $order_screen = 'shop_order';
+    }
+
+    // Only add metabox if we have a valid order screen and the screen matches
+    if ( $order_screen && ( $screen->id === $order_screen || $screen->post_type === 'shop_order' ) ) {
+        try {
+            add_meta_box(
+                'DelyvaMetaBox',
+                'Delyva',
+                'delyvax_show_box',
+                $order_screen,
+                'side',
+                'high'
+            );
+        } catch ( Exception $e ) {
+            // Silently fail if add_meta_box throws an error
+            return;
+        }
+    }
 }
 
 // Metabox content
 function delyvax_show_box( $object ) {
-    // Get the WC_Order object
-    $order = is_a( $object, 'WP_Post' ) ? wc_get_order( $object->ID ) : $object;
-	// $order = wc_get_order ( $post->ID );
-	// $TrackingCode = isset( $post->TrackingCode ) ? $post->TrackingCode : '';
+    // Validate input object
+    if ( ! $object ) {
+        return;
+    }
 
-	$settings = get_option( 'woocommerce_delyvax_settings' );
-	$company_code = $settings['company_code'];
-	$company_name = $settings['company_name'];
-	$create_shipment_on_paid = $settings['create_shipment_on_paid'];
-	$create_shipment_on_confirm = $settings['create_shipment_on_confirm'];
+    // Get the WC_Order object with proper validation
+    $order = null;
+    if ( is_a( $object, 'WP_Post' ) ) {
+        $order = wc_get_order( $object->ID );
+    } elseif ( is_a( $object, 'WC_Order' ) ) {
+        $order = $object;
+    } else {
+        return;
+    }
 
-	if($company_name == null)
-	{
-		$company_name = 'Delyva';
-	}
+    // Validate order object
+    if ( ! $order || ! is_a( $order, 'WC_Order' ) ) {
+        return;
+    }
 
-	//ignore local_pickup
-	$shipping_method = delyvax_get_order_shipping_method($order->get_id());
-	if($shipping_method == 'local_pickup') return;
-	//skip virtual product
-	if ( only_virtual_order_items( $order ) ) return; 
-	//
+    // Check if WooCommerce is active
+    if ( ! class_exists( 'WooCommerce' ) ) {
+        return;
+    }
 
-	$delyvax_order_id = $order->get_meta( 'DelyvaXOrderID' );
-	$TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
+    // Get settings with validation
+    $settings = get_option( 'woocommerce_delyvax_settings', array() );
+    $company_code = isset( $settings['company_code'] ) ? $settings['company_code'] : '';
+    $company_name = isset( $settings['company_name'] ) ? $settings['company_name'] : 'Delyva';
+    $create_shipment_on_paid = isset( $settings['create_shipment_on_paid'] ) ? $settings['create_shipment_on_paid'] : '';
+    $create_shipment_on_confirm = isset( $settings['create_shipment_on_confirm'] ) ? $settings['create_shipment_on_confirm'] : '';
 
-	$DelyvaXServiceCode = $order->get_meta( 'DelyvaXServiceCode' );
+    // Set default company name if null
+    if ( empty( $company_name ) ) {
+        $company_name = 'Delyva';
+    }
 
-	$delyvax_error = $order->get_meta( 'delyvax_error' );	
+    // Check if order has valid ID
+    $order_id = $order->get_id();
+    if ( ! $order_id ) {
+        return;
+    }
 
-	$trackUrl = 'https://'.$company_code.'.delyva.app/customer/strack?trackingNo='.$TrackingCode;
-	$printLabelUrl = 'https://api.delyva.app/v1.0/order/'.$delyvax_order_id.'/label';
+    // Check if required functions exist
+    if ( ! function_exists( 'delyvax_get_order_shipping_method' ) || ! function_exists( 'only_virtual_order_items' ) ) {
+        return;
+    }
+
+    // Ignore local_pickup
+    $shipping_method = delyvax_get_order_shipping_method( $order_id );
+    if ( $shipping_method === 'local_pickup' ) {
+        return;
+    }
+
+    // Skip virtual product
+    if ( only_virtual_order_items( $order ) ) {
+        return;
+    }
+
+    // Get order meta with validation
+    $delyvax_order_id = $order->get_meta( 'DelyvaXOrderID' );
+    $TrackingCode = $order->get_meta( 'DelyvaXTrackingCode' );
+    $DelyvaXServiceCode = $order->get_meta( 'DelyvaXServiceCode' );
+    $delyvax_error = $order->get_meta( 'delyvax_error' );
+
+    // Build URLs with validation
+    $trackUrl = '';
+    $printLabelUrl = '';
+    
+    if ( ! empty( $company_code ) && ! empty( $TrackingCode ) ) {
+        $trackUrl = 'https://' . esc_attr( $company_code ) . '.delyva.app/customer/strack?trackingNo=' . esc_attr( $TrackingCode );
+    }
+    
+    if ( ! empty( $delyvax_order_id ) ) {
+        $printLabelUrl = 'https://api.delyva.app/v1.0/order/' . esc_attr( $delyvax_order_id ) . '/label';
+    }
 	
 	//processing
 	if ( $order->has_status(array('processing'))) {
@@ -149,26 +244,44 @@ function delyvax_show_box( $object ) {
  * Saves the custom meta input
  */
 function delyvax_meta_save($order_id) {
-    $order = wc_get_order($order_id);
-
-    // Checks for input and sanitizes/saves if needed
-    if( isset( $_POST[ 'service_code' ] ) ) {
-    	$service_code = $_POST[ 'service_code' ];
-    	if($service_code !== '')
-    	{
-    	    if ( $order->has_status(array('processing'))) {
-        		$order->update_meta_data('DelyvaXServiceCode',$service_code);
-        // 		$order->update_post_meta( 'DelyvaXServiceCode', $service_code);
-
-        		$order->save();
-
-				delyvax_update_service($order, $service_code);
-        		
-        		//change status to preparing
-        	    $order->update_status('wc-preparing', 'Order status changed to Preparing.', false);        		
-    	    }
-    	}
+    // Validate order ID
+    if ( ! $order_id || ! is_numeric( $order_id ) ) {
+        return false;
     }
+
+    // Check if WooCommerce is active
+    if ( ! class_exists( 'WooCommerce' ) ) {
+        return false;
+    }
+
+    // Get order with validation
+    $order = wc_get_order( $order_id );
+    if ( ! $order || ! is_a( $order, 'WC_Order' ) ) {
+        return false;
+    }
+
+    // Check if service_code is set and sanitize it
+    if ( isset( $_POST['service_code'] ) ) {
+        $service_code = sanitize_text_field( $_POST['service_code'] );
+        
+        if ( ! empty( $service_code ) ) {
+            // Check if order is in processing status
+            if ( $order->has_status( array( 'processing' ) ) ) {
+                // Update meta data
+                $order->update_meta_data( 'DelyvaXServiceCode', $service_code );
+                $order->save();
+
+                // Check if delyvax_update_service function exists
+                if ( function_exists( 'delyvax_update_service' ) ) {
+                    delyvax_update_service( $order, $service_code );
+                }
+
+                // Change status to preparing
+                $order->update_status( 'wc-preparing', 'Order status changed to Preparing.', false );
+            }
+        }
+    }
+    
     return $order;
 }
 
