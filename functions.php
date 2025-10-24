@@ -103,6 +103,148 @@ function delyvaxRequest() {
                 'version' => DELYVAX_PLUGIN_VERSION,
             ], JSON_UNESCAPED_SLASHES));
         }
+        
+        if ($_GET['delyvax'] == 'get_settings' && isset($_GET['token'])) {
+            $api_token = sanitize_text_field($_GET['token']);
+            
+            // Get stored API token and validate
+            $settings = get_option('woocommerce_delyvax_settings', array());
+            $stored_token = isset($settings['api_token']) ? trim($settings['api_token']) : '';
+            
+            if (!empty($stored_token) && hash_equals($stored_token, $api_token)) {
+                // Only allow GET requests for reading settings
+                if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                    http_response_code(405);
+                    die(json_encode([
+                        'error' => 'Method not allowed.',
+                        'code' => 405
+                    ], JSON_UNESCAPED_SLASHES));
+                }
+                
+                header('Content-Type: application/json');
+                
+                // Remove sensitive data for security
+                if (isset($settings['api_token'])) {
+                    $settings['api_token'] = substr($settings['api_token'], 0, 8) . '...';
+                }
+
+                die(json_encode([
+                    'url' => get_home_url(),
+                    'version' => DELYVAX_PLUGIN_VERSION,
+                    'wordpress_version' => get_bloginfo('version'),
+                    'woocommerce_version' => WC()->version,
+                    'settings' => $settings,
+                    'timestamp' => current_time('mysql')
+                ], JSON_UNESCAPED_SLASHES));
+            }
+        }
+        
+        if (($_GET['delyvax'] ?? '') == 'patch_settings' && isset($_GET['token'])) {
+            $api_token = sanitize_text_field($_GET['token']);
+            
+            // Get stored API token and validate
+            $current_settings = get_option('woocommerce_delyvax_settings', array());
+            $stored_token = isset($current_settings['api_token']) ? trim($current_settings['api_token']) : '';
+            
+            if (!empty($stored_token) && hash_equals($stored_token, $api_token)) {
+                // Only allow PATCH requests for updates
+                if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
+                    http_response_code(405);
+                    die(json_encode([
+                        'error' => 'Method not allowed.',
+                        'code' => 405
+                    ], JSON_UNESCAPED_SLASHES));
+                }
+                
+                header('Content-Type: application/json');
+                
+                // Get input data
+                $raw_input = file_get_contents('php://input');
+                $input_data = json_decode($raw_input, true);
+                
+                if (!$input_data) {
+                    http_response_code(400);
+                    die(json_encode([
+                        'error' => 'Invalid JSON data',
+                        'raw_input' => $raw_input,
+                        'code' => 400
+                    ], JSON_UNESCAPED_SLASHES));
+                }
+                
+                // Define allowed settings that can be updated
+                $allowed_settings = [
+                    'enable',
+                    'api_webhook_enable', 
+                    'limit_service_options',
+                    'create_shipment_on_paid',
+                    'create_shipment_on_confirm',
+                    'change_order_status',
+                    'customer_id',
+                    'company_code',
+                    'company_name',
+                    'shop_name',
+                    'shop_mobile',
+                    'shop_email',
+                    'shipping_phone',
+                    'processing_days',
+                    'processing_hours',
+                    'processing_time',
+                    'item_type',
+                    'volumetric_constant',
+                    'weight_option',
+                    'rate_adjustment_type',
+                    'insurance_premium',
+                    'source',
+                    'include_order_note',
+                    'cancel_delivery',
+                    'cancel_order',
+                    'rate_adjustment_percentage',
+                    'rate_adjustment_flat',
+                    'multivendor',
+                    'free_shipping_type',
+                    'free_shipping_condition',
+                    'free_shipping_value'
+                ];
+                
+                $updated_settings = $current_settings;
+                $updated_count = 0;
+                
+                // Update only allowed settings
+                foreach ($input_data as $key => $value) {
+                    if (in_array($key, $allowed_settings)) {
+                        // Sanitize the value based on type
+                        if (is_string($value)) {
+                            $value = sanitize_text_field($value);
+                        } elseif (is_numeric($value)) {
+                            $value = floatval($value);
+                        } elseif (is_bool($value)) {
+                            $value = $value ? 'yes' : 'no';
+                        }
+                        
+                        $updated_settings[$key] = $value;
+                        $updated_count++;
+                    }
+                }
+                
+                // Save updated settings
+                $result = update_option('woocommerce_delyvax_settings', $updated_settings);
+                
+                if ($result) {
+                    die(json_encode([
+                        'success' => true,
+                        'message' => "Successfully updated {$updated_count} settings",
+                        'updated_count' => $updated_count,
+                        'timestamp' => current_time('mysql')
+                    ], JSON_UNESCAPED_SLASHES));
+                } else {
+                    http_response_code(500);
+                    die(json_encode([
+                        'error' => 'Failed to update settings',
+                        'code' => 500
+                    ], JSON_UNESCAPED_SLASHES));
+                }
+            }
+        }
     }
 }
 

@@ -517,7 +517,7 @@ if (!class_exists('DelyvaX_Shipping_Method')) {
                     continue;
                 }
 
-                if (WC()->version < '2.7.0') {
+                if (version_compare(WC()->version, '3.0.0', '<')) {
                     // if this item is variation, get variation product instead
                     if ($item["data"]->product_type == "variation") {
                         $product = $product_factory->get_product($item["variation_id"]);

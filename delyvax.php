@@ -11,7 +11,7 @@
  * Plugin Name:       Delyva
  * Plugin URI:        https://delyva.com
  * Description:       The official Delyva plugin helps store owners to integrate WooCommerce with Delyva for seamless service comparison and order processing.
- * Version:           1.2.1
+ * Version:           1.2.2
  * Author:            Delyva
  * Author URI:        https://delyva.com
  * Text Domain:       delyvax
@@ -27,7 +27,7 @@
 defined( 'ABSPATH' ) or die();
 
 // Define plugin constants
-define('DELYVAX_PLUGIN_VERSION', '1.2.1');
+define('DELYVAX_PLUGIN_VERSION', '1.2.2');
 define('DELYVAX_PLUGIN_FILE', __FILE__);
 define('DELYVAX_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('DELYVAX_API_ENDPOINT', 'https://api.delyva.app/');
