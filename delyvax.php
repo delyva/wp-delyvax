@@ -11,7 +11,7 @@
  * Plugin Name:       Delyva
  * Plugin URI:        https://delyva.com
  * Description:       The official Delyva plugin helps store owners to integrate WooCommerce with Delyva for seamless service comparison and order processing.
- * Version:           1.2.2
+ * Version:           1.2.3
  * Author:            Delyva
  * Author URI:        https://delyva.com
  * Text Domain:       delyvax
@@ -19,6 +19,7 @@
  * License URI:       http://www.gnu.org/licenses/gpl-3.0.txt
  * Requires at least: 6.0
  * Requires PHP:      7.4
+ * Requires Plugins:  woocommerce
  * WC requires at least: 7.0
  * WC tested up to:   9.7
  */
@@ -27,7 +28,7 @@
 defined( 'ABSPATH' ) or die();
 
 // Define plugin constants
-define('DELYVAX_PLUGIN_VERSION', '1.2.2');
+define('DELYVAX_PLUGIN_VERSION', '1.2.3');
 define('DELYVAX_PLUGIN_FILE', __FILE__);
 define('DELYVAX_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('DELYVAX_API_ENDPOINT', 'https://api.delyva.app/');
@@ -114,6 +115,8 @@ class DelyvaX_Plugin {
         require_once DELYVAX_PLUGIN_PATH . 'includes/delyvax-webhook.php';
         require_once DELYVAX_PLUGIN_PATH . 'includes/delyvax-label.php';
         require_once DELYVAX_PLUGIN_PATH . 'includes/shipping-widget.php';
+        require_once DELYVAX_PLUGIN_PATH . 'includes/delyvax-dokan.php';
+        require_once DELYVAX_PLUGIN_PATH . 'includes/delyvax-wcfm.php';
     }
     
     /**

@@ -2,8 +2,8 @@
 Contributors: suhaimihz, delyva
 Tags: delyva, shipping, delivery, courier
 Requires at least: 6.0
-Tested up to: 6.8.3
-Stable tag: 1.2.2
+Tested up to: 6.9.1
+Stable tag: 1.2.3
 Requires PHP: 7.4
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -36,6 +36,12 @@ Delyva WooCommerce plugin
 * PHP 7.4 or higher
 
 == Changelog ==
+
+= 1.2.3 =
+*Release Date - 13th February 2026*
+
+* Dokan: Added Print Label button and Track column to vendor dashboard orders listing
+* WCFM: Added Print Label button and Track column to vendor dashboard orders listing
 
 = 1.2.2 =
 *Release Date - 24 Oct 2025*
